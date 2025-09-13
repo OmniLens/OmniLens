@@ -88,3 +88,30 @@ bun run setup
 ```bash
 bun run dev
 ```
+
+## 🧪 Testing
+
+OmniLens includes a test suite to validate system health and core functionality.
+
+### Available Tests
+
+- **Health Tests** (`tests/health.test.js`): Validates system health, environment variables, database connectivity, GitHub API access, and core functionality
+
+### Running Tests
+
+```bash
+# Run health tests
+bun run test:health
+
+# Run health tests directly
+bun tests/health.test.js
+```
+
+### Test Prerequisites
+
+1. **Development server running**: `bun run dev`
+2. **PostgreSQL database**: Set up and running
+3. **GitHub token**: Configured in `.env.local`
+4. **Environment variables**: All required variables set
+
+For detailed testing information, see [`tests/README.md`](tests/README.md).

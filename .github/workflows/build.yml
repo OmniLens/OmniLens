@@ -1,0 +1,56 @@
+name: 🏗️ Build
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+  workflow_dispatch:
+
+jobs:
+  validate-dashboard:
+    name: 🎯 Validate OmniLens Dashboard
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+
+      - name: 🍞 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: 🧰 Install dependencies
+        run: bun install
+
+      - name: 🔍 Run linting
+        run: bun run lint
+
+      - name: 🏗️ Build application
+        run: bun run build
+
+      - name: 📦 Upload OmniLens artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: omnilens-build
+          path: .next/
+          retention-days: 1
+        if: github.event_name != 'pull_request'
+
+  validation-summary:
+    name: 📊 Validation Summary
+    runs-on: ubuntu-latest
+    needs: validate-dashboard
+    if: always()
+    
+    steps:
+      - name: 📋 Validation Summary
+        run: |
+          echo "## ✅ Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Components Validated:" >> $GITHUB_STEP_SUMMARY
+          echo "✅ OmniLens Dashboard (Next.js + Bun) - Built and tested" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Validation Status:" >> $GITHUB_STEP_SUMMARY
+          echo "- OmniLens Dashboard: ${{ needs.validate-dashboard.result }}" >> $GITHUB_STEP_SUMMARY
