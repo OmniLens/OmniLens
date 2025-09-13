@@ -11,10 +11,10 @@
     "start": "bunx next start",
     "lint": "bunx next lint",
     "test": "bun run test:health && bun run test:api:repo && bun run test:api:workflow && bun run test:golden:repo && bun run test:workflow-persistence",
-    "test:health": "node tests/health.test.js",
-    "test:api:repo": "node tests/api-repo.test.js",
-    "test:api:workflow": "node tests/api-workflow.test.js",
-    "test:golden:repo": "node tests/golden-repo.test.js",
+    "test:health": "bun tests/health.test.js",
+    "test:api:repo": "bun tests/api-repo.test.js",
+    "test:api:workflow": "bun tests/api-workflow.test.js",
+    "test:golden:repo": "bun tests/golden-repo.test.js",
     "test:workflow-persistence": "bun tests/workflow-persistence.test.js"
   },
   "dependencies": {

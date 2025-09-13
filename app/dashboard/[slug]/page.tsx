@@ -494,7 +494,7 @@ export default function DashboardPage({ params }: PageProps) {
   }, [workflows, classifyWorkflowHealth]);
 
   // Format repository display name - use the same logic as the repo card
-  const repoDisplayName = addedRepoPath ? formatRepoDisplayName(addedRepoPath) : formatRepoDisplayName(repoSlug);
+  const repoDisplayName = addedRepoPath ? formatRepoDisplayName(addedRepoPath) : formatRepoDisplayName(repoSlug.replace('-', '/'));
 
   return (
     <div className="container mx-auto p-6 space-y-8">

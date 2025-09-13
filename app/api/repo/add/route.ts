@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
     const repoData = await res.json();
     
     // Repository exists, proceed with adding to database
-    // Generate slug from just the repository name (not the full path)
-    const slug = repoPath.split('/').pop() || repoPath;
+    // Generate slug from the full repository path (org-repo format for uniqueness)
+    const slug = repoPath.replace('/', '-');
 
     // Create new repo object with avatar URL from GitHub API
     const newRepo = {

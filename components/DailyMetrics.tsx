@@ -284,12 +284,6 @@ export default function DailyMetrics({
                   tickLine={false}
                   tick={{ fontSize: 12 }}
                 />
-                <YAxis 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12 }}
-                  width={30}
-                />
                 <Bar 
                   dataKey="passed" 
                   stackId="runs"

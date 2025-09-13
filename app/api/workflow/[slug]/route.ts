@@ -157,9 +157,9 @@ export async function GET(
     const repoData = await repoResponse.json();
     const defaultBranch = repoData.default_branch;
     
-    // Fetch workflows from GitHub API (only active workflows)
+    // Fetch ALL workflows (GitHub's state=active filter is broken)
     const githubResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repoName}/actions/workflows?state=active`,
+      `https://api.github.com/repos/${owner}/${repoName}/actions/workflows`,
       {
         headers: {
           'Authorization': `Bearer ${githubToken}`,
@@ -191,11 +191,14 @@ export async function GET(
     
     const workflowsData: GitHubWorkflowsResponse = await githubResponse.json();
     
+    // Filter to only active workflows (GitHub's state=active filter is broken)
+    const activeWorkflows = workflowsData.workflows.filter(w => w.state === 'active');
+    
     // Filter workflows to only include those active on the default branch
     // We need to check each workflow's runs to see if it has runs on the default branch
     const workflowsOnDefaultBranch = [];
     
-    for (const workflow of workflowsData.workflows) {
+    for (const workflow of activeWorkflows) {
       try {
         // Check if this workflow has runs on the default branch
         const runsResponse = await fetch(
@@ -214,12 +217,29 @@ export async function GET(
           // If there are runs on the default branch, include this workflow
           if (runsData.workflow_runs && runsData.workflow_runs.length > 0) {
             workflowsOnDefaultBranch.push(workflow);
+          } else {
+            // If no runs on default branch, check if it has any runs at all
+            const allRunsResponse = await fetch(
+              `https://api.github.com/repos/${owner}/${repoName}/actions/workflows/${workflow.id}/runs?per_page=1`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${githubToken}`,
+                  'Accept': 'application/vnd.github.v3+json',
+                  'User-Agent': 'OmniLens-Dashboard'
+                }
+              }
+            );
+            
+            if (allRunsResponse.ok) {
+              const allRunsData = await allRunsResponse.json();
+              if (allRunsData.workflow_runs && allRunsData.workflow_runs.length > 0) {
+                workflowsOnDefaultBranch.push(workflow);
+              }
+            }
           }
         }
       } catch (error) {
-        console.warn(`Failed to check runs for workflow ${workflow.id} on default branch:`, error);
-        // If we can't check, include the workflow to be safe
-        workflowsOnDefaultBranch.push(workflow);
+        console.warn(`Failed to check runs for workflow ${workflow.id}:`, error);
       }
     }
     
