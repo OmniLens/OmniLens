@@ -115,7 +115,7 @@ export default function DashboardPage({ params }: PageProps) {
   // Load workflows when component mounts
   useEffect(() => {
     const loadWorkflows = async () => {
-      console.log(`📋 Initial load: Validating cache and fetching workflows for ${repoSlug}`);
+      console.log(`📋 Initial load for ${repoSlug}`);
       setIsLoadingWorkflows(true);
       try {
         const response = await fetch(`/api/workflow/${repoSlug}`, {
@@ -357,13 +357,6 @@ export default function DashboardPage({ params }: PageProps) {
   const getWorkflowRunData = useCallback((workflowId: number): WorkflowRun | null => {
     return workflowRuns.find(run => run.workflow_id === workflowId) || null;
   }, [workflowRuns]);
-
-
-
-
-
-
-
 
   // Helper function to get the last run result for a workflow
   const getLastRunResult = useCallback((workflowId: number, runs: WorkflowRun[]): 'success' | 'failure' | null => {

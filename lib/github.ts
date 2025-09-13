@@ -208,7 +208,6 @@ export async function getWorkflowRunsForDate(date: Date, repoSlug: string, branc
     return filteredRuns;
 
   } catch (error) {
-    console.error("Error fetching workflow runs:", error);
     throw error;
   }
 }
@@ -225,9 +224,6 @@ export async function getWorkflowRunsForDateGrouped(date: Date, repoSlug: string
     const targetDate = new Date(dateStr + "T00:00:00Z");
     const startTime = new Date(targetDate.getTime() - 12 * 60 * 60 * 1000).toISOString(); // 12 hours before
     const endTime = new Date(targetDate.getTime() + 36 * 60 * 60 * 1000).toISOString(); // 36 hours after (next day + 12 hours)
-
-    // Debug logging
-    console.log(`🔍 GitHub API Debug: Searching for runs between ${startTime} and ${endTime} for repo ${repo}`);
 
     // Fetch all workflow runs for the date, handling pagination
     let allRuns: WorkflowRun[] = [];
@@ -312,7 +308,6 @@ export async function getWorkflowRunsForDateGrouped(date: Date, repoSlug: string
     return latestRuns;
 
   } catch (error) {
-    console.error("Error fetching workflow runs:", error);
     throw error;
   }
 }

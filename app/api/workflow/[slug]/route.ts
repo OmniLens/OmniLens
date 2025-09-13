@@ -358,13 +358,10 @@ async function handleWorkflowRunsRequest(
     
     // The getWorkflowRunsForDate function handles all GitHub API calls and error handling
     const dateObj = new Date(date);
-    console.log(`🔍 API Route Debug: date=${date}, dateObj=${dateObj.toISOString()}, slug=${slug}, defaultBranch=${defaultBranch}, grouped=${grouped}`);
     
     const allWorkflowRuns = grouped 
       ? await getWorkflowRunsForDateGrouped(dateObj, slug, defaultBranch)
       : await getWorkflowRunsForDate(dateObj, slug, defaultBranch);
-    
-    console.log(`📊 API Route Debug: Found ${allWorkflowRuns.length} total workflow runs from GitHub`);
     
     // Filter to only include runs from active workflows
     const workflowRuns = allWorkflowRuns.filter(run => activeWorkflowIds.has(run.workflow_id));

@@ -101,7 +101,6 @@ export default function WorkflowCard({
           <div className="flex items-center gap-2">
             {/* Show run count badge if workflow was run multiple times */}
             {(() => {
-              console.log(`🔍 WorkflowCard ${run.name}: run_count=${run.run_count}, all_runs=${run.all_runs?.length}`);
               return run.run_count && run.run_count > 1 ? (
                 <Popover>
                 <PopoverTrigger asChild>
