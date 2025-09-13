@@ -1,0 +1,50 @@
+{
+  "name": "github-workflows-dashboard",
+  "private": true,
+  "license": "UNLICENSED",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bunx next dev",
+    "setup": "if pg_isready -q -d postgres; then echo 'PostgreSQL is already running'; else pg_ctl -D /opt/homebrew/var/postgresql@15 start; fi && (psql -d postgres -c \"SELECT 1 FROM pg_database WHERE datname = 'omnilens';\" | grep -q 1 && echo 'Database already exists' || createdb omnilens) && psql -d omnilens -f lib/schema.sql && echo 'Database ready'",
+    "build": "bunx next build",
+    "start": "bunx next start",
+    "lint": "bunx next lint",
+    "test": "bun run test:health && bun run test:api:repo && bun run test:api:workflow && bun run test:golden:repo && bun run test:workflow-persistence",
+    "test:health": "node tests/health.test.js",
+    "test:api:repo": "node tests/api-repo.test.js",
+    "test:api:workflow": "node tests/api-workflow.test.js",
+    "test:golden:repo": "node tests/golden-repo.test.js",
+    "test:workflow-persistence": "bun tests/workflow-persistence.test.js"
+  },
+  "dependencies": {
+    "@radix-ui/react-popover": "^1.1.14",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@types/pg": "^8.15.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.542.0",
+    "next": "14.2.0",
+    "pg": "^8.16.3",
+    "react": "18.2.0",
+    "react-day-picker": "^9.8.1",
+    "react-dom": "18.2.0",
+    "recharts": "2.15.4",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@types/node": "24.1.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.55.0",
+    "eslint-config-next": "14.2.0",
+    "postcss": "^8.4.38",
+    "postcss-import": "^16.1.1",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.0.0"
+  }
+}
