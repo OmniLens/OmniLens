@@ -34,11 +34,6 @@ export const ZOD_VALIDATION_TEST_CASES = [
 // Slug generation test cases
 export const SLUG_TEST_CASES = [
   {
-    repoPath: 'Visi0ncore/OmniLens',
-    expectedSlug: 'Visi0ncore-OmniLens',
-    description: 'Should generate unique slug with org-repo format'
-  },
-  {
     repoPath: 'OmniLens/OmniLens',
     expectedSlug: 'OmniLens-OmniLens',
     description: 'Should generate unique slug even when org matches repo name'

@@ -193,13 +193,9 @@ function NoRepositoriesFound({
               </Button>
             </div>
           </form>
-
           {addError && (
             <p className="mt-2 text-sm text-red-500">{addError}</p>
           )}
-
-          
-
         </div>
       </div>
     </div>
@@ -235,15 +231,6 @@ export default function HomePage() {
   } | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-
-
-
-
-  // Clear any in-memory cache for this repo
-  const clearRepoLocalState = React.useCallback((repoSlug: string) => {
-    // Clear any cached data for this repository
-    console.log(`🧹 Clearing local cache for repo: ${repoSlug}`);
-  }, []);
 
   // Build repositories list from API (includes both env-configured and user-added repos)
   const hydrateUserRepos = async () => {
@@ -514,7 +501,6 @@ export default function HomePage() {
                         if (response.ok) {
                           // Remove from local state
                           setAvailableRepos(prev => prev.filter(r => r.slug !== repoToDelete.slug));
-                          clearRepoLocalState(repoToDelete.slug);
                           setRepoToDelete(null);
                         } else {
                           console.error('Failed to delete repository');
@@ -653,7 +639,6 @@ export default function HomePage() {
                       if (response.ok) {
                         // Remove from local state
                         setAvailableRepos(prev => prev.filter(r => r.slug !== repoToDelete.slug));
-                        clearRepoLocalState(repoToDelete.slug);
                         setRepoToDelete(null);
                       } else {
                         console.error('Failed to delete repository');

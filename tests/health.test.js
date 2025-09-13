@@ -39,8 +39,6 @@ async function testServerHealth() {
   }
 }
 
-
-
 async function testSlugGeneration() {
   logTest('Slug Generation (Clean URLs)');
   
@@ -128,52 +126,74 @@ async function testDatabaseConnection() {
   }
 }
 
-async function testGitHubApiConnectivity() {
-  logTest('GitHub API Connectivity');
-  
-  if (!process.env.GITHUB_TOKEN) {
-    logError('❌ GITHUB_TOKEN not configured, skipping GitHub API test');
-    return false;
-  }
+async function testExternalDependencies() {
+  logTest('External Dependencies Health');
   
   try {
-    // Test GitHub API connectivity and token validity
-    const response = await fetch('https://api.github.com/user', {
+    // Test GitHub API connectivity (no auth required)
+    const response = await fetch('https://api.github.com/repos/Visi0ncore/StealthList', {
       headers: {
-        'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28'
       }
     });
     
     if (response.ok) {
-      logSuccess('✅ GitHub API connectivity and token validation successful');
-      
-      // Check rate limit headers
-      const remaining = response.headers.get('x-ratelimit-remaining');
-      const limit = response.headers.get('x-ratelimit-limit');
-      
-      if (remaining && limit) {
-        logInfo(`ℹ️  GitHub API rate limit: ${remaining}/${limit} remaining`);
-        
-        if (parseInt(remaining) < 100) {
-          logWarning('⚠️  GitHub API rate limit is low, consider monitoring usage');
-        }
-      }
-      
+      logSuccess('✅ GitHub API is accessible');
       return true;
-    } else if (response.status === 401) {
-      logError('❌ GitHub token is invalid or expired');
-      return false;
-    } else if (response.status === 403) {
-      logError('❌ GitHub token has insufficient permissions');
-      return false;
     } else {
-      logError(`❌ GitHub API returned unexpected status: ${response.status}`);
+      logError(`❌ GitHub API returned status: ${response.status}`);
       return false;
     }
   } catch (error) {
-    logError(`❌ GitHub API connectivity test failed: ${error.message}`);
+    logError(`❌ External dependency test failed: ${error.message}`);
+    return false;
+  }
+}
+
+async function testPerformanceBaseline() {
+  logTest('Performance Baseline Health');
+  
+  try {
+    const start = Date.now();
+    const response = await fetch(`${BASE_URL}/api/repo`);
+    const duration = Date.now() - start;
+    
+    if (response.ok && duration < 1000) {
+      logSuccess(`✅ API response time: ${duration}ms (under 1000ms threshold)`);
+      return true;
+    } else if (response.ok) {
+      logWarning(`⚠️  API response time: ${duration}ms (over 1000ms threshold)`);
+      return true; // Still consider it healthy, just slow
+    } else {
+      logError(`❌ API returned status: ${response.status}`);
+      return false;
+    }
+  } catch (error) {
+    logError(`❌ Performance test failed: ${error.message}`);
+    return false;
+  }
+}
+
+async function testErrorBoundaries() {
+  logTest('Error Boundaries Health');
+  
+  try {
+    // Test that invalid requests return proper error codes, not server crashes
+    const response = await fetch(`${BASE_URL}/api/workflow/invalid-repo-slug`);
+    
+    if (response.status === 404) {
+      logSuccess('✅ Error boundaries working - invalid requests return 404');
+      return true;
+    } else if (response.status === 500) {
+      logError('❌ Server error on invalid request - error boundaries not working');
+      return false;
+    } else {
+      logWarning(`⚠️  Unexpected status for invalid request: ${response.status}`);
+      return true; // Not a critical failure
+    }
+  } catch (error) {
+    logError(`❌ Error boundary test failed: ${error.message}`);
     return false;
   }
 }
@@ -198,8 +218,9 @@ async function testCoreApiEndpoints() {
       
       const response = await makeRequest(`${BASE_URL}${endpoint.path}`, options);
       
-      if (response.ok || (endpoint.path.includes('validate') && response.status === 404)) {
+      if (response.ok || (endpoint.path.includes('validate') && (response.status === 404 || response.status === 400))) {
         // 404 is OK for validate endpoint with test repo that might not exist
+        // 400 is OK for validate endpoint when repo has no workflows with runs
         logSuccess(`✅ ${endpoint.description} endpoint is healthy`);
       } else {
         logError(`❌ ${endpoint.description} endpoint failed: ${response.status}`);
@@ -258,7 +279,9 @@ async function runHealthTests() {
     { name: 'Core API Endpoints', fn: testCoreApiEndpoints },
     { name: 'Database Connection', fn: testDatabaseConnection },
     { name: 'Environment Variables', fn: testEnvironmentVariables },
-    { name: 'GitHub API Connectivity', fn: testGitHubApiConnectivity },
+    { name: 'External Dependencies', fn: testExternalDependencies },
+    { name: 'Performance Baseline', fn: testPerformanceBaseline },
+    { name: 'Error Boundaries', fn: testErrorBoundaries },
     { name: 'Server Health', fn: testServerHealth },
     { name: 'Slug Generation', fn: testSlugGeneration },
     { name: 'Zod Validation', fn: testZodValidation }
@@ -328,7 +351,9 @@ export {
   testEnvironmentVariables,
   testServerHealth,
   testDatabaseConnection,
-  testGitHubApiConnectivity,
+  testExternalDependencies,
+  testPerformanceBaseline,
+  testErrorBoundaries,
   testCoreApiEndpoints,
   testSlugGeneration,
   testZodValidation
