@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getUserRepo, saveWorkflows, getWorkflows } from '@/lib/db-storage';
+import { getUserRepo, saveWorkflows } from '@/lib/db-storage';
 import { getLatestWorkflowRuns, getWorkflowRunsForDate, getWorkflowRunsForDateGrouped } from '@/lib/github';
 
 // Zod schemas for validation
@@ -158,13 +158,16 @@ export async function GET(
     const defaultBranch = repoData.default_branch;
     
     // Fetch ALL workflows (GitHub's state=active filter is broken)
+    // Add cache-busting timestamp to force fresh data
     const githubResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repoName}/actions/workflows`,
+      `https://api.github.com/repos/${owner}/${repoName}/actions/workflows?_t=${Date.now()}`,
       {
         headers: {
           'Authorization': `Bearer ${githubToken}`,
           'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'OmniLens-Dashboard'
+          'User-Agent': 'OmniLens-Dashboard',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
         }
       }
     );
@@ -194,57 +197,9 @@ export async function GET(
     // Filter to only active workflows (GitHub's state=active filter is broken)
     const activeWorkflows = workflowsData.workflows.filter(w => w.state === 'active');
     
-    // Filter workflows to only include those active on the default branch
-    // We need to check each workflow's runs to see if it has runs on the default branch
-    const workflowsOnDefaultBranch = [];
-    
-    for (const workflow of activeWorkflows) {
-      try {
-        // Check if this workflow has runs on the default branch
-        const runsResponse = await fetch(
-          `https://api.github.com/repos/${owner}/${repoName}/actions/workflows/${workflow.id}/runs?branch=${defaultBranch}&per_page=1`,
-          {
-            headers: {
-              'Authorization': `Bearer ${githubToken}`,
-              'Accept': 'application/vnd.github.v3+json',
-              'User-Agent': 'OmniLens-Dashboard'
-            }
-          }
-        );
-        
-        if (runsResponse.ok) {
-          const runsData = await runsResponse.json();
-          // If there are runs on the default branch, include this workflow
-          if (runsData.workflow_runs && runsData.workflow_runs.length > 0) {
-            workflowsOnDefaultBranch.push(workflow);
-          } else {
-            // If no runs on default branch, check if it has any runs at all
-            const allRunsResponse = await fetch(
-              `https://api.github.com/repos/${owner}/${repoName}/actions/workflows/${workflow.id}/runs?per_page=1`,
-              {
-                headers: {
-                  'Authorization': `Bearer ${githubToken}`,
-                  'Accept': 'application/vnd.github.v3+json',
-                  'User-Agent': 'OmniLens-Dashboard'
-                }
-              }
-            );
-            
-            if (allRunsResponse.ok) {
-              const allRunsData = await allRunsResponse.json();
-              if (allRunsData.workflow_runs && allRunsData.workflow_runs.length > 0) {
-                workflowsOnDefaultBranch.push(workflow);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.warn(`Failed to check runs for workflow ${workflow.id}:`, error);
-      }
-    }
-    
-    // Transform the response to match our API format
-    const workflows = workflowsOnDefaultBranch.map(workflow => ({
+    // Return ALL active workflows - don't filter by whether they have runs
+    // This ensures consistency with metrics which are calculated from all workflows
+    const workflows = activeWorkflows.map(workflow => ({
       id: workflow.id,
       name: workflow.name,
       path: workflow.path,
@@ -254,44 +209,16 @@ export async function GET(
       deletedAt: workflow.deleted_at
     }));
     
-    // Compare with cached workflows to detect changes
-    const savedWorkflows = await getWorkflows(validatedSlug);
-    
-    // Helper function to compare workflow arrays
-    const workflowsAreEqual = (github: any[], cached: any[]) => {
-      if (github.length !== cached.length) return false;
-      
-      // Sort both arrays by id for comparison
-      const githubSorted = [...github].sort((a, b) => a.id - b.id);
-      const cachedSorted = [...cached].sort((a, b) => a.id - b.id);
-      
-      return githubSorted.every((ghWorkflow, index) => {
-        const cachedWorkflow = cachedSorted[index];
-        return (
-          ghWorkflow.id === cachedWorkflow.id &&
-          ghWorkflow.name === cachedWorkflow.name &&
-          ghWorkflow.path === cachedWorkflow.path &&
-          ghWorkflow.state === cachedWorkflow.state
-        );
-      });
-    };
-    
-    const isCacheValid = workflowsAreEqual(workflows, savedWorkflows);
-    let cacheUpdated = false;
-    
-    // Update cache if there are differences
-    if (!isCacheValid) {
-      try {
-        await saveWorkflows(validatedSlug, workflows);
-        cacheUpdated = true;
-        console.log(`🔄 [WORKFLOW API] Cache updated: ${workflows.length} workflows for ${validatedSlug}`);
-      } catch (error) {
-        console.error('❌ [WORKFLOW API] Error updating workflow cache:', error);
-        // Continue with the response even if saving fails
-      }
-    } else {
-      console.log(`✅ [WORKFLOW API] Cache is current: ${workflows.length} workflows for ${validatedSlug}`);
+    // Save workflows to database for home page display (but still return fresh data)
+    try {
+      await saveWorkflows(validatedSlug, workflows);
+      console.log(`💾 [WORKFLOW API] Saved ${workflows.length} workflows to database for ${validatedSlug}`);
+    } catch (error) {
+      console.error('❌ [WORKFLOW API] Error saving workflows to database:', error);
+      // Continue with response even if saving fails
     }
+    
+    console.log(`🚀 [WORKFLOW API] Returning ${workflows.length} fresh workflows from GitHub for ${validatedSlug}`);
     
     const response = {
       repository: {
@@ -300,9 +227,7 @@ export async function GET(
         repoPath: repo.repoPath
       },
       workflows: workflows,
-      totalCount: workflows.length,
-      cached: !cacheUpdated,
-      cacheUpdated: cacheUpdated
+      totalCount: workflows.length
     };
     
     return NextResponse.json(response);
@@ -332,10 +257,24 @@ async function handleWorkflowRunsRequest(
 ) {
   try {
     
-    // Get active workflows from database to filter runs
-    const allSavedWorkflows = await getWorkflows(slug);
-    const activeWorkflows = allSavedWorkflows.filter(workflow => workflow.state === 'active');
-    const activeWorkflowIds = new Set(activeWorkflows.map(w => w.id));
+    // Get fresh workflows from GitHub API instead of database cache
+    const workflowsResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/workflow/${slug}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
+    
+    if (!workflowsResponse.ok) {
+      return NextResponse.json(
+        { error: 'Failed to fetch workflows' },
+        { status: 500 }
+      );
+    }
+    
+    const workflowsData = await workflowsResponse.json();
+    const activeWorkflows = workflowsData.workflows || [];
+    const activeWorkflowIds = new Set(activeWorkflows.map((w: any) => w.id));
     
     // Get the repository's default branch for filtering runs
     const githubToken = process.env.GITHUB_TOKEN;
@@ -406,8 +345,8 @@ async function handleWorkflowRunsRequest(
     const totalWorkflows = activeWorkflows.length;
     const workflowsWithRuns = new Set(workflowRuns.map(run => run.workflow_id));
     const missingWorkflows = activeWorkflows
-      .filter(workflow => !workflowsWithRuns.has(workflow.id))
-      .map(workflow => workflow.name);
+      .filter((workflow: any) => !workflowsWithRuns.has(workflow.id))
+      .map((workflow: any) => workflow.name);
     const didntRunCount = missingWorkflows.length;
     
     const overviewData = {

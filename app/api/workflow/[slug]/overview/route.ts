@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getUserRepo, getWorkflows } from '@/lib/db-storage';
+import { getUserRepo } from '@/lib/db-storage';
 import { getWorkflowRunsForDate, calculateOverviewData } from '@/lib/github';
 
 // Zod schemas for validation
@@ -30,11 +30,15 @@ export async function GET(
     const dateParam = searchParams.get('date');
     const date = dateParam ? dateSchema.parse(dateParam) : new Date().toISOString().split('T')[0];
     
-    // Get saved workflows from database (active only)
-    const allSavedWorkflows = await getWorkflows(validatedSlug);
-    const savedWorkflows = allSavedWorkflows.filter(workflow => workflow.state === 'active');
+    // Get fresh workflows from GitHub API instead of database cache
+    const workflowsResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/workflow/${validatedSlug}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
     
-    if (savedWorkflows.length === 0) {
+    if (!workflowsResponse.ok) {
       return NextResponse.json({
         repository: {
           slug: validatedSlug,
@@ -47,8 +51,8 @@ export async function GET(
           passedRuns: 0,
           failedRuns: 0,
           totalRuntime: 0,
-          didntRunCount: savedWorkflows.length,
-          totalWorkflows: savedWorkflows.length,
+          didntRunCount: 0,
+          totalWorkflows: 0,
           missingWorkflows: [],
           successRate: 0,
           passRate: 0
@@ -56,6 +60,9 @@ export async function GET(
         message: 'No active workflows found. Please fetch workflows first.'
       });
     }
+    
+    const workflowsData = await workflowsResponse.json();
+    const savedWorkflows = workflowsData.workflows || [];
     
     // Get the repository's default branch
     const githubToken = process.env.GITHUB_TOKEN;
@@ -106,11 +113,11 @@ export async function GET(
     const overviewData = calculateOverviewData(workflowRuns);
     
     // Calculate workflows that didn't run today
-    const activeWorkflowIds = new Set(savedWorkflows.map(workflow => workflow.id));
+    const activeWorkflowIds = new Set(savedWorkflows.map((workflow: any) => workflow.id));
     const workflowsWithRuns = new Set(workflowRuns.map(run => run.workflow_id));
     const missingWorkflows = savedWorkflows
-      .filter(workflow => !workflowsWithRuns.has(workflow.id))
-      .map(workflow => workflow.name);
+      .filter((workflow: any) => !workflowsWithRuns.has(workflow.id))
+      .map((workflow: any) => workflow.name);
     const didntRunCount = missingWorkflows.length;
     
     // Calculate additional metrics

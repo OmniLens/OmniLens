@@ -130,25 +130,18 @@ export default function DashboardPage({ params }: PageProps) {
         if (response.ok) {
           const data = await response.json();
           
-          // Log cache status from API response
-          if (data.cacheUpdated) {
-            console.log(`🔄 Initial load: Cache was outdated and has been updated with ${data.totalCount} workflows`);
-          } else if (data.cached === false) {
-            console.log(`✅ Initial load: Cache was current, ${data.totalCount} workflows validated`);
-          } else {
-            console.log(`📋 Initial load: ${data.totalCount} workflows loaded`);
-          }
+          // Log fresh data from GitHub
+          console.log(`🚀 Initial load: ${data.totalCount} fresh workflows from GitHub`);
           
-          // Filter to only active workflows and sort by name
-          const activeWorkflows = (data.workflows || [])
-            .filter((workflow: any) => workflow.state === 'active')
+          // Sort all workflows by name (API already filters to active workflows)
+          const sortedWorkflows = (data.workflows || [])
             .sort((a: any, b: any) => {
               const nameA = removeEmojiFromWorkflowName(a.name || '');
               const nameB = removeEmojiFromWorkflowName(b.name || '');
               return nameA.localeCompare(nameB);
             });
-          setWorkflows(activeWorkflows);
-          console.log(`✅ Initial load complete: ${activeWorkflows.length} active workflows loaded`);
+          setWorkflows(sortedWorkflows);
+          console.log(`✅ Initial load complete: ${sortedWorkflows.length} workflows loaded`);
         } else {
           console.error('Failed to load workflows');
           setWorkflows([]);
@@ -268,25 +261,18 @@ export default function DashboardPage({ params }: PageProps) {
       if (response.ok) {
         const data = await response.json();
         
-        // Log cache status from API response
-        if (data.cacheUpdated) {
-          console.log(`🔄 Manual refresh: Cache was outdated and has been updated with ${data.totalCount} workflows`);
-        } else if (data.cached === false) {
-          console.log(`✅ Manual refresh: Cache was current, ${data.totalCount} workflows validated`);
-        } else {
-          console.log(`🔄 Manual refresh: ${data.totalCount} workflows loaded`);
-        }
+        // Log fresh data from GitHub
+        console.log(`🚀 Manual refresh: ${data.totalCount} fresh workflows from GitHub`);
         
-        // Filter to only active workflows and sort by name
-        const activeWorkflows = (data.workflows || [])
-          .filter((workflow: any) => workflow.state === 'active')
+        // Sort all workflows by name (API already filters to active workflows)
+        const sortedWorkflows = (data.workflows || [])
           .sort((a: any, b: any) => {
             const nameA = removeEmojiFromWorkflowName(a.name || '');
             const nameB = removeEmojiFromWorkflowName(b.name || '');
             return nameA.localeCompare(nameB);
           });
-        setWorkflows(activeWorkflows);
-        console.log(`✅ Manual refresh: workflows updated with ${activeWorkflows.length} active workflows`);
+        setWorkflows(sortedWorkflows);
+        console.log(`✅ Manual refresh: workflows updated with ${sortedWorkflows.length} workflows`);
         
         // Also refresh workflow runs data to get latest running status
         const dateStr = format(selectedDate, 'yyyy-MM-dd');

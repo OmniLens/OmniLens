@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,7 +10,6 @@ import {
   Package,
   X,
   Github,
-  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
@@ -558,16 +556,6 @@ export default function HomePage() {
       <div className="container mx-auto p-6 space-y-8">
         <div className="flex justify-end mb-6">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={hydrateUserRepos}
-              disabled={isLoading}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
             {showAddForm && (
               <form onSubmit={handleAddRepo} className="flex items-center gap-2">
                 <input
