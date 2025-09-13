@@ -50,7 +50,7 @@ async function testSlugGeneration() {
   let allPassed = true;
   
   for (const testCase of testCases) {
-    const actualSlug = testCase.repoPath.split('/').pop() || testCase.repoPath;
+    const actualSlug = testCase.repoPath.replace('/', '-');
     
     if (actualSlug === testCase.expectedSlug) {
       logSuccess(`✅ ${testCase.description}: "${actualSlug}"`);
