@@ -503,15 +503,6 @@ export default function DashboardPage({ params }: PageProps) {
             Refresh
           </Button>
           <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            disabled
-          >
-            <BarChart3 className="h-4 w-4" />
-            Report
-          </Button>
-          <Button
             variant={isSelectedDateToday ? "default" : "outline"}
             size="sm"
             onClick={handleSetToday}
