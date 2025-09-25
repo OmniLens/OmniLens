@@ -94,25 +94,23 @@ psql -d omnilens -c "SELECT * FROM workflows LIMIT 5;"
 cp .env.example .env.local
 ```
 
-### 2. Configure Environment
-
 Update `.env.local` with your GitHub token and database configuration:
 - Add your GitHub Personal Access Token
 - Configure your database connection details
 
-### 3. Install Dependencies
+### 2. Install Dependencies
 
 ```bash
 bun install
 ```
 
-### 4. Setup Database
+### 3. Setup Database
 
 ```bash
 bun run setup
 ```
 
-### 5. Start Development Server
+### 4. Start Development Server
 
 ```bash
 bun run dev
