@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { format, isToday } from "date-fns";
 import { DatePicker } from "@/components/DatePicker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { removeEmojiFromWorkflowName } from "@/lib/utils";
 import type { WorkflowRun } from "@/lib/github";
 import WorkflowCard from "@/components/WorkflowCard";
 import DailyMetrics from "@/components/DailyMetrics";
+import { useSession } from "@/lib/auth-client";
 
 
 // Helper function to format repository name for display
@@ -96,7 +98,16 @@ interface PageProps {
 
 export default function DashboardPage({ params }: PageProps) {
   const { slug: repoSlug } = params;
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
   const [addedRepoPath, setAddedRepoPath] = useState<string | null>(null);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push('/');
+    }
+  }, [session, isPending, router]);
   const [workflows, setWorkflows] = useState<any[]>([]);
   const [workflowRuns, setWorkflowRuns] = useState<WorkflowRun[]>([]);
   const [groupedWorkflowRuns, setGroupedWorkflowRuns] = useState<WorkflowRun[]>([]);
@@ -121,6 +132,7 @@ export default function DashboardPage({ params }: PageProps) {
       try {
         const response = await fetch(`/api/workflow/${repoSlug}`, {
           cache: 'no-store',
+          credentials: 'include',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -173,10 +185,14 @@ export default function DashboardPage({ params }: PageProps) {
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
         
         // Fetch workflow runs
-        const runsResponse = await fetch(`/api/workflow/${repoSlug}?date=${dateStr}&grouped=true`);
+        const runsResponse = await fetch(`/api/workflow/${repoSlug}?date=${dateStr}&grouped=true`, {
+          credentials: 'include'
+        });
         
         // Fetch overview data
-        const overviewResponse = await fetch(`/api/workflow/${repoSlug}/overview?date=${dateStr}`);
+        const overviewResponse = await fetch(`/api/workflow/${repoSlug}/overview?date=${dateStr}`, {
+          credentials: 'include'
+        });
         
         if (runsResponse.ok && overviewResponse.ok) {
           const runsData = await runsResponse.json();
@@ -215,7 +231,9 @@ export default function DashboardPage({ params }: PageProps) {
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
         
-        const response = await fetch(`/api/workflow/${repoSlug}?date=${yesterdayStr}&grouped=true`);
+        const response = await fetch(`/api/workflow/${repoSlug}?date=${yesterdayStr}&grouped=true`, {
+          credentials: 'include'
+        });
         if (response.ok) {
           const data = await response.json();
           setYesterdayWorkflowRuns(data.workflowRuns || []);
@@ -252,6 +270,7 @@ export default function DashboardPage({ params }: PageProps) {
       // Add timestamp to force cache revalidation
       const response = await fetch(`/api/workflow/${repoSlug}?refresh=${Date.now()}`, {
         cache: 'no-store',
+        credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
@@ -281,6 +300,7 @@ export default function DashboardPage({ params }: PageProps) {
         // Fetch workflow runs
         const runsResponse = await fetch(`/api/workflow/${repoSlug}?date=${dateStr}&grouped=true&refresh=${Date.now()}`, {
           cache: 'no-store',
+          credentials: 'include',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -291,6 +311,7 @@ export default function DashboardPage({ params }: PageProps) {
         // Fetch overview data
         const overviewResponse = await fetch(`/api/workflow/${repoSlug}/overview?date=${dateStr}&refresh=${Date.now()}`, {
           cache: 'no-store',
+          credentials: 'include',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -315,6 +336,7 @@ export default function DashboardPage({ params }: PageProps) {
         
         const yesterdayResponse = await fetch(`/api/workflow/${repoSlug}?date=${yesterdayStr}&grouped=true&refresh=${Date.now()}`, {
           cache: 'no-store',
+          credentials: 'include',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -487,7 +509,7 @@ export default function DashboardPage({ params }: PageProps) {
     <div className="container mx-auto p-6 space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link href="/" className="text-muted-foreground hover:text-foreground">
+          <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <h1 className="text-3xl font-bold tracking-tight">{repoDisplayName}</h1>

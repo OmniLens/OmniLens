@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { loadUserAddedRepos } from '@/lib/db-storage';
+import { withAuth } from '@/lib/auth-middleware';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,7 @@ const repositoriesResponseSchema = z.object({
   repositories: z.array(repositorySchema)
 });
 
-export async function GET() {
+export const GET = withAuth(async (request: NextRequest, _context, authData) => {
   try {
     const userAddedRepos = await loadUserAddedRepos();
     
@@ -56,4 +57,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});

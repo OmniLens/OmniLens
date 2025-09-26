@@ -2,16 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getUserRepo } from '@/lib/db-storage';
 import { getWorkflowRunsForDate, calculateOverviewData } from '@/lib/github';
+import { withAuth } from '@/lib/auth-middleware';
+import { makeGitHubRequest } from '@/lib/github-auth';
 
 // Zod schemas for validation
 const slugSchema = z.string().min(1, 'Repository slug is required');
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').optional();
 
 // GET /api/workflow/{slug}/overview - Get aggregated daily metrics
-export async function GET(
+export const GET = withAuth(async (
   request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+  { params }: { params: { slug: string } },
+  authData
+) => {
   try {
     // Validate the slug parameter
     const validatedSlug = slugSchema.parse(params.slug);
@@ -30,15 +33,31 @@ export async function GET(
     const dateParam = searchParams.get('date');
     const date = dateParam ? dateSchema.parse(dateParam) : new Date().toISOString().split('T')[0];
     
-    // Get fresh workflows from GitHub API instead of database cache
-    const workflowsResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/workflow/${validatedSlug}`, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
-      }
-    });
+    // Get fresh workflows directly from GitHub API instead of internal API call
+    // Extract owner and repo name from the repository path
+    const [owner, repoName] = repo.repoPath.split('/');
+    if (!owner || !repoName) {
+      return NextResponse.json(
+        { error: 'Invalid repository path format' },
+        { status: 400 }
+      );
+    }
     
-    if (!workflowsResponse.ok) {
+    // Fetch workflows directly from GitHub
+    const githubResponse = await makeGitHubRequest(
+      authData.user.id,
+      `https://api.github.com/repos/${owner}/${repoName}/actions/workflows?_t=${Date.now()}`,
+      {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'OmniLens-Dashboard',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      }
+    );
+    
+    if (!githubResponse.ok) {
       return NextResponse.json({
         repository: {
           slug: validatedSlug,
@@ -61,34 +80,15 @@ export async function GET(
       });
     }
     
-    const workflowsData = await workflowsResponse.json();
-    const savedWorkflows = workflowsData.workflows || [];
+    const workflowsData = await githubResponse.json();
+    const savedWorkflows = workflowsData.workflows.filter((w: any) => w.state === 'active');
     
     // Get the repository's default branch
-    const githubToken = process.env.GITHUB_TOKEN;
-    if (!githubToken) {
-      console.error('GitHub token not configured');
-      return NextResponse.json(
-        { error: 'GitHub integration not configured' },
-        { status: 500 }
-      );
-    }
-    
-    // Extract owner and repo name from the repository path
-    const [owner, repoName] = repo.repoPath.split('/');
-    if (!owner || !repoName) {
-      return NextResponse.json(
-        { error: 'Invalid repository path format' },
-        { status: 400 }
-      );
-    }
-    
-    // Get the repository's default branch
-    const repoResponse = await fetch(
+    const repoResponse = await makeGitHubRequest(
+      authData.user.id,
       `https://api.github.com/repos/${owner}/${repoName}`,
       {
         headers: {
-          'Authorization': `Bearer ${githubToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'OmniLens-Dashboard'
         }
@@ -107,7 +107,7 @@ export async function GET(
     
     // Get workflow runs for the specified date (from default branch only)
     const dateObj = new Date(date!); // date is guaranteed to be defined by this point
-    const workflowRuns = await getWorkflowRunsForDate(dateObj, validatedSlug, defaultBranch);
+    const workflowRuns = await getWorkflowRunsForDate(dateObj, validatedSlug, authData.user.id, defaultBranch);
     
     // Calculate overview data using the existing function
     const overviewData = calculateOverviewData(workflowRuns);
@@ -194,4 +194,4 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+});

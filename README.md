@@ -29,6 +29,80 @@ The dashboard integrates multiple data sources:
 - **PostgreSQL Database**: Stores repository metadata and workflow persistence
 - **Real-time Validation**: Repository validation before adding to dashboard
 
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ or Bun
+- PostgreSQL (any installation method)
+- GitHub Personal Access Token with `repo` scope
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/omnilens.git
+   cd omnilens
+   ```
+
+2. **Install dependencies**
+   ```bash
+   bun install
+   # or npm install
+   ```
+
+3. **Set up PostgreSQL**
+   
+   The setup script automatically detects your PostgreSQL installation:
+   ```bash
+   bun run setup
+   ```
+   
+   This works with any PostgreSQL installation:
+   - Homebrew: `brew install postgresql`
+   - Ubuntu/Debian: `sudo apt install postgresql postgresql-contrib`
+   - Docker: `docker run --name postgres -e POSTGRES_PASSWORD=password -p 5432:5432 -d postgres`
+   - Postgres.app (macOS): Download from [postgresapp.com](https://postgresapp.com/)
+
+4. **Configure environment variables**
+   
+   Create a `.env` file:
+   ```bash
+   # GitHub Configuration
+   GITHUB_TOKEN=your_github_personal_access_token
+   GITHUB_CLIENT_ID=your_github_oauth_app_client_id
+   GITHUB_CLIENT_SECRET=your_github_oauth_app_client_secret
+   
+   # Authentication
+   BETTER_AUTH_SECRET=your_random_secret_key_here
+   BETTER_AUTH_URL=http://localhost:3000
+   
+   # Database (adjust if needed)
+   DB_USER=your_db_user
+   DB_HOST=localhost
+   DB_NAME=omnilens
+   DB_PASSWORD=your_db_password
+   DB_PORT=5432
+   ```
+
+5. **Set up GitHub OAuth App**
+   
+   - Go to [GitHub Settings > Developer settings > OAuth Apps](https://github.com/settings/developers)
+   - Create a new OAuth App with:
+     - Homepage URL: `http://localhost:3000`
+     - Authorization callback URL: `http://localhost:3000/api/auth/callback/github`
+   - Copy the Client ID and Client Secret to your `.env`
+
+6. **Start the development server**
+   ```bash
+   bun dev
+   # or npm run dev
+   ```
+
+7. **Open your browser**
+   
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
 ## 🔑 API Requirements
 
 - GitHub Personal Access Token with `repo` scope
@@ -91,10 +165,10 @@ psql -d omnilens -c "SELECT * FROM workflows LIMIT 5;"
 ### 1. Environment Setup
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-Update `.env.local` with your GitHub token and database configuration:
+Update `.env` with your GitHub token and database configuration:
 - Add your GitHub Personal Access Token
 - Configure your database connection details
 
@@ -156,7 +230,7 @@ The health tests validate:
 
 1. **Development server running**: `bun run dev`
 2. **PostgreSQL database**: Set up and running
-3. **GitHub token**: Configured in `.env.local`
+3. **GitHub token**: Configured in `.env`
 4. **Environment variables**: All required variables set
 
 For detailed testing information, see [`tests/README.md`](tests/README.md).

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { withAuth } from '@/lib/auth-middleware';
+import { makeGitHubRequest } from '@/lib/github-auth';
 
 const API_BASE = 'https://api.github.com';
 
@@ -33,13 +35,8 @@ function normalizeRepoInput(input: string): string | null {
   return null;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, _context, authData) => {
   try {
-    const token = process.env.GITHUB_TOKEN;
-    if (!token) {
-      return NextResponse.json({ error: 'Missing GITHUB_TOKEN environment variable' }, { status: 500 });
-    }
-
     const body = await request.json();
     
     // Validate request body with Zod
@@ -50,21 +47,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid GitHub repository URL or format. Use owner/repo or a full GitHub URL.' }, { status: 400 });
     }
 
-    const res = await fetch(`${API_BASE}/repos/${repoPath}`, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${token}`,
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-      // do not cache validation calls
-      cache: 'no-store',
-    });
+    // Use user's GitHub token to validate repository
+    const res = await makeGitHubRequest(
+      authData.user.id,
+      `${API_BASE}/repos/${repoPath}`,
+      { cache: 'no-store' }
+    );
 
     if (res.status === 404) {
       return NextResponse.json({ valid: false, error: 'Repository not found' }, { status: 404 });
     }
     if (res.status === 403) {
-      return NextResponse.json({ valid: false, error: 'Repository access denied. Check token permissions.' }, { status: 403 });
+      return NextResponse.json({ valid: false, error: 'Repository access denied. Check your GitHub permissions.' }, { status: 403 });
     }
     if (!res.ok) {
       return NextResponse.json({ valid: false, error: `GitHub API error: ${res.status} ${res.statusText}` }, { status: 500 });
@@ -79,14 +73,11 @@ export async function POST(request: NextRequest) {
     const avatarUrl: string = json.owner.avatar_url;
 
     // Also validate that we can access workflows for this repository (GitHub's state=active filter is broken)
-    const workflowsRes = await fetch(`${API_BASE}/repos/${repoPath}/actions/workflows`, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${token}`,
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-      cache: 'no-store',
-    });
+    const workflowsRes = await makeGitHubRequest(
+      authData.user.id,
+      `${API_BASE}/repos/${repoPath}/actions/workflows`,
+      { cache: 'no-store' }
+    );
 
     if (!workflowsRes.ok) {
       if (workflowsRes.status === 403) {
@@ -118,16 +109,10 @@ export async function POST(request: NextRequest) {
     for (const workflow of activeWorkflows) {
       try {
         // Check if this workflow has runs on the default branch
-        const runsResponse = await fetch(
+        const runsResponse = await makeGitHubRequest(
+          authData.user.id,
           `${API_BASE}/repos/${repoPath}/actions/workflows/${workflow.id}/runs?branch=${defaultBranch}&per_page=1`,
-          {
-            headers: {
-              Accept: 'application/vnd.github+json',
-              Authorization: `Bearer ${token}`,
-              'X-GitHub-Api-Version': '2022-11-28',
-            },
-            cache: 'no-store',
-          }
+          { cache: 'no-store' }
         );
         
         if (runsResponse.ok) {
@@ -138,16 +123,10 @@ export async function POST(request: NextRequest) {
           }
           
           // If no runs on default branch, check if it has any runs at all
-          const allRunsResponse = await fetch(
+          const allRunsResponse = await makeGitHubRequest(
+            authData.user.id,
             `${API_BASE}/repos/${repoPath}/actions/workflows/${workflow.id}/runs?per_page=1`,
-            {
-              headers: {
-                Accept: 'application/vnd.github+json',
-                Authorization: `Bearer ${token}`,
-                'X-GitHub-Api-Version': '2022-11-28',
-              },
-              cache: 'no-store',
-            }
+            { cache: 'no-store' }
           );
           
           if (allRunsResponse.ok) {
@@ -181,6 +160,13 @@ export async function POST(request: NextRequest) {
       workflowCount: usableWorkflowCount
     });
   } catch (error: unknown) {
+    // Handle GitHub token errors
+    if (error instanceof Error && error.message.includes('GitHub access token not found')) {
+      return NextResponse.json({ 
+        error: 'GitHub access token not found. Please ensure you are logged in with GitHub.',
+      }, { status: 401 });
+    }
+    
     // Handle Zod validation errors
     if (error instanceof z.ZodError) {
       return NextResponse.json({ 
@@ -192,6 +178,6 @@ export async function POST(request: NextRequest) {
     console.error('Validation API Error:', error);
     return NextResponse.json({ error: 'Failed to validate repository' }, { status: 500 });
   }
-}
+});
 
 

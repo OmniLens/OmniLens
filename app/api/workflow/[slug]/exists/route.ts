@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getWorkflows } from '@/lib/db-storage';
+import { withAuth } from '@/lib/auth-middleware';
 
 // Zod schema for slug parameter validation
 const slugSchema = z.string().min(1, 'Repository slug is required');
 
 // GET /api/workflow/{slug}/exists - Check if workflows exist in database (without triggering GitHub fetch)
-export async function GET(
+export const GET = withAuth(async (
   request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+  { params }: { params: { slug: string } },
+  authData
+) => {
   try {
     // Validate the slug parameter
     const validatedSlug = slugSchema.parse(params.slug);
@@ -43,4 +45,4 @@ export async function GET(
       workflowCount: 0
     }, { status: 500 });
   }
-}
+});

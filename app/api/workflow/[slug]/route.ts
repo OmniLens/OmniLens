@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getUserRepo, saveWorkflows } from '@/lib/db-storage';
 import { getLatestWorkflowRuns, getWorkflowRunsForDate, getWorkflowRunsForDateGrouped } from '@/lib/github';
+import { withAuth } from '@/lib/auth-middleware';
+import { makeGitHubRequest } from '@/lib/github-auth';
 
 // Zod schemas for validation
 const slugSchema = z.string().min(1, 'Repository slug is required');
@@ -76,10 +78,11 @@ interface GitHubWorkflowRunsResponse {
  *       500:
  *         description: Internal server error
  */
-export async function GET(
+export const GET = withAuth(async (
   request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+  { params }: { params: { slug: string } },
+  authData
+) => {
   try {
     // Validate the slug parameter
     const validatedSlug = slugSchema.parse(params.slug);
@@ -103,7 +106,7 @@ export async function GET(
         // Validate date parameter
         const validatedDate = dateSchema.parse(date);
         // Handle workflow runs request
-        return await handleWorkflowRunsRequest(validatedSlug, repo, validatedDate, grouped);
+        return await handleWorkflowRunsRequest(validatedSlug, repo, validatedDate, grouped, authData);
       } catch (error) {
         if (error instanceof z.ZodError) {
           return NextResponse.json(
@@ -125,22 +128,14 @@ export async function GET(
       );
     }
     
-    // Get GitHub token from environment
-    const githubToken = process.env.GITHUB_TOKEN;
-    if (!githubToken) {
-      console.error('GitHub token not configured');
-      return NextResponse.json(
-        { error: 'GitHub integration not configured' },
-        { status: 500 }
-      );
-    }
+    // Use user's GitHub token for API calls
     
     // First, get the repository info to find the default branch
-    const repoResponse = await fetch(
+    const repoResponse = await makeGitHubRequest(
+      authData.user.id,
       `https://api.github.com/repos/${owner}/${repoName}`,
       {
         headers: {
-          'Authorization': `Bearer ${githubToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'OmniLens-Dashboard'
         }
@@ -159,11 +154,11 @@ export async function GET(
     
     // Fetch ALL workflows (GitHub's state=active filter is broken)
     // Add cache-busting timestamp to force fresh data
-    const githubResponse = await fetch(
+    const githubResponse = await makeGitHubRequest(
+      authData.user.id,
       `https://api.github.com/repos/${owner}/${repoName}/actions/workflows?_t=${Date.now()}`,
       {
         headers: {
-          'Authorization': `Bearer ${githubToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'OmniLens-Dashboard',
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -246,45 +241,19 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+});
 
 // Helper function to handle workflow runs requests
 async function handleWorkflowRunsRequest(
   slug: string,
   repo: any,
   date: string,
-  grouped: boolean = false
+  grouped: boolean = false,
+  authData: any
 ) {
   try {
     
-    // Get fresh workflows from GitHub API instead of database cache
-    const workflowsResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/workflow/${slug}`, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
-      }
-    });
-    
-    if (!workflowsResponse.ok) {
-      return NextResponse.json(
-        { error: 'Failed to fetch workflows' },
-        { status: 500 }
-      );
-    }
-    
-    const workflowsData = await workflowsResponse.json();
-    const activeWorkflows = workflowsData.workflows || [];
-    const activeWorkflowIds = new Set(activeWorkflows.map((w: any) => w.id));
-    
-    // Get the repository's default branch for filtering runs
-    const githubToken = process.env.GITHUB_TOKEN;
-    if (!githubToken) {
-      return NextResponse.json(
-        { error: 'GitHub integration not configured' },
-        { status: 500 }
-      );
-    }
-    
+    // Get fresh workflows directly from GitHub API instead of internal API call
     // Extract owner and repo name from the repository path
     const [owner, repoName] = repo.repoPath.split('/');
     if (!owner || !repoName) {
@@ -294,11 +263,36 @@ async function handleWorkflowRunsRequest(
       );
     }
     
-    const repoResponse = await fetch(
+    // Fetch workflows directly from GitHub
+    const githubResponse = await makeGitHubRequest(
+      authData.user.id,
+      `https://api.github.com/repos/${owner}/${repoName}/actions/workflows?_t=${Date.now()}`,
+      {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'OmniLens-Dashboard',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      }
+    );
+    
+    if (!githubResponse.ok) {
+      return NextResponse.json(
+        { error: 'Failed to fetch workflows from GitHub' },
+        { status: 500 }
+      );
+    }
+    
+    const workflowsData = await githubResponse.json();
+    const activeWorkflows = workflowsData.workflows.filter((w: any) => w.state === 'active');
+    const activeWorkflowIds = new Set(activeWorkflows.map((w: any) => w.id));
+    
+    const repoResponse = await makeGitHubRequest(
+      authData.user.id,
       `https://api.github.com/repos/${owner}/${repoName}`,
       {
         headers: {
-          'Authorization': `Bearer ${githubToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'OmniLens-Dashboard'
         }
@@ -319,8 +313,8 @@ async function handleWorkflowRunsRequest(
     const dateObj = new Date(date);
     
     const allWorkflowRuns = grouped 
-      ? await getWorkflowRunsForDateGrouped(dateObj, slug, defaultBranch)
-      : await getWorkflowRunsForDate(dateObj, slug, defaultBranch);
+      ? await getWorkflowRunsForDateGrouped(dateObj, slug, authData.user.id, defaultBranch)
+      : await getWorkflowRunsForDate(dateObj, slug, authData.user.id, defaultBranch);
     
     // Filter to only include runs from active workflows
     const workflowRuns = allWorkflowRuns.filter(run => activeWorkflowIds.has(run.workflow_id));

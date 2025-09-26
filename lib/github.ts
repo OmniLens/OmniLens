@@ -35,7 +35,7 @@ interface OverviewData {
 const API_BASE = "https://api.github.com";
 
 // Helper function to get repository info from database
-async function getRepoInfo(repoSlug: string) {
+async function getRepoInfo(repoSlug: string, userId?: string) {
   const { getUserRepo } = await import('./db-storage');
   const repo = await getUserRepo(repoSlug);
 
@@ -43,9 +43,16 @@ async function getRepoInfo(repoSlug: string) {
     throw new Error(`Repository not found: ${repoSlug}`);
   }
 
-  const token = process.env.GITHUB_TOKEN;
+  if (!userId) {
+    throw new Error("User ID is required for GitHub API access");
+  }
+
+  // Get user-specific GitHub token
+  const { getUserGitHubToken } = await import('./github-auth');
+  const token = await getUserGitHubToken(userId);
+  
   if (!token) {
-    throw new Error("Missing GITHUB_TOKEN environment variable");
+    throw new Error("GitHub access token not found. Please ensure you are logged in with GitHub.");
   }
 
   return { token, repo: repo.repoPath };
@@ -114,9 +121,9 @@ export function getLatestWorkflowRuns(workflowRuns: WorkflowRun[]): WorkflowRun[
 }
 
 // Get workflow runs for a specific date and repository (for daily metrics - returns all runs)
-export async function getWorkflowRunsForDate(date: Date, repoSlug: string, branch?: string): Promise<WorkflowRun[]> {
+export async function getWorkflowRunsForDate(date: Date, repoSlug: string, userId: string, branch?: string): Promise<WorkflowRun[]> {
   try {
-    const { token, repo } = await getRepoInfo(repoSlug);
+    const { token, repo } = await getRepoInfo(repoSlug, userId);
 
     // Format date to ISO string for GitHub API
     const dateStr = format(date, "yyyy-MM-dd");
@@ -213,9 +220,9 @@ export async function getWorkflowRunsForDate(date: Date, repoSlug: string, branc
 }
 
 // Get workflow runs for a specific date and repository (for workflow cards - returns grouped data)
-export async function getWorkflowRunsForDateGrouped(date: Date, repoSlug: string, branch?: string): Promise<WorkflowRun[]> {
+export async function getWorkflowRunsForDateGrouped(date: Date, repoSlug: string, userId: string, branch?: string): Promise<WorkflowRun[]> {
   try {
-    const { token, repo } = await getRepoInfo(repoSlug);
+    const { token, repo } = await getRepoInfo(repoSlug, userId);
 
     // Format date to ISO string for GitHub API
     const dateStr = format(date, "yyyy-MM-dd");
@@ -350,28 +357,28 @@ export function calculateOverviewData(workflowRuns: WorkflowRun[]): OverviewData
 }
 
 // Get overview data for a specific date and repository
-export async function getOverviewDataForDate(date: Date, repoSlug: string): Promise<OverviewData> {
-  const workflowRuns = await getWorkflowRunsForDate(date, repoSlug);
+export async function getOverviewDataForDate(date: Date, repoSlug: string, userId: string): Promise<OverviewData> {
+  const workflowRuns = await getWorkflowRunsForDate(date, repoSlug, userId);
   return calculateOverviewData(workflowRuns);
 }
 
 // Legacy functions for backward compatibility - now require repo parameter
-export async function getTodayWorkflowRuns(repoSlug: string): Promise<WorkflowRun[]> {
-  return getWorkflowRunsForDate(new Date(), repoSlug);
+export async function getTodayWorkflowRuns(repoSlug: string, userId: string): Promise<WorkflowRun[]> {
+  return getWorkflowRunsForDate(new Date(), repoSlug, userId);
 }
 
-export async function getYesterdayWorkflowRuns(repoSlug: string): Promise<WorkflowRun[]> {
+export async function getYesterdayWorkflowRuns(repoSlug: string, userId: string): Promise<WorkflowRun[]> {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  return getWorkflowRunsForDate(yesterday, repoSlug);
+  return getWorkflowRunsForDate(yesterday, repoSlug, userId);
 }
 
-export async function getTodayOverviewData(repoSlug: string): Promise<OverviewData> {
-  return getOverviewDataForDate(new Date(), repoSlug);
+export async function getTodayOverviewData(repoSlug: string, userId: string): Promise<OverviewData> {
+  return getOverviewDataForDate(new Date(), repoSlug, userId);
 }
 
-export async function getYesterdayOverviewData(repoSlug: string): Promise<OverviewData> {
+export async function getYesterdayOverviewData(repoSlug: string, userId: string): Promise<OverviewData> {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  return getOverviewDataForDate(yesterday, repoSlug);
+  return getOverviewDataForDate(yesterday, repoSlug, userId);
 } 

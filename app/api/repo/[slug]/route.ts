@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getUserRepo, removeUserRepo, deleteWorkflows } from '@/lib/db-storage';
+import { withAuth } from '@/lib/auth-middleware';
 
 // Zod schema for slug parameter validation
 const slugSchema = z.string().min(1, 'Repository slug is required');
@@ -39,10 +40,11 @@ const deleteResponseSchema = z.object({
 });
 
 // GET /api/repo/{slug} - Get a specific repository
-export async function GET(
+export const GET = withAuth(async (
   request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+  { params }: { params: { slug: string } },
+  authData
+) => {
   try {
     // Validate the slug parameter
     const validatedSlug = slugSchema.parse(params.slug);
@@ -71,13 +73,14 @@ export async function GET(
     console.error('Get repo API Error:', error);
     return NextResponse.json({ error: 'Failed to get repository' }, { status: 500 });
   }
-}
+});
 
 // DELETE /api/repo/{slug} - Delete a specific repository
-export async function DELETE(
+export const DELETE = withAuth(async (
   request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+  { params }: { params: { slug: string } },
+  authData
+) => {
   try {
     // Validate the slug parameter
     const validatedSlug = slugSchema.parse(params.slug);
@@ -125,4 +128,4 @@ export async function DELETE(
     console.error('Delete repo API Error:', error);
     return NextResponse.json({ error: 'Failed to delete repository' }, { status: 500 });
   }
-}
+});
