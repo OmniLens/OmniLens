@@ -21,6 +21,7 @@
     "test:auth:valid": "bun tests/test-auth-valid.js"
   },
   "dependencies": {
+    "@databuddy/sdk": "^2.1.76",
     "@radix-ui/react-popover": "^1.1.14",
     "@radix-ui/react-slot": "^1.2.3",
     "@types/pg": "^8.15.5",
