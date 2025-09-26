@@ -83,6 +83,12 @@ The dashboard integrates multiple data sources:
    DB_NAME=omnilens
    DB_PASSWORD=your_db_password
    DB_PORT=5432
+   
+   # Production Database (for managed services like AWS RDS, Google Cloud SQL, etc.)
+   # SSL is automatically enabled in production (NODE_ENV=production)
+   # For custom SSL settings, you can override with:
+   # DB_SSL=true
+   # DB_SSL_REJECT_UNAUTHORIZED=false
    ```
 
 5. **Set up GitHub OAuth App**
@@ -180,9 +186,13 @@ bun install
 
 ### 3. Setup Database
 
+**For local development:**
 ```bash
 bun run setup
 ```
+
+**For deployment:**
+Database tables are automatically created when the application starts.
 
 ### 4. Start Development Server
 

@@ -1,6 +1,9 @@
 import { betterAuth } from "better-auth";
 import { Pool } from "pg";
 
+// Import runtime database initialization
+import './runtime-init.js';
+
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -15,6 +18,7 @@ const pool = new Pool({
 export const auth = betterAuth({
   database: pool,
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  secret: process.env.BETTER_AUTH_SECRET,
   socialProviders: { 
     github: { 
       clientId: process.env.GITHUB_CLIENT_ID as string, 

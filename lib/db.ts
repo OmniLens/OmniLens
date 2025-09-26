@@ -1,5 +1,8 @@
 import { Pool } from 'pg';
 
+// Import runtime database initialization
+import './runtime-init.js';
+
 // Database connection pool
 const pool = new Pool({
   user: process.env.DB_USER,
