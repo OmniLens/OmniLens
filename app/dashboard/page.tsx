@@ -298,7 +298,7 @@ export default function DashboardHomePage() {
 
 
   // Build repositories list from API (includes both env-configured and user-added repos)
-  const hydrateUserRepos = async () => {
+  const hydrateUserRepos = React.useCallback(async () => {
     // Show skeleton only when we already have repos or the fetch reveals repos
     setShowSkeleton(availableRepos.length > 0);
     setIsLoading(true);
@@ -438,7 +438,7 @@ export default function DashboardHomePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [availableRepos.length]);
 
   // Load repositories on mount (no polling)
   React.useEffect(() => {
@@ -446,7 +446,7 @@ export default function DashboardHomePage() {
     
     // Initial load
     hydrateUserRepos();
-  }, []); // Empty dependency array - only run once on mount
+  }, [hydrateUserRepos]); // Include hydrateUserRepos in dependencies
 
   async function handleAddRepo(e: React.FormEvent) {
     e.preventDefault();
