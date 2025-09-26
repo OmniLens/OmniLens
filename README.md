@@ -1,6 +1,6 @@
 # 👁️ OmniLens
 
-A dashboard for monitoring GitHub workflow runs with basic repository management.
+An intelligent dashboard that transforms GitHub Actions chaos into actionable insights. OmniLens gives you complete visibility into your CI/CD pipeline health, helping you identify bottlenecks, track success rates, and optimize your development workflow. Just connect your repositories and instantly see which workflows are failing, when they're running, and how they're performing over time.
 
 ## ✨ Features
 

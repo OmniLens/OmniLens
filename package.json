@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "bunx next dev",
-    "setup": "if pg_isready -q -d postgres; then echo 'PostgreSQL is already running'; else pg_ctl -D /opt/homebrew/var/postgresql@15 start; fi && (psql -d postgres -c \"SELECT 1 FROM pg_database WHERE datname = 'omnilens';\" | grep -q 1 && echo 'Database already exists' || createdb omnilens) && psql -d omnilens -f lib/schema.sql && echo 'Database ready'",
+    "setup": "if pg_isready -q -d postgres; then echo 'PostgreSQL is already running'; else pg_ctl -D /opt/homebrew/var/postgresql@17 start; fi && (psql -d postgres -c \"SELECT 1 FROM pg_database WHERE datname = 'omnilens';\" | grep -q 1 && echo 'Database already exists' || createdb omnilens) && psql -d omnilens -f lib/schema.sql && echo 'Database ready'",
     "build": "bunx next build",
     "start": "bunx next start",
     "lint": "bunx next lint",
@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@types/node": "24.1.0",
-    "@types/react": "^18.2.0",
+    "@types/react": "18.3.24",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.19",
     "eslint": "^8.55.0",
@@ -45,6 +45,6 @@
     "postcss": "^8.4.38",
     "postcss-import": "^16.1.1",
     "tailwindcss": "^3.4.4",
-    "typescript": "^5.0.0"
+    "typescript": "5.9.2"
   }
 }
