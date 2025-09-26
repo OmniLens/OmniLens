@@ -10,6 +10,7 @@ import {
   Package,
   X,
   Github,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
@@ -428,10 +429,20 @@ export default function HomePage() {
     }
   }
 
+  const handleAddRepoClick = () => {
+    setShowAddForm(true);
+  };
+
+  const handleLogout = () => {
+    // TODO: Implement logout with Better Auth
+    console.log("Logout clicked - implement with Better Auth");
+    window.location.href = "/login";
+  };
+
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0D0D0D]">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6">
           <div className="mb-8">
             <p className="text-muted-foreground">
@@ -446,7 +457,7 @@ export default function HomePage() {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0D0D0D]">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6">
           <div className="mb-8">
             <p className="text-muted-foreground text-red-600">
@@ -460,7 +471,7 @@ export default function HomePage() {
   
   if (availableRepos.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0D0D0D]">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6 space-y-8">
           <NoRepositoriesFound
             newRepoUrl={newRepoUrl}
@@ -538,7 +549,7 @@ export default function HomePage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D]">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-8">
         <div className="flex justify-end mb-6">
           <div className="flex items-center gap-2">
@@ -579,9 +590,35 @@ export default function HomePage() {
               </form>
             )}
             {!showAddForm && (
-              <Button variant="default" size="sm" onClick={() => setShowAddForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Repo
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleAddRepoClick}
+                aria-label="Add repository"
+                className="group flex items-center justify-center overflow-hidden gap-0 transition-all duration-200 group-hover:gap-2"
+              >
+                <span className="flex h-7 w-7 items-center justify-center">
+                  <Plus className="h-4 w-4" />
+                </span>
+                <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200 group-hover:max-w-[80px] group-hover:opacity-100">
+                  Add Repo
+                </span>
+              </Button>
+            )}
+            {availableRepos.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                aria-label="Log out"
+                className="group flex items-center justify-center overflow-hidden gap-0 transition-all duration-200 group-hover:gap-2"
+              >
+                <span className="flex h-7 w-7 items-center justify-center">
+                  <LogOut className="h-4 w-4" />
+                </span>
+                <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200 group-hover:max-w-[80px] group-hover:opacity-100">
+                  Log out
+                </span>
               </Button>
             )}
           </div>

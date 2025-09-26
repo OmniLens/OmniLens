@@ -1,23 +1,21 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { ReactNode } from "react";
-import Header from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "OmniLens - GitHub Workflows Dashboard",
   description: "A dashboard for monitoring GitHub workflow runs",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/omnilens.jpeg",
+    shortcut: "/omnilens.jpeg",
+    apple: "/omnilens.jpeg",
   },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen bg-[#0D0D0D] font-sans antialiased">
-        <Header />
+      <body className="min-h-screen bg-background font-sans antialiased">
         {children}
       </body>
     </html>
