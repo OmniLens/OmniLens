@@ -13,11 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DB_USER: ${{ secrets.DB_USER }}
+      GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+      GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      BETTER_AUTH_URL: http://localhost:3000
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_HOST: localhost
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_PORT: 5432
       NODE_ENV: test
     
     services:
@@ -67,9 +71,27 @@ jobs:
         bun run dev &
         sleep 10
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+        GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+        BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+        BETTER_AUTH_URL: http://localhost:3000
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_HOST: localhost
+        DB_NAME: ${{ secrets.DB_NAME }}
+        DB_PORT: 5432
+        NODE_ENV: test
 
     - name: 🧪 Run health tests
       run: bun run test:health
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+        GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+        BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+        BETTER_AUTH_URL: http://localhost:3000
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_HOST: localhost
+        DB_NAME: ${{ secrets.DB_NAME }}
+        DB_PORT: 5432
+        NODE_ENV: test
