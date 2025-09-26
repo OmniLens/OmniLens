@@ -95,7 +95,7 @@ export async function checkServer() {
   log('🔍 Checking if server is running...', 'cyan');
   
   try {
-    const response = await fetch(`${BASE_URL}/api/repo`);
+    const response = await fetch(`${BASE_URL}/api/health`);
     if (response.ok) {
       log('✅ Server is running!', 'green');
       return true;
