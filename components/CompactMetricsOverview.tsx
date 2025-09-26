@@ -64,8 +64,8 @@ export default function CompactMetricsOverview({
           {/* In Progress */}
           {inProgressRuns > 0 && (
             <div className="flex items-center gap-1">
-              <Loader className="h-3 w-3 text-orange-500 animate-spin" />
-              <span className="text-orange-500">{inProgressRuns}</span>
+              <Loader className="h-3 w-3 text-blue-500 animate-spin" />
+              <span className="text-blue-500">{inProgressRuns}</span>
             </div>
           )}
         </div>

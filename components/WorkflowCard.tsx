@@ -126,7 +126,7 @@ export default function WorkflowCard({
                               const isDetailSuccess = runDetail.conclusion === 'success';
                               const label = isDetailSuccess ? 'Pass' : isDetailRunning ? 'Running' : 'Fail';
                               const variant = isDetailSuccess ? 'success' : 'destructive';
-                              const runningClass = isDetailRunning ? 'bg-orange-500 hover:bg-orange-600 text-white' : '';
+                              const runningClass = isDetailRunning ? 'bg-blue-500 hover:bg-blue-600 text-white' : '';
                               return (
                                 <Badge variant={variant} className={`text-xs justify-self-start ${runningClass}`}>
                                   {label}
@@ -156,7 +156,7 @@ export default function WorkflowCard({
                 isInProgress ? "destructive" : 
                 "destructive"
               }
-              className={`shrink-0 ${isInProgress ? 'bg-orange-500 hover:bg-orange-600 text-white' : ''}`}
+              className={`shrink-0 ${isInProgress ? 'bg-blue-500 hover:bg-blue-600 text-white' : ''}`}
             >
               {hasNoRuns ? "No Runs" :
                isSuccess ? "Pass" : 
