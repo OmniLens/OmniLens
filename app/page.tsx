@@ -8,12 +8,12 @@ import {
   Plus,
   Trash2,
   Package,
-  X,
   Github,
   LogOut,
 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 
@@ -155,6 +155,52 @@ function RepositoryCard({ repoSlug, repoPath, displayName, avatarUrl, htmlUrl, h
 }
 
 
+function RepositoryCardSkeleton() {
+  return (
+    <Card className="h-full border-border bg-card">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-6 w-6 rounded-full" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-md" />
+            <Skeleton className="h-8 w-8 rounded-md" />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+      </CardContent>
+    </Card>
+  );
+}
+
+
+function HomePageLoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto space-y-8 p-6">
+        <div className="mb-6 flex justify-end">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-9 rounded-md" />
+            <Skeleton className="h-9 w-9 rounded-md" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <RepositoryCardSkeleton key={index} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function NoRepositoriesFound({
   newRepoUrl,
   isValidating,
@@ -235,10 +281,14 @@ export default function HomePage() {
 
   const [isAddHovered, setIsAddHovered] = React.useState(false);
   const [isLogoutHovered, setIsLogoutHovered] = React.useState(false);
+  const [showSkeleton, setShowSkeleton] = React.useState(false);
 
 
   // Build repositories list from API (includes both env-configured and user-added repos)
   const hydrateUserRepos = async () => {
+    // Show skeleton only when we already have repos or the fetch reveals repos
+    setShowSkeleton(availableRepos.length > 0);
+    setIsLoading(true);
     try {
       console.log('📋 Fetching repositories from API...');
       
@@ -265,9 +315,11 @@ export default function HomePage() {
       // Only fetch workflow data if we have repositories
       if (mappedRepos.length === 0) {
         setAvailableRepos([]);
+        setShowSkeleton(false);
         return;
       }
 
+      setShowSkeleton(true);
       const todayStr = new Date().toISOString().slice(0, 10);
 
       // Check each repository for existing workflow data (without triggering fetch)
@@ -445,17 +497,7 @@ export default function HomePage() {
 
   // Show loading state
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto p-6">
-          <div className="mb-8">
-            <p className="text-muted-foreground">
-              Loading repositories...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return showSkeleton ? <HomePageLoadingSkeleton /> : null;
   }
 
   // Show error state
@@ -477,6 +519,33 @@ export default function HomePage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6 space-y-8">
+          <div className="flex justify-end">
+            <Button
+              variant={isLogoutHovered ? "default" : "outline"}
+              size="sm"
+              onClick={handleLogout}
+              onMouseEnter={() => setIsLogoutHovered(true)}
+              onMouseLeave={() => setIsLogoutHovered(false)}
+              aria-label="Log out"
+              className={cn(
+                "flex items-center justify-center overflow-hidden transition-all duration-200",
+                isLogoutHovered ? "gap-2 px-3" : "gap-0 px-2",
+                !isLogoutHovered && "shadow-none"
+              )}
+            >
+              <span className="flex h-7 w-7 items-center justify-center">
+                <LogOut className="h-4 w-4" />
+              </span>
+              <span
+                className={cn(
+                  "max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200",
+                  isLogoutHovered && "ml-1 max-w-[80px] opacity-100"
+                )}
+              >
+                Log out
+              </span>
+            </Button>
+          </div>
           <NoRepositoriesFound
             newRepoUrl={newRepoUrl}
             isValidating={isValidating}
