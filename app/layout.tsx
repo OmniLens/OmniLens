@@ -4,8 +4,8 @@ import { ReactNode } from "react";
 import { AuthProvider } from "@/components/auth-provider";
 
 export const metadata: Metadata = {
-  title: "OmniLens - GitHub Workflows Dashboard",
-  description: "A dashboard for monitoring GitHub workflow runs",
+  title: "OmniLens",
+  description: "Monitoring GitHub workflow runs",
   icons: {
     icon: "/omnilens.jpeg",
     shortcut: "/omnilens.jpeg",
