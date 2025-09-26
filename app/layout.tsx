@@ -26,7 +26,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           trackWebVitals={true} // Default is false, explicitly enable for quick start
           trackErrors={true} // Default is false, explicitly enable for quick start
         />
-        {children}
       </body>
     </html>
   );
