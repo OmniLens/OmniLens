@@ -102,6 +102,7 @@ export default function DashboardPage({ params }: PageProps) {
   const [groupedWorkflowRuns, setGroupedWorkflowRuns] = useState<WorkflowRun[]>([]);
   const [yesterdayWorkflowRuns, setYesterdayWorkflowRuns] = useState<WorkflowRun[]>([]);
   const [overviewData, setOverviewData] = useState<any>(null);
+  const [isRefreshHovered, setIsRefreshHovered] = useState(false);
   const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(true);
   const [isLoadingRuns, setIsLoadingRuns] = useState(false);
 
@@ -493,20 +494,10 @@ export default function DashboardPage({ params }: PageProps) {
         </div>
         <div className="flex items-center gap-3">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            className="flex items-center gap-2"
-            disabled={isLoadingWorkflows}
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoadingWorkflows ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button
             variant={isSelectedDateToday ? "default" : "outline"}
             size="sm"
             onClick={handleSetToday}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 px-3"
           >
             <Calendar className="h-4 w-4" />
             Today
@@ -522,6 +513,15 @@ export default function DashboardPage({ params }: PageProps) {
             }}
             placeholder="Select Date"
           />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            className="flex items-center gap-2 px-3"
+            disabled={isLoadingWorkflows}
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoadingWorkflows ? 'animate-spin' : ''}`}/> 
+          </Button>
         </div>
       </div>
 
