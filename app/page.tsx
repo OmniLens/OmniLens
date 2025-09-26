@@ -12,8 +12,9 @@ import {
   Github,
   LogOut,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
+import { cn } from "@/lib/utils";
 
 
 // Helper function to format repository name for display (same as dashboard)
@@ -231,6 +232,9 @@ export default function HomePage() {
     displayName: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const [isAddHovered, setIsAddHovered] = React.useState(false);
+  const [isLogoutHovered, setIsLogoutHovered] = React.useState(false);
 
 
   // Build repositories list from API (includes both env-configured and user-added repos)
@@ -591,32 +595,54 @@ export default function HomePage() {
             )}
             {!showAddForm && (
               <Button
-                variant="default"
+                variant={isAddHovered ? "default" : "outline"}
                 size="sm"
                 onClick={handleAddRepoClick}
+                onMouseEnter={() => setIsAddHovered(true)}
+                onMouseLeave={() => setIsAddHovered(false)}
                 aria-label="Add repository"
-                className="group flex items-center justify-center overflow-hidden gap-0 transition-all duration-200 group-hover:gap-2"
+                className={cn(
+                  "flex items-center justify-center overflow-hidden transition-all duration-200",
+                  isAddHovered ? "gap-2 px-3" : "gap-0 px-2",
+                  !isAddHovered && "shadow-none"
+                )}
               >
                 <span className="flex h-7 w-7 items-center justify-center">
                   <Plus className="h-4 w-4" />
                 </span>
-                <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200 group-hover:max-w-[80px] group-hover:opacity-100">
+                <span
+                  className={cn(
+                    "max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200",
+                    isAddHovered && "ml-1 max-w-[80px] opacity-100"
+                  )}
+                >
                   Add Repo
                 </span>
               </Button>
             )}
             {availableRepos.length > 0 && (
               <Button
-                variant="outline"
+                variant={isLogoutHovered ? "default" : "outline"}
                 size="sm"
                 onClick={handleLogout}
+                onMouseEnter={() => setIsLogoutHovered(true)}
+                onMouseLeave={() => setIsLogoutHovered(false)}
                 aria-label="Log out"
-                className="group flex items-center justify-center overflow-hidden gap-0 transition-all duration-200 group-hover:gap-2"
+                className={cn(
+                  "flex items-center justify-center overflow-hidden transition-all duration-200",
+                  isLogoutHovered ? "gap-2 px-3" : "gap-0 px-2",
+                  !isLogoutHovered && "shadow-none"
+                )}
               >
                 <span className="flex h-7 w-7 items-center justify-center">
                   <LogOut className="h-4 w-4" />
                 </span>
-                <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200 group-hover:max-w-[80px] group-hover:opacity-100">
+                <span
+                  className={cn(
+                    "max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200",
+                    isLogoutHovered && "ml-1 max-w-[80px] opacity-100"
+                  )}
+                >
                   Log out
                 </span>
               </Button>
