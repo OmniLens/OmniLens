@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getUserRepo, saveWorkflows } from '@/lib/db-storage';
+import { getUserRepo, saveWorkflows, deleteWorkflows } from '@/lib/db-storage';
 import { getLatestWorkflowRuns, getWorkflowRunsForDate, getWorkflowRunsForDateGrouped } from '@/lib/github';
 import { withAuth } from '@/lib/auth-middleware';
 import { makeGitHubRequest } from '@/lib/github-auth';
@@ -131,7 +131,6 @@ export const GET = withAuth(async (
       );
     
     if (hasRecentWorkflows) {
-      console.log(`🚀 [WORKFLOW API] Using cached workflows for ${validatedSlug} (${savedWorkflows.length} workflows)`);
       
       const workflows = savedWorkflows.map((workflow: any) => ({
         id: workflow.id,
@@ -162,7 +161,6 @@ export const GET = withAuth(async (
     }
     
     // Fetch fresh workflows from GitHub
-    console.log(`🔄 [WORKFLOW API] Fetching fresh workflows from GitHub for ${validatedSlug}`);
     
     // Extract owner and repo name from the repository path
     const [owner, repoName] = repo.repoPath.split('/');
@@ -249,13 +247,11 @@ export const GET = withAuth(async (
     // Save workflows to database for home page display (but still return fresh data)
     try {
       await saveWorkflows(validatedSlug, workflows, authData.user.id);
-      console.log(`💾 [WORKFLOW API] Saved ${workflows.length} workflows to database for ${validatedSlug}, user: ${authData.user.id}`);
     } catch (error) {
       console.error('❌ [WORKFLOW API] Error saving workflows to database:', error);
       // Continue with response even if saving fails
     }
     
-    console.log(`🚀 [WORKFLOW API] Returning ${workflows.length} fresh workflows from GitHub for ${validatedSlug}`);
     
     const response = {
       repository: {
@@ -390,6 +386,30 @@ async function handleWorkflowRunsRequest(
       .map((workflow: any) => workflow.name);
     const didntRunCount = missingWorkflows.length;
     
+    // Calculate hourly breakdown
+    const runsByHour = Array.from({ length: 24 }, (_, hour) => {
+      const hourRuns = workflowRuns.filter(run => {
+        const runHour = new Date(run.run_started_at).getHours();
+        return runHour === hour;
+      });
+      
+      const passed = hourRuns.filter(run => run.conclusion === 'success').length;
+      const failed = hourRuns.filter(run => run.conclusion === 'failure').length;
+      
+      return {
+        hour,
+        passed,
+        failed,
+        total: hourRuns.length
+      };
+    });
+    
+    // Calculate average runs per hour
+    const totalRuns = workflowRuns.length;
+    const avgRunsPerHour = totalRuns > 0 ? Math.round((totalRuns / 24) * 10) / 10 : 0;
+    const minRunsPerHour = Math.min(...runsByHour.map(h => h.total));
+    const maxRunsPerHour = Math.max(...runsByHour.map(h => h.total));
+    
     const overviewData = {
       completedRuns,
       inProgressRuns,
@@ -398,7 +418,11 @@ async function handleWorkflowRunsRequest(
       totalRuntime,
       didntRunCount,
       totalWorkflows,
-      missingWorkflows
+      missingWorkflows,
+      runsByHour,
+      avgRunsPerHour,
+      minRunsPerHour,
+      maxRunsPerHour
     };
     
     const response = {
@@ -416,3 +440,92 @@ async function handleWorkflowRunsRequest(
     );
   }
 }
+
+// PUT /api/workflow/{slug} - Update/save workflows for a repository
+export const PUT = withAuth(async (
+  request: NextRequest,
+  { params }: { params: { slug: string } },
+  authData
+) => {
+  try {
+    // Validate the slug parameter
+    const validatedSlug = slugSchema.parse(params.slug);
+    
+    // Parse request body
+    const body = await request.json();
+    const { workflows } = body;
+    
+    if (!Array.isArray(workflows)) {
+      return NextResponse.json({ error: 'Workflows must be an array' }, { status: 400 });
+    }
+    
+    // Validate workflow structure
+    const workflowSchema = z.object({
+      id: z.number(),
+      name: z.string(),
+      path: z.string(),
+      state: z.string()
+    });
+    
+    const validatedWorkflows = workflows.map(workflow => workflowSchema.parse(workflow));
+    
+    // Save workflows to database
+    await saveWorkflows(validatedSlug, validatedWorkflows, authData.user.id);
+    
+    return NextResponse.json({
+      success: true,
+      message: `Successfully saved ${validatedWorkflows.length} workflows for ${validatedSlug}`,
+      workflows: validatedWorkflows
+    });
+    
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.issues);
+      return NextResponse.json({ 
+        error: 'Invalid workflow data',
+        details: error.issues.map((issue: z.ZodIssue) => `${issue.path.join('.')}: ${issue.message}`)
+      }, { status: 400 });
+    }
+    
+    console.error('Error saving workflows:', error);
+    return NextResponse.json({ error: 'Failed to save workflows' }, { status: 500 });
+  }
+});
+
+// DELETE /api/workflow/{slug} - Delete all workflows for a repository
+export const DELETE = withAuth(async (
+  request: NextRequest,
+  { params }: { params: { slug: string } },
+  authData
+) => {
+  try {
+    // Validate the slug parameter
+    const validatedSlug = slugSchema.parse(params.slug);
+    
+    // Check if repository exists for this user
+    const repo = await getUserRepo(validatedSlug, authData.user.id);
+    if (!repo) {
+      return NextResponse.json({ error: 'Repository not found' }, { status: 404 });
+    }
+    
+    // Delete workflows from database
+    await deleteWorkflows(validatedSlug, authData.user.id);
+    
+    return NextResponse.json({
+      success: true,
+      message: `Successfully deleted workflows for ${validatedSlug}`
+    });
+    
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.issues);
+      return NextResponse.json({ 
+        error: 'Invalid repository slug',
+        details: error.issues.map((issue: z.ZodIssue) => `${issue.path.join('.')}: ${issue.message}`)
+      }, { status: 400 });
+    }
+    
+    console.error('Error deleting workflows:', error);
+    return NextResponse.json({ error: 'Failed to delete workflows' }, { status: 500 });
+  }
+});

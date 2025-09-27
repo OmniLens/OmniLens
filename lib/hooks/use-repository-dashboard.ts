@@ -118,32 +118,10 @@ export function useWorkflowRuns(slug: string, date: string) {
       return data.workflowRuns || [];
     },
     enabled: !!slug && !!date,
-    staleTime: (() => {
-      // Historical data never changes
-      const queryDate = new Date(date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (queryDate < today) {
-        return Infinity; // Cache indefinitely for historical data
-      }
-      
-      // Current day data is fresh for 2 minutes
-      return 2 * 60 * 1000;
-    })(),
-    gcTime: (() => {
-      // Historical data stays in cache for 24 hours
-      const queryDate = new Date(date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (queryDate < today) {
-        return 24 * 60 * 60 * 1000; // 24 hours
-      }
-      
-      // Current day data cached for 1 hour
-      return 60 * 60 * 1000;
-    })(),
+    staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache for 10 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false, // Don't refetch on window focus to avoid unnecessary requests
   });
 }
 
@@ -152,7 +130,7 @@ export function useWorkflowOverview(slug: string, date: string) {
   return useQuery({
     queryKey: ['workflow-overview', slug, date],
     queryFn: async (): Promise<WorkflowOverview> => {
-      const response = await fetch(`/api/workflow/${slug}/overview?date=${date}`, {
+      const response = await fetch(`/api/workflow/${slug}?date=${date}`, {
         cache: 'no-store',
         credentials: 'include'
       });
@@ -162,7 +140,7 @@ export function useWorkflowOverview(slug: string, date: string) {
       }
       
       const data = await response.json();
-      return data.overview || {
+      return data.overviewData || {
         totalWorkflows: 0,
         totalRuns: 0,
         completedRuns: 0,
@@ -173,58 +151,23 @@ export function useWorkflowOverview(slug: string, date: string) {
       };
     },
     enabled: !!slug && !!date,
-    staleTime: (() => {
-      // Historical data never changes
-      const queryDate = new Date(date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (queryDate < today) {
-        return Infinity; // Cache indefinitely for historical data
-      }
-      
-      // Current day data is fresh for 2 minutes
-      return 2 * 60 * 1000;
-    })(),
-    gcTime: (() => {
-      // Historical data stays in cache for 24 hours
-      const queryDate = new Date(date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (queryDate < today) {
-        return 24 * 60 * 60 * 1000; // 24 hours
-      }
-      
-      // Current day data cached for 1 hour
-      return 60 * 60 * 1000;
-    })(),
+    staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache for 10 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false, // Don't refetch on window focus to avoid unnecessary requests
   });
 }
 
 // Fetch yesterday's data for comparison
 export function useYesterdayWorkflowRuns(slug: string, date: string) {
-  const yesterday = new Date(date);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().slice(0, 10);
-
+  // Temporarily disable to test if this is causing the issue
   return useQuery({
-    queryKey: ['workflow-runs', slug, yesterdayStr],
+    queryKey: ['yesterday-disabled', slug, date],
     queryFn: async (): Promise<WorkflowRun[]> => {
-      const response = await fetch(`/api/workflow/${slug}?date=${yesterdayStr}`, {
-        cache: 'no-store',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch yesterday's workflow runs for ${slug}`);
-      }
-      
-      const data = await response.json();
-      return data.workflowRuns || [];
+      return []; // Return empty array
     },
-    enabled: !!slug && !!date,
-    staleTime: Infinity, // Yesterday's data never changes
-    gcTime: 24 * 60 * 60 * 1000, // 24 hours cache
+    enabled: false, // Disable completely
+    staleTime: Infinity,
+    gcTime: 0,
   });
 }

@@ -267,8 +267,10 @@ export default function DashboardHomePage() {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate and refetch repository data
+      // Comprehensive cache invalidation for all affected queries
       queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-existence'] });
+      queryClient.invalidateQueries({ queryKey: ['repository-metrics'] });
       setNewRepoUrl('');
       setShowAddForm(false);
       setAddError(null);
@@ -290,9 +292,16 @@ export default function DashboardHomePage() {
         throw new Error('Failed to delete repository');
       }
     },
-    onSuccess: () => {
-      // Invalidate and refetch repository data
+    onSuccess: (data, slug) => {
+      // Comprehensive cache invalidation for all affected queries
       queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      queryClient.invalidateQueries({ queryKey: ['repository-workflows', slug] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-existence', slug] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-existence'] });
+      queryClient.invalidateQueries({ queryKey: ['repository-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-runs', slug] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-overview', slug] });
+      queryClient.invalidateQueries({ queryKey: ['yesterday-workflow-runs', slug] });
       setRepoToDelete(null);
     },
     onError: (error) => {

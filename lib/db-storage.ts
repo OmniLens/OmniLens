@@ -94,24 +94,36 @@ export async function saveWorkflows(repoSlug: string, workflows: Array<{
   state: string;
 }>, userId: string) {
   try {
-    // Delete existing workflows for this repo and user to ensure clean state
-    await pool.query(
-      'DELETE FROM workflows WHERE repo_slug = $1 AND user_id = $2',
-      [repoSlug, userId]
-    );
-    
-    console.log(`🧹 Deleted existing workflows for repo: ${repoSlug}, user: ${userId}`);
-    
-    // Insert only current workflows from GitHub
+    // Use UPSERT instead of DELETE ALL for better performance and optimistic updates
     for (const workflow of workflows) {
+      await pool.query(`
+        INSERT INTO workflows (repo_slug, workflow_id, workflow_name, workflow_path, workflow_state, user_id)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (user_id, repo_slug, workflow_id) 
+        DO UPDATE SET 
+          workflow_name = EXCLUDED.workflow_name,
+          workflow_path = EXCLUDED.workflow_path,
+          workflow_state = EXCLUDED.workflow_state,
+          updated_at = CURRENT_TIMESTAMP
+      `, [repoSlug, workflow.id, workflow.name, workflow.path, workflow.state, userId]);
+    }
+    
+    // Only delete workflows that are no longer in the GitHub response
+    if (workflows.length > 0) {
+      const currentWorkflowIds = workflows.map(w => w.id);
+      // Use NOT IN with proper array handling for PostgreSQL
       await pool.query(
-        `INSERT INTO workflows (repo_slug, workflow_id, workflow_name, workflow_path, workflow_state, user_id)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [repoSlug, workflow.id, workflow.name, workflow.path, workflow.state, userId]
+        'DELETE FROM workflows WHERE repo_slug = $1 AND user_id = $2 AND workflow_id NOT IN (SELECT unnest($3::int[]))',
+        [repoSlug, userId, currentWorkflowIds]
+      );
+    } else {
+      // If no workflows, delete all for this repo
+      await pool.query(
+        'DELETE FROM workflows WHERE repo_slug = $1 AND user_id = $2',
+        [repoSlug, userId]
       );
     }
     
-    console.log(`✅ Saved ${workflows.length} current workflows for repo: ${repoSlug}, user: ${userId}`);
   } catch (error) {
     console.error('Error saving workflows:', error);
     throw error;
@@ -145,7 +157,6 @@ export async function deleteWorkflows(repoSlug: string, userId: string) {
       'DELETE FROM workflows WHERE repo_slug = $1 AND user_id = $2',
       [repoSlug, userId]
     );
-    console.log(`✅ Deleted workflows for repo: ${repoSlug}, user: ${userId}`);
   } catch (error) {
     console.error('🚨 Error deleting workflows:', error);
     throw error;

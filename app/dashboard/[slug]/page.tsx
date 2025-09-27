@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, BarChart3, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   useDateState, 
   useRepositoryWorkflows, 
@@ -57,37 +58,6 @@ function WorkflowDefinitionCard({ workflow }: { workflow: Workflow }) {
   );
 }
 
-// Workflow Card Skeleton Component
-function WorkflowCardSkeleton() {
-  return (
-    <Card className="relative h-auto border-2 border-border animate-pulse">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-sm leading-tight truncate pr-2">
-            <div className="h-4 bg-muted rounded w-32" />
-          </h3>
-          <div className="flex items-center gap-2">
-            <div className="h-5 bg-muted rounded w-6" />
-            <div className="h-5 bg-muted rounded w-12" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0 space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 bg-muted rounded" />
-          <div className="h-4 bg-muted rounded w-20" />
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <div className="h-4 w-4 bg-muted rounded" />
-            <div className="h-4 bg-muted rounded w-16" />
-          </div>
-          <div className="h-8 bg-muted rounded w-16" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 interface PageProps {
   params: { slug: string };
@@ -97,9 +67,20 @@ export default function DashboardPage({ params }: PageProps) {
   const { slug: repoSlug } = params;
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const queryClient = useQueryClient();
   
   // Use nuqs for date state management
   const { selectedDate, setSelectedDate } = useDateState();
+  
+  // Cache invalidation when date changes
+  useEffect(() => {
+    if (selectedDate) {
+      // Clear old comparison queries to prevent stale data
+      queryClient.removeQueries({ queryKey: ['yesterday-workflow-runs', repoSlug] });
+      queryClient.removeQueries({ queryKey: ['comparison-data', repoSlug] });
+      queryClient.removeQueries({ queryKey: ['yesterday-disabled', repoSlug] });
+    }
+  }, [selectedDate, repoSlug, queryClient]);
   
   // Local state for UI interactions
 
@@ -359,8 +340,7 @@ export default function DashboardPage({ params }: PageProps) {
               variant="outline"
               size="sm"
               onClick={() => {
-                const today = new Date().toISOString().slice(0, 10);
-                setSelectedDate(today);
+                setSelectedDate(new Date().toISOString().slice(0, 10));
               }}
               className={selectedDate === new Date().toISOString().slice(0, 10) ? "bg-primary text-primary-foreground" : ""}
             >
@@ -370,7 +350,11 @@ export default function DashboardPage({ params }: PageProps) {
               date={new Date(selectedDate)}
               onDateChange={(date) => {
                 if (date) {
-                  setSelectedDate(date.toISOString().slice(0, 10));
+                  // Use local date formatting to avoid timezone issues
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  setSelectedDate(`${year}-${month}-${day}`);
                 }
               }}
             />

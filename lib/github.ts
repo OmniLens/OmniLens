@@ -129,12 +129,12 @@ export async function getWorkflowRunsForDate(date: Date, repoSlug: string, userI
     // Format date to ISO string for GitHub API
     const dateStr = format(date, "yyyy-MM-dd");
 
-    // Get workflow runs from midnight of the target date until now
+    // Get workflow runs for the specific date only (from midnight to end of day)
     const startOfDay = `${dateStr}T00:00:00Z`;
-    const now = new Date().toISOString();
+    const endOfDay = `${dateStr}T23:59:59Z`;
 
     const startTime = startOfDay;
-    const endTime = now;
+    const endTime = endOfDay;
 
     // Fetch all workflow runs for the date, handling pagination
     let allRuns: WorkflowRun[] = [];
