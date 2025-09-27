@@ -23,6 +23,7 @@
     "@databuddy/sdk": "^2.1.76",
     "@radix-ui/react-popover": "^1.1.14",
     "@radix-ui/react-slot": "^1.2.3",
+    "@sentry/nextjs": "^10",
     "@types/pg": "^8.15.5",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
