@@ -87,8 +87,8 @@ export const GET = withAuth(async (
     // Validate the slug parameter
     const validatedSlug = slugSchema.parse(params.slug);
     
-    // Check if the repository exists in our database
-    const repo = await getUserRepo(validatedSlug);
+    // Check if the repository exists in our database for this user
+    const repo = await getUserRepo(validatedSlug, authData.user.id);
     if (!repo) {
       return NextResponse.json(
         { error: 'Repository not found in dashboard' },
@@ -206,8 +206,8 @@ export const GET = withAuth(async (
     
     // Save workflows to database for home page display (but still return fresh data)
     try {
-      await saveWorkflows(validatedSlug, workflows);
-      console.log(`💾 [WORKFLOW API] Saved ${workflows.length} workflows to database for ${validatedSlug}`);
+      await saveWorkflows(validatedSlug, workflows, authData.user.id);
+      console.log(`💾 [WORKFLOW API] Saved ${workflows.length} workflows to database for ${validatedSlug}, user: ${authData.user.id}`);
     } catch (error) {
       console.error('❌ [WORKFLOW API] Error saving workflows to database:', error);
       // Continue with response even if saving fails

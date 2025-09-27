@@ -67,7 +67,7 @@ export const POST = withAuth(async (request: NextRequest, _context, authData) =>
       };
 
       // Add to storage
-      const success = await addUserRepo(newRepo);
+      const success = await addUserRepo(newRepo, authData.user.id);
       if (!success) {
         return NextResponse.json({ 
           error: 'Repository already exists in dashboard',

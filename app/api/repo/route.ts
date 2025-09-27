@@ -19,7 +19,7 @@ const repositoriesResponseSchema = z.object({
 
 export const GET = withAuth(async (request: NextRequest, _context, authData) => {
   try {
-    const userAddedRepos = await loadUserAddedRepos();
+    const userAddedRepos = await loadUserAddedRepos(authData.user.id);
     
     // Convert user-added repos to the expected format
     const allRepos = userAddedRepos.map((repo: any) => ({

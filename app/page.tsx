@@ -68,7 +68,7 @@ export default function LoginPage() {
             onClick={handleGitHubSignIn}
             variant={isGithubHovered ? "default" : "outline"}
             size="lg"
-            disabled={true}
+            disabled={isLoading}
             onMouseEnter={() => setIsGithubHovered(true)}
             onMouseLeave={() => setIsGithubHovered(false)}
             className={cn(

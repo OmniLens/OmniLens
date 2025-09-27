@@ -19,8 +19,8 @@ export const GET = withAuth(async (
     // Validate the slug parameter
     const validatedSlug = slugSchema.parse(params.slug);
     
-    // Check if the repository exists in our database
-    const repo = await getUserRepo(validatedSlug);
+    // Check if the repository exists in our database for this user
+    const repo = await getUserRepo(validatedSlug, authData.user.id);
     if (!repo) {
       return NextResponse.json(
         { error: 'Repository not found in dashboard' },

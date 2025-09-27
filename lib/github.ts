@@ -37,14 +37,15 @@ const API_BASE = "https://api.github.com";
 // Helper function to get repository info from database
 async function getRepoInfo(repoSlug: string, userId?: string) {
   const { getUserRepo } = await import('./db-storage');
-  const repo = await getUserRepo(repoSlug);
+  
+  if (!userId) {
+    throw new Error("User ID is required for GitHub API access");
+  }
+  
+  const repo = await getUserRepo(repoSlug, userId);
 
   if (!repo) {
     throw new Error(`Repository not found: ${repoSlug}`);
-  }
-
-  if (!userId) {
-    throw new Error("User ID is required for GitHub API access");
   }
 
   // Get user-specific GitHub token

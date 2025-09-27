@@ -49,7 +49,7 @@ export const GET = withAuth(async (
     // Validate the slug parameter
     const validatedSlug = slugSchema.parse(params.slug);
     
-    const repo = await getUserRepo(validatedSlug);
+    const repo = await getUserRepo(validatedSlug, authData.user.id);
 
     if (!repo) {
       return NextResponse.json({ error: 'Repository not found' }, { status: 404 });
@@ -85,21 +85,21 @@ export const DELETE = withAuth(async (
     // Validate the slug parameter
     const validatedSlug = slugSchema.parse(params.slug);
     
-    // First check if the repository exists
-    const existingRepo = await getUserRepo(validatedSlug);
+    // First check if the repository exists for this user
+    const existingRepo = await getUserRepo(validatedSlug, authData.user.id);
     if (!existingRepo) {
       return NextResponse.json({ error: 'Repository not found' }, { status: 404 });
     }
     
     // Delete associated workflows first
     try {
-      await deleteWorkflows(validatedSlug);
+      await deleteWorkflows(validatedSlug, authData.user.id);
     } catch (error) {
       console.error('Error deleting workflows for repo:', validatedSlug, error);
       // Continue with repository deletion even if workflow deletion fails
     }
     
-    const deletedRepo = await removeUserRepo(validatedSlug);
+    const deletedRepo = await removeUserRepo(validatedSlug, authData.user.id);
 
     if (!deletedRepo) {
       return NextResponse.json({ error: 'Failed to delete repository' }, { status: 500 });
