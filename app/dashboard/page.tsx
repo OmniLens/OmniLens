@@ -401,7 +401,7 @@ export default function DashboardHomePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [availableRepos.length]);
+  }, []);
 
   // Load repositories on mount (no polling)
   React.useEffect(() => {

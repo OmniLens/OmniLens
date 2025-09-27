@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { getAllUsers, getAllUserIds, getUserById, getAllUsersWithStats } from '@/lib/db-storage';
 import { withAdminAuth } from '@/lib/admin-auth';
 
+// Force dynamic rendering for admin routes
+export const dynamic = 'force-dynamic';
+
 // Zod schema for user response
 const userSchema = z.object({
   id: z.string(),

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllUserIds } from '@/lib/db-storage';
 import { withAuth } from '@/lib/auth-middleware';
 
+// Force dynamic rendering for admin routes
+export const dynamic = 'force-dynamic';
+
 // GET /api/admin/user-ids - Get all user IDs (admin only)
 export const GET = withAuth(async (request: NextRequest, _context, authData) => {
   try {
