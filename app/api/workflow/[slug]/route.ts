@@ -118,7 +118,52 @@ export const GET = withAuth(async (
       }
     }
     
-    // Always fetch fresh workflows from GitHub first to ensure data integrity
+    // Check if we have recent workflow data in database first
+    const { getWorkflows } = await import('@/lib/db-storage');
+    const savedWorkflows = await getWorkflows(validatedSlug, authData.user.id);
+    
+    // If we have recent workflows (less than 5 minutes old), use them
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    const hasRecentWorkflows = savedWorkflows.length > 0 && 
+      savedWorkflows.some((workflow: any) => 
+        workflow.updatedAt && new Date(workflow.updatedAt) > fiveMinutesAgo
+      );
+    
+    if (hasRecentWorkflows) {
+      console.log(`🚀 [WORKFLOW API] Using cached workflows for ${validatedSlug} (${savedWorkflows.length} workflows)`);
+      
+      const workflows = savedWorkflows.map((workflow: any) => ({
+        id: workflow.id,
+        name: workflow.name,
+        path: workflow.path,
+        state: workflow.state,
+        createdAt: workflow.createdAt,
+        updatedAt: workflow.updatedAt,
+        deletedAt: workflow.deletedAt
+      }));
+      
+      const response = {
+        repository: {
+          slug: validatedSlug,
+          displayName: repo.displayName,
+          repoPath: repo.repoPath
+        },
+        workflows: workflows,
+        totalCount: workflows.length
+      };
+      
+      return NextResponse.json(response, {
+        headers: {
+          'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+          'X-Cache': 'HIT'
+        }
+      });
+    }
+    
+    // Fetch fresh workflows from GitHub
+    console.log(`🔄 [WORKFLOW API] Fetching fresh workflows from GitHub for ${validatedSlug}`);
+    
     // Extract owner and repo name from the repository path
     const [owner, repoName] = repo.repoPath.split('/');
     if (!owner || !repoName) {
@@ -153,16 +198,13 @@ export const GET = withAuth(async (
     const defaultBranch = repoData.default_branch;
     
     // Fetch ALL workflows (GitHub's state=active filter is broken)
-    // Add cache-busting timestamp to force fresh data
     const githubResponse = await makeGitHubRequest(
       authData.user.id,
-      `https://api.github.com/repos/${owner}/${repoName}/actions/workflows?_t=${Date.now()}`,
+      `https://api.github.com/repos/${owner}/${repoName}/actions/workflows`,
       {
         headers: {
           'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'OmniLens-Dashboard',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
+          'User-Agent': 'OmniLens-Dashboard'
         }
       }
     );
@@ -225,7 +267,12 @@ export const GET = withAuth(async (
       totalCount: workflows.length
     };
     
-    return NextResponse.json(response);
+    return NextResponse.json(response, {
+      headers: {
+        'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+        'X-Cache': 'MISS'
+      }
+    });
     
   } catch (error) {
     if (error instanceof z.ZodError) {

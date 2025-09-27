@@ -1,8 +1,8 @@
 {
-  "name": "github-workflows-dashboard",
+  "name": "omnilens",
   "private": true,
-  "license": "UNLICENSED",
-  "version": "0.2.0",
+  "license": "MIT",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "bunx next dev",

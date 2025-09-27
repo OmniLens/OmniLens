@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
-import { Skeleton } from "@/components/ui/skeleton";
+// import { Skeleton } from "@/components/ui/skeleton"; // Removed skeleton import
 import { cn } from "@/lib/utils";
 import { useSession, signOut } from "@/lib/auth-client";
 
@@ -158,50 +158,10 @@ function RepositoryCard({ repoSlug, repoPath, displayName, avatarUrl, htmlUrl, h
 }
 
 
-function RepositoryCardSkeleton() {
-  return (
-    <Card className="h-full border-border bg-card">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-6 w-6 rounded-full" />
-            <Skeleton className="h-5 w-32" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-md" />
-            <Skeleton className="h-8 w-8 rounded-md" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-1/2" />
-      </CardContent>
-    </Card>
-  );
-}
+// Removed RepositoryCardSkeleton - no skeletons in repo dashboard
 
 
-function HomePageLoadingSkeleton() {
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto space-y-8 p-6">
-        <div className="mb-6 flex justify-end">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-9 rounded-md" />
-            <Skeleton className="h-9 w-9 rounded-md" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <RepositoryCardSkeleton key={index} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+// Removed HomePageLoadingSkeleton - no skeletons in repo dashboard
 
 
 function NoRepositoriesFound({
@@ -274,6 +234,7 @@ export default function DashboardHomePage() {
     } | null;
   }>>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isMetricsLoading, setIsMetricsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [showAddForm, setShowAddForm] = React.useState(false);
 
@@ -294,13 +255,11 @@ export default function DashboardHomePage() {
 
   const [isAddHovered, setIsAddHovered] = React.useState(false);
   const [isLogoutHovered, setIsLogoutHovered] = React.useState(false);
-  const [showSkeleton, setShowSkeleton] = React.useState(false);
+  // const [showSkeleton, setShowSkeleton] = React.useState(false); // Removed skeleton
 
 
   // Build repositories list from API (includes both env-configured and user-added repos)
   const hydrateUserRepos = React.useCallback(async () => {
-    // Show skeleton only when we already have repos or the fetch reveals repos
-    setShowSkeleton(availableRepos.length > 0);
     setIsLoading(true);
     try {
       console.log('📋 Fetching repositories from API...');
@@ -328,113 +287,117 @@ export default function DashboardHomePage() {
         metrics: null,
       }));
 
-      // Only fetch workflow data if we have repositories
+      // Show repositories immediately, then load metrics progressively
       if (mappedRepos.length === 0) {
         setAvailableRepos([]);
-        setShowSkeleton(false);
+        setIsMetricsLoading(false);
         return;
       }
 
-      setShowSkeleton(true);
+      // Show repositories immediately with default state
+      const reposWithDefaults = mappedRepos.map((repo: any) => ({
+        ...repo,
+        hasWorkflows: false,
+        metrics: {
+          totalWorkflows: 0,
+          passedRuns: 0,
+          failedRuns: 0,
+          inProgressRuns: 0,
+          successRate: 0,
+          hasActivity: false
+        }
+      }));
+      
+      setAvailableRepos(reposWithDefaults);
+      setIsLoading(false);
+      setIsMetricsLoading(true);
+      
+      // Load metrics in background
       const todayStr = new Date().toISOString().slice(0, 10);
 
-      // Check each repository for existing workflow data (without triggering fetch)
-      const enhanced = await Promise.all(
-        mappedRepos.map(async (repo: any) => {
+      // Load metrics in background (progressive enhancement)
+      try {
+        // OPTIMIZATION: Batch all workflow existence checks first
+        const existenceChecks = await Promise.all(
+          mappedRepos.map(async (repo: any) => {
+            try {
+              const checkResponse = await fetch(`/api/workflow/${repo.slug}/exists`, { 
+                cache: 'no-store',
+                credentials: 'include'
+              });
+              if (checkResponse.ok) {
+                const checkData = await checkResponse.json();
+                return { repo, hasWorkflows: checkData.hasWorkflows, workflowCount: checkData.workflowCount };
+              }
+              return { repo, hasWorkflows: false, workflowCount: 0 };
+            } catch (error) {
+              console.error(`Error checking workflow existence for ${repo.slug}:`, error);
+              return { repo, hasWorkflows: false, workflowCount: 0 };
+            }
+          })
+        );
+
+        // OPTIMIZATION: Only fetch metrics for repos that have workflows
+        const reposWithWorkflows = existenceChecks.filter(check => check.hasWorkflows);
+        const metricsPromises = reposWithWorkflows.map(async ({ repo }) => {
           try {
-            // First check if workflows are already saved in database (without triggering GitHub fetch)
-            const checkResponse = await fetch(`/api/workflow/${repo.slug}/exists`, { 
+            const runsResponse = await fetch(`/api/workflow/${repo.slug}?date=${todayStr}`, { 
               cache: 'no-store',
               credentials: 'include'
             });
-            let hasWorkflows = false;
-            let metrics = {
-              totalWorkflows: 0,
-              passedRuns: 0,
-              failedRuns: 0,
-              inProgressRuns: 0,
-              successRate: 0,
-              hasActivity: false
-            };
-
-            if (checkResponse.ok) {
-              const checkData = await checkResponse.json();
-              
-              if (checkData.hasWorkflows) {
-                // Only fetch metrics for repos that have already been visited (have saved workflows)
-                const runsResponse = await fetch(`/api/workflow/${repo.slug}?date=${todayStr}`, { 
-                  cache: 'no-store',
-                  credentials: 'include'
-                });
-                if (runsResponse.ok) {
-                  const runsData = await runsResponse.json();
-                  const overviewData = runsData.overviewData;
-                  
-                  hasWorkflows = true;
-                  metrics = {
-                    totalWorkflows: checkData.workflowCount || 0,
-                    passedRuns: overviewData.passedRuns || 0,
-                    failedRuns: overviewData.failedRuns || 0,
-                    inProgressRuns: overviewData.inProgressRuns || 0,
-                    successRate: overviewData.completedRuns > 0 
-                      ? Math.round((overviewData.passedRuns / overviewData.completedRuns) * 100) 
-                      : 0,
-                    hasActivity: (overviewData.completedRuns > 0 || overviewData.inProgressRuns > 0)
-                  };
-                } else {
-                  // If runs API fails, still show that workflows exist but no current activity
-                  hasWorkflows = true;
-                  metrics = {
-                    totalWorkflows: checkData.workflowCount || 0,
-                    passedRuns: 0,
-                    failedRuns: 0,
-                    inProgressRuns: 0,
-                    successRate: 0,
-                    hasActivity: false
-                  };
+            if (runsResponse.ok) {
+              const runsData = await runsResponse.json();
+              const overviewData = runsData.overviewData;
+              return {
+                slug: repo.slug,
+                metrics: {
+                  totalWorkflows: 0, // Will be filled from existence check
+                  passedRuns: overviewData.passedRuns || 0,
+                  failedRuns: overviewData.failedRuns || 0,
+                  inProgressRuns: overviewData.inProgressRuns || 0,
+                  successRate: overviewData.completedRuns > 0 
+                    ? Math.round((overviewData.passedRuns / overviewData.completedRuns) * 100) 
+                    : 0,
+                  hasActivity: (overviewData.completedRuns > 0 || overviewData.inProgressRuns > 0)
                 }
-              } else {
-                // No workflows saved yet - show default state (don't trigger fetch)
-                hasWorkflows = false;
-                metrics = {
-                  totalWorkflows: 0,
-                  passedRuns: 0,
-                  failedRuns: 0,
-                  inProgressRuns: 0,
-                  successRate: 0,
-                  hasActivity: false
-                };
-              }
-            } else {
-              // Check API failed - assume no workflows found yet
-              hasWorkflows = false;
+              };
             }
-
-            return { 
-              ...repo, 
-              hasWorkflows, 
-              metrics 
-            };
+            return { slug: repo.slug, metrics: null };
           } catch (error) {
-            console.error(`Error checking workflow data for ${repo.slug}:`, error);
-            return { 
-              ...repo, 
-              hasWorkflows: false, 
-              metrics: {
-                totalWorkflows: 0,
-                passedRuns: 0,
-                failedRuns: 0,
-                inProgressRuns: 0,
-                successRate: 0,
-                hasActivity: false
-              }
-            };
+            console.error(`Error fetching metrics for ${repo.slug}:`, error);
+            return { slug: repo.slug, metrics: null };
           }
-        })
-      );
+        });
 
-      setAvailableRepos(enhanced);
-      console.log(`✅ Loaded ${enhanced.length} repositories with workflow data`);
+        const metricsResults = await Promise.all(metricsPromises);
+        const metricsMap = new Map(metricsResults.map(result => [result.slug, result.metrics]));
+
+        // Update repositories with enhanced data
+        const enhanced = existenceChecks.map(({ repo, hasWorkflows, workflowCount }) => {
+          const metrics = metricsMap.get(repo.slug) || {
+            totalWorkflows: workflowCount || 0,
+            passedRuns: 0,
+            failedRuns: 0,
+            inProgressRuns: 0,
+            successRate: 0,
+            hasActivity: false
+          };
+
+          return { 
+            ...repo, 
+            hasWorkflows, 
+            metrics: hasWorkflows ? { ...metrics, totalWorkflows: workflowCount || 0 } : metrics
+          };
+        });
+
+        setAvailableRepos(enhanced);
+        console.log(`✅ Enhanced ${enhanced.length} repositories with workflow data`);
+      } catch (error) {
+        console.error('Error loading workflow data:', error);
+        // Keep the default repositories even if metrics fail
+      } finally {
+        setIsMetricsLoading(false);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -524,13 +487,24 @@ export default function DashboardHomePage() {
 
   // Show loading state for authentication
   if (isPending) {
-    return <HomePageLoadingSkeleton />;
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  // Show loading state for data
-  if (isLoading) {
-    return showSkeleton ? <HomePageLoadingSkeleton /> : null;
-  }
+  // Remove loading skeleton - show data as it loads
+  // if (isLoading) {
+  //   return showSkeleton ? <HomePageLoadingSkeleton /> : null;
+  // }
 
   // Show error state
   if (error) {
@@ -547,7 +521,40 @@ export default function DashboardHomePage() {
     );
   }
   
-  if (availableRepos.length === 0) {
+  // Show loading state while fetching data
+  if (isLoading && availableRepos.length === 0) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading repositories...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while fetching metrics
+  if (isMetricsLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading workflow data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Only show "No repositories" if we're not loading and actually have no repos
+  if (!isLoading && availableRepos.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6 space-y-8">
