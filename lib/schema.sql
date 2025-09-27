@@ -1,18 +1,22 @@
 -- Create repositories table
 CREATE TABLE IF NOT EXISTS repositories (
   id SERIAL PRIMARY KEY,
-  slug VARCHAR(255) UNIQUE NOT NULL,
+  slug VARCHAR(255) NOT NULL,
   repo_path VARCHAR(255) NOT NULL,
   display_name VARCHAR(255) NOT NULL,
   html_url TEXT NOT NULL,
   default_branch VARCHAR(100) NOT NULL,
   avatar_url TEXT,
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
   added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (user_id, slug)
 );
 
--- Create index on slug for faster lookups
+-- Create indexes for repositories table
 CREATE INDEX IF NOT EXISTS idx_repositories_slug ON repositories(slug);
+CREATE INDEX IF NOT EXISTS idx_repositories_user_id ON repositories(user_id);
+CREATE INDEX IF NOT EXISTS idx_repositories_user_slug ON repositories(user_id, slug);
 
 -- Create updated_at trigger
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -36,14 +40,17 @@ CREATE TABLE IF NOT EXISTS workflows (
   workflow_name VARCHAR(255) NOT NULL,
   workflow_path VARCHAR(500) NOT NULL,
   workflow_state VARCHAR(50) NOT NULL,
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(repo_slug, workflow_id)
+  UNIQUE (user_id, repo_slug, workflow_id)
 );
 
 -- Create indexes for workflows table
 CREATE INDEX IF NOT EXISTS idx_workflows_repo_slug ON workflows(repo_slug);
 CREATE INDEX IF NOT EXISTS idx_workflows_workflow_id ON workflows(workflow_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_user_id ON workflows(user_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_user_repo ON workflows(user_id, repo_slug);
 
 -- Create trigger for workflows updated_at
 CREATE TRIGGER update_workflows_updated_at 

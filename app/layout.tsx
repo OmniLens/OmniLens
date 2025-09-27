@@ -1,6 +1,8 @@
 import "./globals.css";
 import { ReactNode } from "react";
 import { AuthProvider } from "@/components/auth-provider";
+import { QueryProvider } from "@/lib/query-client";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import * as Sentry from '@sentry/nextjs';
@@ -26,9 +28,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-background font-sans antialiased">
-        <AuthProvider>{children}</AuthProvider>
-      <Analytics />
-      <SpeedInsights />
+        <NuqsAdapter>
+          <QueryProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </QueryProvider>
+        </NuqsAdapter>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

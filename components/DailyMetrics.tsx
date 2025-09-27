@@ -297,7 +297,7 @@ export default function DailyMetrics({
                   radius={[2, 2, 0, 0]}
                 />
                 <ChartTooltip 
-                  content={<ChartTooltipContent labelFormatter={(value) => `${value}:00`} />}
+                  content={<ChartTooltipContent labelFormatter={(value) => `Runs`} />}
                   cursor={false}
                 />
               </BarChart>

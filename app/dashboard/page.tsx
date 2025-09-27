@@ -14,20 +14,17 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
-// import { Skeleton } from "@/components/ui/skeleton"; // Removed skeleton import
 import { cn } from "@/lib/utils";
 import { useSession, signOut } from "@/lib/auth-client";
+import { useDashboardRepositories } from "@/lib/hooks/use-dashboard-repositories";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-
-// Helper function to format repository name for display (same as dashboard)
+// Helper function to format repository name for display
 function formatRepoDisplayName(repoName: string): string {
-  // Extract just the repo name part (after the last slash)
   const repoNamePart = repoName.split('/').pop() || repoName;
-  
-  // Convert kebab-case or snake_case to Title Case
   return repoNamePart
-    .replace(/[-_]/g, ' ') // Replace hyphens and underscores with spaces
-    .replace(/\b\w/g, l => l.toUpperCase()) // Capitalize first letter of each word
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, l => l.toUpperCase())
     .trim();
 }
 
@@ -52,9 +49,21 @@ interface RepositoryCardProps {
   onRequestDelete?: () => void;
 }
 
-function RepositoryCard({ repoSlug, repoPath, displayName, avatarUrl, htmlUrl, hasError, errorMessage, hasWorkflows, metrics, isUserRepo = false, onRequestDelete }: RepositoryCardProps) {
-  // Get avatar URL from the repository data if available, otherwise fallback to GitHub API
+function RepositoryCard({ 
+  repoSlug, 
+  repoPath, 
+  displayName, 
+  avatarUrl, 
+  htmlUrl, 
+  hasError, 
+  errorMessage, 
+  hasWorkflows, 
+  metrics, 
+  isUserRepo = false, 
+  onRequestDelete 
+}: RepositoryCardProps) {
   const owner = (repoPath || displayName || '').split('/')[0] || '';
+  
   const cardContent = (
     <Card className={`relative h-full transition-all duration-200 ${
       hasError 
@@ -137,7 +146,6 @@ function RepositoryCard({ repoSlug, repoPath, displayName, avatarUrl, htmlUrl, h
             </p>
           </div>
         )}
-
       </CardContent>
     </Card>
   );
@@ -156,13 +164,6 @@ function RepositoryCard({ repoSlug, repoPath, displayName, avatarUrl, htmlUrl, h
     </div>
   );
 }
-
-
-// Removed RepositoryCardSkeleton - no skeletons in repo dashboard
-
-
-// Removed HomePageLoadingSkeleton - no skeletons in repo dashboard
-
 
 function NoRepositoriesFound({
   newRepoUrl,
@@ -216,34 +217,20 @@ function NoRepositoriesFound({
 export default function DashboardHomePage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const queryClient = useQueryClient();
   
-  const [availableRepos, setAvailableRepos] = React.useState<Array<{
-    slug: string;
-    repoPath: string;
-    displayName: string;
-    avatarUrl?: string;
-    htmlUrl?: string;
-    hasWorkflows?: boolean;
-    metrics?: {
-      totalWorkflows: number;
-      passedRuns: number;
-      failedRuns: number;
-      inProgressRuns: number;
-      successRate: number;
-      hasActivity: boolean;
-    } | null;
-  }>>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isMetricsLoading, setIsMetricsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [showAddForm, setShowAddForm] = React.useState(false);
+  // Use the new hook for repository data
+  const { 
+    repositories, 
+    isLoading, 
+    error,
+    isLoadingRepos,
+    isLoadingWorkflows,
+    isLoadingMetrics 
+  } = useDashboardRepositories();
 
-  // Redirect to login if not authenticated
-  React.useEffect(() => {
-    if (!isPending && !session) {
-      router.push('/');
-    }
-  }, [session, isPending, router]);
+  // Local state for UI interactions
+  const [showAddForm, setShowAddForm] = React.useState(false);
   const [newRepoUrl, setNewRepoUrl] = React.useState("");
   const [addError, setAddError] = React.useState<string | null>(null);
   const [isValidating, setIsValidating] = React.useState(false);
@@ -252,164 +239,66 @@ export default function DashboardHomePage() {
     displayName: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
-
   const [isAddHovered, setIsAddHovered] = React.useState(false);
   const [isLogoutHovered, setIsLogoutHovered] = React.useState(false);
-  // const [showSkeleton, setShowSkeleton] = React.useState(false); // Removed skeleton
 
+  // Redirect to login if not authenticated
+  React.useEffect(() => {
+    if (!isPending && !session) {
+      router.push('/');
+    }
+  }, [session, isPending, router]);
 
-  // Build repositories list from API (includes both env-configured and user-added repos)
-  const hydrateUserRepos = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
-      console.log('📋 Fetching repositories from API...');
+  // Add repository mutation
+  const addRepoMutation = useMutation({
+    mutationFn: async (repoData: any) => {
+      const response = await fetch('/api/repo/add', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(repoData),
+      });
       
-      // Fetch all repositories from the API
-      const response = await fetch('/api/repo', { 
-        cache: 'no-store',
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error || 'Failed to add repository');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate and refetch repository data
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      setNewRepoUrl('');
+      setShowAddForm(false);
+      setAddError(null);
+    },
+    onError: (error) => {
+      setAddError(error.message);
+    },
+  });
+
+  // Delete repository mutation
+  const deleteRepoMutation = useMutation({
+    mutationFn: async (slug: string) => {
+      const response = await fetch(`/api/repo/${slug}`, {
+        method: 'DELETE',
         credentials: 'include'
       });
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch repositories');
+        throw new Error('Failed to delete repository');
       }
-      
-      const data = await response.json();
-      const allRepos = data.repositories || [];
-      
-      // Map to the expected format
-      const mappedRepos = allRepos.map((r: any) => ({
-        slug: r.slug,
-        repoPath: r.repoPath || r.slug.replace(/-/g, '/'), // Convert slug back to repoPath if needed
-        htmlUrl: r.htmlUrl,
-        displayName: r.displayName,
-        avatarUrl: r.avatarUrl,
-        hasWorkflows: false,
-        metrics: null,
-      }));
-
-      // Show repositories immediately, then load metrics progressively
-      if (mappedRepos.length === 0) {
-        setAvailableRepos([]);
-        setIsMetricsLoading(false);
-        return;
-      }
-
-      // Show repositories immediately with default state
-      const reposWithDefaults = mappedRepos.map((repo: any) => ({
-        ...repo,
-        hasWorkflows: false,
-        metrics: {
-          totalWorkflows: 0,
-          passedRuns: 0,
-          failedRuns: 0,
-          inProgressRuns: 0,
-          successRate: 0,
-          hasActivity: false
-        }
-      }));
-      
-      setAvailableRepos(reposWithDefaults);
-      setIsLoading(false);
-      setIsMetricsLoading(true);
-      
-      // Load metrics in background
-      const todayStr = new Date().toISOString().slice(0, 10);
-
-      // Load metrics in background (progressive enhancement)
-      try {
-        // OPTIMIZATION: Batch all workflow existence checks first
-        const existenceChecks = await Promise.all(
-          mappedRepos.map(async (repo: any) => {
-            try {
-              const checkResponse = await fetch(`/api/workflow/${repo.slug}/exists`, { 
-                cache: 'no-store',
-                credentials: 'include'
-              });
-              if (checkResponse.ok) {
-                const checkData = await checkResponse.json();
-                return { repo, hasWorkflows: checkData.hasWorkflows, workflowCount: checkData.workflowCount };
-              }
-              return { repo, hasWorkflows: false, workflowCount: 0 };
-            } catch (error) {
-              console.error(`Error checking workflow existence for ${repo.slug}:`, error);
-              return { repo, hasWorkflows: false, workflowCount: 0 };
-            }
-          })
-        );
-
-        // OPTIMIZATION: Only fetch metrics for repos that have workflows
-        const reposWithWorkflows = existenceChecks.filter(check => check.hasWorkflows);
-        const metricsPromises = reposWithWorkflows.map(async ({ repo }) => {
-          try {
-            const runsResponse = await fetch(`/api/workflow/${repo.slug}?date=${todayStr}`, { 
-              cache: 'no-store',
-              credentials: 'include'
-            });
-            if (runsResponse.ok) {
-              const runsData = await runsResponse.json();
-              const overviewData = runsData.overviewData;
-              return {
-                slug: repo.slug,
-                metrics: {
-                  totalWorkflows: 0, // Will be filled from existence check
-                  passedRuns: overviewData.passedRuns || 0,
-                  failedRuns: overviewData.failedRuns || 0,
-                  inProgressRuns: overviewData.inProgressRuns || 0,
-                  successRate: overviewData.completedRuns > 0 
-                    ? Math.round((overviewData.passedRuns / overviewData.completedRuns) * 100) 
-                    : 0,
-                  hasActivity: (overviewData.completedRuns > 0 || overviewData.inProgressRuns > 0)
-                }
-              };
-            }
-            return { slug: repo.slug, metrics: null };
-          } catch (error) {
-            console.error(`Error fetching metrics for ${repo.slug}:`, error);
-            return { slug: repo.slug, metrics: null };
-          }
-        });
-
-        const metricsResults = await Promise.all(metricsPromises);
-        const metricsMap = new Map(metricsResults.map(result => [result.slug, result.metrics]));
-
-        // Update repositories with enhanced data
-        const enhanced = existenceChecks.map(({ repo, hasWorkflows, workflowCount }) => {
-          const metrics = metricsMap.get(repo.slug) || {
-            totalWorkflows: workflowCount || 0,
-            passedRuns: 0,
-            failedRuns: 0,
-            inProgressRuns: 0,
-            successRate: 0,
-            hasActivity: false
-          };
-
-          return { 
-            ...repo, 
-            hasWorkflows, 
-            metrics: hasWorkflows ? { ...metrics, totalWorkflows: workflowCount || 0 } : metrics
-          };
-        });
-
-        setAvailableRepos(enhanced);
-        console.log(`✅ Enhanced ${enhanced.length} repositories with workflow data`);
-      } catch (error) {
-        console.error('Error loading workflow data:', error);
-        // Keep the default repositories even if metrics fail
-      } finally {
-        setIsMetricsLoading(false);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Load repositories on mount (no polling)
-  React.useEffect(() => {
-    console.log('🏠 Dashboard page mounted - loading repositories...');
-    
-    // Initial load
-    hydrateUserRepos();
-  }, [hydrateUserRepos]); // Include hydrateUserRepos in dependencies
+    },
+    onSuccess: () => {
+      // Invalidate and refetch repository data
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      setRepoToDelete(null);
+    },
+    onError: (error) => {
+      console.error('Delete error:', error);
+    },
+  });
 
   async function handleAddRepo(e: React.FormEvent) {
     e.preventDefault();
@@ -419,6 +308,7 @@ export default function DashboardHomePage() {
       setAddError('Please enter a GitHub repository URL or owner/repo');
       return;
     }
+    
     setIsValidating(true);
     try {
       // Step 1: Validate the repository
@@ -435,38 +325,21 @@ export default function DashboardHomePage() {
         return;
       }
 
-      // Step 2: Add the repository to dashboard
-      const addRes = await fetch('/api/repo/add', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          repoPath: validateJson.repoPath,
-          displayName: validateJson.displayName,
-          htmlUrl: validateJson.htmlUrl,
-          defaultBranch: validateJson.defaultBranch,
-          avatarUrl: validateJson.avatarUrl
-        }),
+      // Step 2: Add the repository using mutation
+      await addRepoMutation.mutateAsync({
+        repoPath: validateJson.repoPath,
+        displayName: validateJson.displayName,
+        htmlUrl: validateJson.htmlUrl,
+        defaultBranch: validateJson.defaultBranch,
+        avatarUrl: validateJson.avatarUrl
       });
-      const addJson = await addRes.json();
       
-      if (!addRes.ok) {
-        if (addRes.status === 409) {
-          setAddError('Repository already exists in your dashboard');
-        } else {
-          setAddError(addJson?.error || 'Failed to add repository to dashboard');
-        }
-        return;
-      }
-
-      // Success! Refresh the repositories list
-      await hydrateUserRepos();
-      
-      setNewRepoUrl('');
-      setShowAddForm(false);
     } catch (err) {
-      setAddError('Network error processing repository');
-      setNewRepoUrl(''); // Clear input on error
+      if (err instanceof Error) {
+        setAddError(err.message);
+      } else {
+        setAddError('Network error processing repository');
+      }
     } finally {
       setIsValidating(false);
     }
@@ -501,11 +374,6 @@ export default function DashboardHomePage() {
     );
   }
 
-  // Remove loading skeleton - show data as it loads
-  // if (isLoading) {
-  //   return showSkeleton ? <HomePageLoadingSkeleton /> : null;
-  // }
-
   // Show error state
   if (error) {
     return (
@@ -513,7 +381,7 @@ export default function DashboardHomePage() {
         <div className="container mx-auto p-6">
           <div className="mb-8">
             <p className="text-muted-foreground text-red-600">
-              Error: {error}
+              Error: {error.message}
             </p>
           </div>
         </div>
@@ -522,30 +390,18 @@ export default function DashboardHomePage() {
   }
   
   // Show loading state while fetching data
-  if (isLoading && availableRepos.length === 0) {
+  if (isLoading && repositories.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading repositories...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading state while fetching metrics
-  if (isMetricsLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto p-6">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading workflow data...</p>
+              <p className="text-muted-foreground">
+                {isLoadingRepos ? 'Loading repositories...' : 
+                 isLoadingWorkflows ? 'Loading workflow data...' : 
+                 isLoadingMetrics ? 'Loading metrics...' : 'Loading...'}
+              </p>
             </div>
           </div>
         </div>
@@ -554,7 +410,7 @@ export default function DashboardHomePage() {
   }
 
   // Only show "No repositories" if we're not loading and actually have no repos
-  if (!isLoading && availableRepos.length === 0) {
+  if (!isLoading && repositories.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6 space-y-8">
@@ -592,70 +448,17 @@ export default function DashboardHomePage() {
             onUrlChange={(v) => setNewRepoUrl(v)}
             onSubmit={handleAddRepo}
           />
-          {/* Confirmation Modal (hidden when no repo) */}
-          {repoToDelete && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-              <div className="w-full max-w-md rounded-lg border border-border bg-background shadow-lg">
-                <div className="p-4 border-b border-border">
-                  <h2 className="text-lg font-semibold">Remove repository</h2>
-                </div>
-                <div className="p-4 space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Are you sure you want to remove
-                    {" "}
-                    <span className="font-medium text-foreground">{formatRepoDisplayName(repoToDelete.displayName)}</span>?
-                  </p>
-                  
-                </div>
-                <div className="p-4 border-t border-border flex justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setRepoToDelete(null)}>Cancel</Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={async () => {
-                      if (!repoToDelete) return;
-                      setIsDeleting(true);
-                      try {
-                        // Delete from API
-                        const response = await fetch(`/api/repo/${repoToDelete.slug}`, {
-                          method: 'DELETE',
-                          credentials: 'include'
-                        });
-                        
-                        if (response.ok) {
-                          // Remove from local state
-                          setAvailableRepos(prev => prev.filter(r => r.slug !== repoToDelete.slug));
-                          setRepoToDelete(null);
-                        } else {
-                          console.error('Failed to delete repository');
-                        }
-                      } finally {
-                        setIsDeleting(false);
-                      }
-                    }}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? 'Removing…' : 'Remove'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-                  )}
-        
-
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   // Process each repository to check for errors and workflow data
-  const repositoryData = availableRepos.map(repo => ({
+  const repositoryData = repositories.map(repo => ({
     ...repo,
-    // Keep neutral style and allow navigation even when no workflows found
     hasError: false,
     errorMessage: ''
   })).sort((a, b) => {
-    // Sort alphabetically by repository name (not org/user)
     const repoNameA = formatRepoDisplayName(a.displayName);
     const repoNameB = formatRepoDisplayName(b.displayName);
     return repoNameA.localeCompare(repoNameB);
@@ -729,7 +532,7 @@ export default function DashboardHomePage() {
                 </span>
               </Button>
             )}
-            {availableRepos.length > 0 && (
+            {repositories.length > 0 && (
               <Button
                 variant={isLogoutHovered ? "default" : "outline"}
                 size="sm"
@@ -757,7 +560,6 @@ export default function DashboardHomePage() {
               </Button>
             )}
           </div>
-          
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -792,37 +594,19 @@ export default function DashboardHomePage() {
                   {" "}
                   <span className="font-medium text-foreground">{formatRepoDisplayName(repoToDelete.displayName)}</span>?
                 </p>
-                
               </div>
               <div className="p-4 border-t border-border flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => setRepoToDelete(null)}>Cancel</Button>
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={async () => {
+                  onClick={() => {
                     if (!repoToDelete) return;
-                    setIsDeleting(true);
-                    try {
-                      // Delete from API
-                      const response = await fetch(`/api/repo/${repoToDelete.slug}`, {
-                        method: 'DELETE',
-                        credentials: 'include'
-                      });
-                      
-                      if (response.ok) {
-                        // Remove from local state
-                        setAvailableRepos(prev => prev.filter(r => r.slug !== repoToDelete.slug));
-                        setRepoToDelete(null);
-                      } else {
-                        console.error('Failed to delete repository');
-                      }
-                    } finally {
-                      setIsDeleting(false);
-                    }
+                    deleteRepoMutation.mutate(repoToDelete.slug);
                   }}
-                  disabled={isDeleting}
+                  disabled={deleteRepoMutation.isPending}
                 >
-                  {isDeleting ? 'Removing…' : 'Remove'}
+                  {deleteRepoMutation.isPending ? 'Removing…' : 'Remove'}
                 </Button>
               </div>
             </div>
