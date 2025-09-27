@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAllUsers, getAllUserIds, getUserById, getAllUsersWithStats } from '@/lib/db-storage';
-import { withAuth } from '@/lib/auth-middleware';
+import { withAdminAuth } from '@/lib/admin-auth';
 
 // Zod schema for user response
 const userSchema = z.object({
@@ -22,12 +22,11 @@ const userWithStatsSchema = userSchema.extend({
   lastActivity: z.string().nullable()
 });
 
-// GET /api/admin/users - Get all users (admin only)
-export const GET = withAuth(async (request: NextRequest, _context, authData) => {
+// GET /api/admin/users - Get all users (admin token required)
+export const GET = withAdminAuth(async (request: NextRequest) => {
   try {
-    // Check if user is admin (you can implement your own admin logic here)
-    // For now, we'll allow any authenticated user to see the user list
-    // In production, you might want to add role-based access control
+    // This endpoint is now protected by admin API token authentication
+    // Only requests with valid admin tokens can access this data
     
     const { searchParams } = new URL(request.url);
     const includeStats = searchParams.get('includeStats') === 'true';
