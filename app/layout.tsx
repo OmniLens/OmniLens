@@ -35,6 +35,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </NuqsAdapter>
         <Analytics />
         <SpeedInsights />
+        
+        {/* Version indicator - bottom left */}
+        <div className="fixed bottom-4 left-4 z-50 text-xs text-muted-foreground font-mono">
+          v0.5.0
+        </div>
       </body>
     </html>
   );

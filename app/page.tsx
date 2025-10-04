@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Github } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signIn, useSession } from "@/lib/auth-client";
@@ -57,9 +58,18 @@ export default function LoginPage() {
 
           {/* App Name */}
           <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-white">
-              OmniLens
-            </h1>
+            <div className="flex items-center justify-center gap-3">
+              <h1 className="text-4xl font-bold tracking-tight text-white">
+                OmniLens
+              </h1>
+              <Badge 
+                variant="secondary" 
+                className="bg-muted/50 text-muted-foreground border-border/50 text-xs font-medium px-2.5 py-0.5 relative overflow-hidden"
+              >
+                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></span>
+                <span className="relative z-10">ALPHA</span>
+              </Badge>
+            </div>
           </div>
 
           {/* Login Button */}
