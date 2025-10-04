@@ -376,7 +376,7 @@ export default function DashboardHomePage() {
   // Show loading state for authentication
   if (isPending) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
         <div className="container mx-auto p-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
@@ -392,7 +392,7 @@ export default function DashboardHomePage() {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
         <div className="container mx-auto p-6">
           <div className="mb-8">
             <p className="text-muted-foreground text-red-600">
@@ -407,7 +407,7 @@ export default function DashboardHomePage() {
   // Show loading state while fetching data
   if (isLoading && repositories.length === 0) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
         <div className="container mx-auto p-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">

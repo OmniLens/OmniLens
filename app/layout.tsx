@@ -5,6 +5,7 @@ import { QueryProvider } from "@/lib/query-client";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { VersionIndicator } from "@/components/VersionIndicator";
 import * as Sentry from '@sentry/nextjs';
 import type { Metadata } from "next";
 
@@ -39,9 +40,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <SpeedInsights />
         
         {/* Version indicator - bottom left */}
-        <div className="fixed bottom-4 left-4 z-50 text-xs text-muted-foreground font-mono">
-          v0.6.0
-        </div>
+        <VersionIndicator />
       </body>
     </html>
   );

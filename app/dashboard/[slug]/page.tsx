@@ -286,7 +286,7 @@ export default function DashboardPage({ params }: PageProps) {
   // Show loading state while fetching workflows
   if (isLoadingWorkflows || isLoadingYesterday) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
         <div className="container mx-auto p-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
@@ -302,7 +302,7 @@ export default function DashboardPage({ params }: PageProps) {
   // Show loading state while fetching runs
   if (isLoadingRuns || isLoadingOverview) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
         <div className="container mx-auto p-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">

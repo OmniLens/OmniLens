@@ -364,7 +364,7 @@ async function handleWorkflowRunsRequest(
     
     // Calculate overview data
     const completedRuns = workflowRuns.filter(run => run.status === 'completed').length;
-    const inProgressRuns = workflowRuns.filter(run => run.status === 'in_progress').length;
+    const inProgressRuns = workflowRuns.filter(run => run.status === 'in_progress' || run.status === 'queued').length;
     const passedRuns = workflowRuns.filter(run => run.conclusion === 'success').length;
     const failedRuns = workflowRuns.filter(run => run.conclusion === 'failure').length;
     
