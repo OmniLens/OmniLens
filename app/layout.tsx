@@ -30,7 +30,32 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-screen bg-background font-sans antialiased">
         <NuqsAdapter>
           <QueryProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <div className="flex flex-col min-h-screen">
+                <main className="flex-1">
+                  {children}
+                </main>
+                
+                {/* Footer */}
+                <footer className="border-t border-border/50 bg-background/50 backdrop-blur-sm">
+                  <div className="container mx-auto px-4 py-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                      <div className="text-sm text-muted-foreground">
+                        © 2025 OmniLens. All rights reserved.
+                      </div>
+                      <div className="flex gap-6 text-sm">
+                        <a 
+                          href="/legal" 
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Legal
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </footer>
+              </div>
+            </AuthProvider>
           </QueryProvider>
         </NuqsAdapter>
         <Analytics />

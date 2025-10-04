@@ -95,7 +95,13 @@ export default function LoginPage() {
       <div className="p-4">
         <div className="text-center w-full max-w-md mx-auto">
           <p className="text-sm text-muted-foreground">
-            By signing in, you agree to our Terms of Service and Privacy Policy
+            By signing in, you agree to our{" "}
+            <a 
+              href="/legal" 
+              className="text-blue-400 hover:text-blue-300 underline transition-colors"
+            >
+              Terms of Service and Privacy Policy
+            </a>
           </p>
         </div>
       </div>
