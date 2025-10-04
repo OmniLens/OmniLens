@@ -2,14 +2,13 @@
   "name": "omnilens",
   "private": true,
   "license": "MIT",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "scripts": {
     "build": "bunx next build",
     "dev": "bunx next dev",
     "lint": "bunx next lint && bunx tsc --noEmit",
     "setup": "node scripts/setup-db.js",
-    
     "test:multi-user": "node scripts/test-multi-user.js",
     "test:users": "node scripts/test-user-management.js",
     "test": "bun run test:health && bun run test:auth:basic && bun run test:multi-user && bun run test:users",
@@ -19,6 +18,7 @@
     "test:auth:valid": "bun tests/test-auth-valid.js"
   },
   "dependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-popover": "^1.1.14",
     "@radix-ui/react-slot": "^1.2.3",
     "@sentry/nextjs": "^10",

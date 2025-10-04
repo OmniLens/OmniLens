@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "Sentry": {
-      "url": "https://mcp.sentry.dev/mcp/precium/javascript-nextjs"
+      "url": "https://mcp.sentry.dev/mcp/omnilens/javascript-nextjs"
     }
   }
 }

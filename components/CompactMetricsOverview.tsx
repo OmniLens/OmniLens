@@ -73,7 +73,7 @@ export default function CompactMetricsOverview({
         {/* Activity Indicator */}
         <div className="flex items-center gap-1">
           <div className={`w-2 h-2 rounded-full ${
-            hasActivity ? 'bg-green-500' : 'bg-gray-500'
+            hasActivity ? 'bg-green-500' : 'bg-muted'
           }`} />
           <span className="text-muted-foreground">
             {hasActivity ? 'Active' : 'Idle'}

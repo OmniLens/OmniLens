@@ -5,6 +5,8 @@ on:
     branches: main
   pull_request:
     branches: main
+  schedule:
+    - cron: '0 3 * * *'  # Run daily at 05:00 AM UTC+2
   workflow_dispatch:
 
 jobs:
@@ -29,14 +31,6 @@ jobs:
 
       - name: 🏗️ Build application
         run: bun run build
-
-      - name: 📦 Upload OmniLens artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: omnilens-build
-          path: .next/
-          retention-days: 1
-        if: github.event_name != 'pull_request'
 
   validation-summary:
     name: 📊 Validation Summary

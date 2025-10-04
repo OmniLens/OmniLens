@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Github } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signIn, useSession } from "@/lib/auth-client";
@@ -36,7 +37,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Main Content - Centered */}
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md flex flex-col items-center space-y-8">
@@ -57,9 +58,18 @@ export default function LoginPage() {
 
           {/* App Name */}
           <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-white">
-              OmniLens
-            </h1>
+            <div className="flex items-center justify-center gap-3">
+              <h1 className="text-4xl font-bold tracking-tight text-white">
+                OmniLens
+              </h1>
+              <Badge 
+                variant="secondary" 
+                className="bg-muted/50 text-muted-foreground border-border/50 text-xs font-medium px-2.5 py-0.5 relative overflow-hidden"
+              >
+                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></span>
+                <span className="relative z-10">ALPHA</span>
+              </Badge>
+            </div>
           </div>
 
           {/* Login Button */}
@@ -83,9 +93,18 @@ export default function LoginPage() {
 
       {/* Footer - Bottom */}
       <div className="p-4">
-        <div className="text-center w-full max-w-md mx-auto">
+        <div className="text-center w-full max-w-md mx-auto space-y-2">
           <p className="text-sm text-muted-foreground">
-            By signing in, you agree to our Terms of Service and Privacy Policy
+            By signing in, you agree to our{" "}
+            <a 
+              href="/legal" 
+              className="text-blue-400 hover:text-blue-300 underline transition-colors"
+            >
+              Terms of Service and Privacy Policy
+            </a>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            © 2025 OmniLens. All rights reserved.
           </p>
         </div>
       </div>

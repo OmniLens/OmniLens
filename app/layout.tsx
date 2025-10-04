@@ -30,11 +30,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-screen bg-background font-sans antialiased">
         <NuqsAdapter>
           <QueryProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
           </QueryProvider>
         </NuqsAdapter>
         <Analytics />
         <SpeedInsights />
+        
+        {/* Version indicator - bottom left */}
+        <div className="fixed bottom-4 left-4 z-50 text-xs text-muted-foreground font-mono">
+          v0.6.0
+        </div>
       </body>
     </html>
   );
