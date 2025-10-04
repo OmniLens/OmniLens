@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,8 +12,15 @@ import {
   Package,
   Github,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
 import { cn } from "@/lib/utils";
 import { useSession, signOut } from "@/lib/auth-client";
@@ -239,8 +247,6 @@ export default function DashboardHomePage() {
     displayName: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
-  const [isAddHovered, setIsAddHovered] = React.useState(false);
-  const [isLogoutHovered, setIsLogoutHovered] = React.useState(false);
 
   // Redirect to login if not authenticated
   React.useEffect(() => {
@@ -424,31 +430,28 @@ export default function DashboardHomePage() {
       <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6 space-y-8">
           <div className="flex justify-end">
-            <Button
-              variant={isLogoutHovered ? "default" : "outline"}
-              size="sm"
-              onClick={handleLogout}
-              onMouseEnter={() => setIsLogoutHovered(true)}
-              onMouseLeave={() => setIsLogoutHovered(false)}
-              aria-label="Log out"
-              className={cn(
-                "flex items-center justify-center overflow-hidden transition-all duration-200",
-                isLogoutHovered ? "gap-2 px-3" : "gap-0 px-2",
-                !isLogoutHovered && "shadow-none"
-              )}
-            >
-              <span className="flex h-7 w-7 items-center justify-center">
-                <LogOut className="h-4 w-4" />
-              </span>
-              <span
-                className={cn(
-                  "max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200",
-                  isLogoutHovered && "ml-1 max-w-[80px] opacity-100"
-                )}
-              >
-                Log out
-              </span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label="Settings"
+                  className="flex items-center justify-center gap-0 px-2"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center">
+                    <Settings className="h-4 w-4" />
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled className="cursor-default">
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <NoRepositoriesFound
             newRepoUrl={newRepoUrl}
@@ -516,57 +519,39 @@ export default function DashboardHomePage() {
             )}
             {!showAddForm && (
               <Button
-                variant={isAddHovered ? "default" : "outline"}
+                variant="default"
                 size="sm"
                 onClick={handleAddRepoClick}
-                onMouseEnter={() => setIsAddHovered(true)}
-                onMouseLeave={() => setIsAddHovered(false)}
                 aria-label="Add repository"
-                className={cn(
-                  "flex items-center justify-center overflow-hidden transition-all duration-200",
-                  isAddHovered ? "gap-2 px-3" : "gap-0 px-2",
-                  !isAddHovered && "shadow-none"
-                )}
+                className="flex items-center justify-center gap-2 px-3 bg-white text-black hover:bg-gray-100"
               >
-                <span className="flex h-7 w-7 items-center justify-center">
-                  <Plus className="h-4 w-4" />
-                </span>
-                <span
-                  className={cn(
-                    "max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200",
-                    isAddHovered && "ml-1 max-w-[80px] opacity-100"
-                  )}
-                >
-                  Add Repo
-                </span>
+                <Plus className="h-4 w-4" />
+                Add Repo
               </Button>
             )}
             {repositories.length > 0 && (
-              <Button
-                variant={isLogoutHovered ? "default" : "outline"}
-                size="sm"
-                onClick={handleLogout}
-                onMouseEnter={() => setIsLogoutHovered(true)}
-                onMouseLeave={() => setIsLogoutHovered(false)}
-                aria-label="Log out"
-                className={cn(
-                  "flex items-center justify-center overflow-hidden transition-all duration-200",
-                  isLogoutHovered ? "gap-2 px-3" : "gap-0 px-2",
-                  !isLogoutHovered && "shadow-none"
-                )}
-              >
-                <span className="flex h-7 w-7 items-center justify-center">
-                  <LogOut className="h-4 w-4" />
-                </span>
-                <span
-                  className={cn(
-                    "max-w-0 overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200",
-                    isLogoutHovered && "ml-1 max-w-[80px] opacity-100"
-                  )}
-                >
-                  Log out
-                </span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label="Settings"
+                    className="flex items-center justify-center gap-0 px-2"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center">
+                      <Settings className="h-4 w-4" />
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem disabled className="cursor-default">
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
