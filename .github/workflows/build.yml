@@ -8,12 +8,11 @@ on:
   schedule:
     - cron: '0 3 * * *'  # Run daily at 05:00 AM UTC+2
   workflow_dispatch:
-
 jobs:
   validate-dashboard:
     name: 🎯 Validate OmniLens Dashboard
-    runs-on: ubuntu-latest
-    
+    runs-on: tenki-standard-autoscale
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v5
@@ -34,10 +33,10 @@ jobs:
 
   validation-summary:
     name: 📊 Validation Summary
-    runs-on: ubuntu-latest
+    runs-on: tenki-standard-autoscale
     needs: validate-dashboard
     if: always()
-    
+
     steps:
       - name: 📋 Validation Summary
         run: |

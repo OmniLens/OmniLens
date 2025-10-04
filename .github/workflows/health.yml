@@ -8,12 +8,11 @@ on:
   schedule:
     - cron: '0 3 * * *'  # Run daily at 05:00 AM UTC+2
   workflow_dispatch:
-
 jobs:
   test-health:
     name: 🧪 Run health tests
-    runs-on: ubuntu-latest
-    
+    runs-on: tenki-standard-autoscale
+
     env:
       GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
       GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
@@ -25,7 +24,7 @@ jobs:
       DB_NAME: ${{ secrets.DB_NAME }}
       DB_PORT: 5432
       NODE_ENV: test
-    
+
     services:
       postgres:
         image: postgres:15
@@ -40,7 +39,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    
+
     steps:
     - name: 📥Checkout code
       uses: actions/checkout@v5
