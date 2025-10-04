@@ -523,7 +523,7 @@ export default function DashboardHomePage() {
                 size="sm"
                 onClick={handleAddRepoClick}
                 aria-label="Add repository"
-                className="flex items-center justify-center gap-2 px-3 bg-white text-black hover:bg-gray-100"
+                className="flex items-center justify-center gap-2 px-3"
               >
                 <Plus className="h-4 w-4" />
                 Add Repo
@@ -577,7 +577,7 @@ export default function DashboardHomePage() {
 
         {/* Confirmation Modal */}
         {repoToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
             <div className="w-full max-w-md rounded-lg border border-border bg-background shadow-lg">
               <div className="p-4 border-b border-border">
                 <h2 className="text-lg font-semibold">Remove repository</h2>
