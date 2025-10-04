@@ -21,6 +21,7 @@ An intelligent dashboard that transforms GitHub Actions chaos into actionable in
 - **Tailwind CSS**: Styling with shadcn/ui components
 - **TypeScript**: Full type safety throughout
 - **Bun**: Package manager and runtime
+- **Tenki Cloud**: GitHub Action runners for CI/CD
 
 ## 📊 Data Sources
 
@@ -248,17 +249,31 @@ For detailed testing information, see [`tests/README.md`](tests/README.md).
 ## 🚀 API Endpoints
 
 ### Repository Management
-- `GET /api/repo` - List all repositories
-- `POST /api/repo/add` - Add a new repository
-- `POST /api/repo/validate` - Validate repository access
-- `GET /api/repo/[slug]` - Get specific repository
-- `DELETE /api/repo/[slug]` - Remove repository
+- `GET /api/repo` - List all repositories for authenticated user
+- `POST /api/repo/add` - Add a new repository to dashboard
+- `POST /api/repo/validate` - Validate repository access and workflows
+- `GET /api/repo/[slug]` - Get specific repository details
+- `DELETE /api/repo/[slug]` - Remove repository from dashboard
 
 ### Workflow Data
-- `GET /api/workflow/[slug]` - Get workflows for repository
+- `GET /api/workflow/[slug]` - Get workflows for repository (no date = list workflows)
 - `GET /api/workflow/[slug]?date=YYYY-MM-DD` - Get workflow runs for specific date
-- `GET /api/workflow/[slug]/overview` - Get daily metrics overview
+- `GET /api/workflow/[slug]/overview` - Get daily metrics overview with statistics
+- `GET /api/workflow/[slug]/overview?date=YYYY-MM-DD` - Get overview for specific date
 - `GET /api/workflow/[slug]/exists` - Check if workflows exist in database
+
+### Authentication
+- `GET /api/auth/[...auth]` - Authentication endpoints (login, logout, session management)
+- `POST /api/auth/[...auth]` - Authentication actions (login, logout, session refresh)
+
+### Admin Management
+- `GET /api/admin/user-ids` - Get all user IDs in the system (requires authentication)
+- `GET /api/admin/users` - Get all users (requires admin token)
+- `GET /api/admin/users?userId=id` - Get specific user information (requires admin token)
+- `GET /api/admin/users?includeStats=true` - Get users with repository and workflow counts (requires admin token)
+
+### Health & Monitoring
+- `GET /api/health` - System health check endpoint (no authentication required)
 
 ## 🎨 UI Components
 
