@@ -1,12 +1,8 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
+interface VersionIndicatorProps {
+  version?: string;
+}
 
-export function VersionIndicator() {
-  // Read package.json at build time
-  const packageJsonPath = join(process.cwd(), 'package.json');
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
-  const version = packageJson.version;
-
+export function VersionIndicator({ version = '0.7.1' }: VersionIndicatorProps) {
   return (
     <div className="fixed bottom-4 left-4 z-50 text-xs text-muted-foreground font-mono">
       v{version}

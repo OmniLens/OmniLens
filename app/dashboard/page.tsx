@@ -251,7 +251,7 @@ export default function DashboardHomePage() {
   // Redirect to login if not authenticated
   React.useEffect(() => {
     if (!isPending && !session) {
-      router.push('/');
+      router.push('/login');
     }
   }, [session, isPending, router]);
 
@@ -367,7 +367,7 @@ export default function DashboardHomePage() {
   const handleLogout = async () => {
     try {
       await signOut();
-      router.push('/');
+      router.push('/login');
     } catch (error) {
       console.error("Logout error:", error);
     }

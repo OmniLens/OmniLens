@@ -83,7 +83,7 @@ export default function LegalPage() {
             If you have any questions about our legal documents or need clarification on any terms, please contact us through our GitHub repository or support channels.
           </p>
           <p className="text-sm text-muted-foreground">
-            Last updated: January 2025
+            Last updated: October 2025
           </p>
         </div>
       </div>

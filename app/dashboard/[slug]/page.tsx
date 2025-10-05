@@ -90,7 +90,7 @@ export default function DashboardPage({ params }: PageProps) {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isPending && !session) {
-      router.push('/');
+      router.push('/login');
     }
   }, [session, isPending, router]);
 

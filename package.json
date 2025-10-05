@@ -2,7 +2,7 @@
   "name": "omnilens",
   "private": true,
   "license": "MIT",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "type": "module",
   "scripts": {
     "build": "bunx next build",
