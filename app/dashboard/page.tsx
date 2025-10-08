@@ -22,10 +22,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
-import GitHubStatusBanner from "@/components/GitHubStatusBanner";
+import RepositoryCardSkeleton from "@/components/RepositoryCardSkeleton";
 import { cn } from "@/lib/utils";
 import { useSession, signOut } from "@/lib/auth-client";
-import { useDashboardRepositories } from "@/lib/hooks/use-dashboard-repositories";
+import { useDashboardRepositoriesBatch } from "@/lib/hooks/use-dashboard-repositories-batch";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Helper function to format repository name for display
@@ -234,15 +234,16 @@ export default function DashboardHomePage() {
   const { data: session, isPending } = useSession();
   const queryClient = useQueryClient();
   
-  // Use the new hook for repository data
-  const { 
-    repositories, 
-    isLoading, 
+  // Use the new batch hook for repository data (single request, parallel loading)
+  const {
+    data: dashboardData,
+    isLoading,
     error,
-    isLoadingRepos,
-    isLoadingWorkflows,
-    isLoadingMetrics 
-  } = useDashboardRepositories();
+    isError
+  } = useDashboardRepositoriesBatch();
+
+  // Extract repositories from the batch response
+  const repositories = dashboardData?.repositories || [];
 
   // Local state for UI interactions
   const [showAddForm, setShowAddForm] = React.useState(false);
@@ -280,10 +281,8 @@ export default function DashboardHomePage() {
       return response.json();
     },
     onSuccess: () => {
-      // Comprehensive cache invalidation for all affected queries
-      queryClient.invalidateQueries({ queryKey: ['repositories'] });
-      queryClient.invalidateQueries({ queryKey: ['workflow-existence'] });
-      queryClient.invalidateQueries({ queryKey: ['repository-metrics'] });
+      // Invalidate the new batch dashboard query
+      queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
       setNewRepoUrl('');
       setShowAddForm(false);
       setAddError(null);
@@ -306,12 +305,9 @@ export default function DashboardHomePage() {
       }
     },
     onSuccess: (data, slug) => {
-      // Comprehensive cache invalidation for all affected queries
-      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      // Invalidate the batch dashboard query and any related queries
+      queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
       queryClient.invalidateQueries({ queryKey: ['repository-workflows', slug] });
-      queryClient.invalidateQueries({ queryKey: ['workflow-existence', slug] });
-      queryClient.invalidateQueries({ queryKey: ['workflow-existence'] });
-      queryClient.invalidateQueries({ queryKey: ['repository-metrics'] });
       queryClient.invalidateQueries({ queryKey: ['workflow-runs', slug] });
       queryClient.invalidateQueries({ queryKey: ['workflow-overview', slug] });
       queryClient.invalidateQueries({ queryKey: ['yesterday-workflow-runs', slug] });
@@ -411,20 +407,39 @@ export default function DashboardHomePage() {
     );
   }
   
-  // Show loading state while fetching data
+  // Show loading state with skeleton cards while fetching data
   if (isLoading && repositories.length === 0) {
     return (
-      <div className="min-h-screen">
-        <div className="container mx-auto p-6">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">
-                {isLoadingRepos ? 'Loading repositories...' : 
-                 isLoadingWorkflows ? 'Loading workflow data...' : 
-                 isLoadingMetrics ? 'Loading metrics...' : 'Loading...'}
-              </p>
-            </div>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-6 space-y-8">
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label="Settings"
+                  className="flex items-center justify-center gap-0 px-2"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center">
+                    <Settings className="h-4 w-4" />
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled className="cursor-default">
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Show skeleton cards while loading */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <RepositoryCardSkeleton count={6} />
           </div>
         </div>
       </div>
