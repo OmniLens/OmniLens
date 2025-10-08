@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { VersionIndicator } from './VersionIndicator';
+import packageJson from 'package.json';
 
 export default function ConditionalVersionIndicator() {
   const pathname = usePathname();
@@ -11,8 +12,8 @@ export default function ConditionalVersionIndicator() {
     return null;
   }
 
-  // Get version from package.json
-  const version = process.env.npm_package_version;
+  // Get version directly from package.json
+  const version = packageJson.version;
 
   return <VersionIndicator version={version} />;
 }
