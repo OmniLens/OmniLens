@@ -295,6 +295,7 @@ export default function DashboardHomePage() {
     displayName: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [deletingRepoSlug, setDeletingRepoSlug] = React.useState<string | null>(null);
 
   // Redirect to login if not authenticated
   React.useEffect(() => {
@@ -302,6 +303,18 @@ export default function DashboardHomePage() {
       router.push('/login');
     }
   }, [session, isPending, router]);
+
+  // Clear delete modal and deleting state when repository is no longer in the list
+  React.useEffect(() => {
+    if (repoToDelete && dashboardData?.repositories) {
+      const repoExists = dashboardData.repositories.some(repo => repo.slug === repoToDelete.slug);
+      if (!repoExists) {
+        setRepoToDelete(null);
+        setIsDeleting(false);
+        setDeletingRepoSlug(null);
+      }
+    }
+  }, [dashboardData, repoToDelete]);
 
   // Process each repository to check for errors and workflow data
   const repositoryData: DisplayItem[] = repositories.map(repo => ({
@@ -405,6 +418,11 @@ export default function DashboardHomePage() {
         throw new Error('Failed to delete repository');
       }
     },
+    onMutate: (slug) => {
+      // Set deleting state and track which repo is being deleted
+      setIsDeleting(true);
+      setDeletingRepoSlug(slug);
+    },
     onSuccess: (data, slug) => {
       // Invalidate the batch dashboard query and any related queries
       queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
@@ -412,10 +430,16 @@ export default function DashboardHomePage() {
       queryClient.invalidateQueries({ queryKey: ['workflow-runs', slug] });
       queryClient.invalidateQueries({ queryKey: ['workflow-overview', slug] });
       queryClient.invalidateQueries({ queryKey: ['yesterday-workflow-runs', slug] });
-      setRepoToDelete(null);
+      // Keep deleting state until UI updates and removes the card
+    },
+    onSettled: () => {
+      // Don't clear deleting state here - it will be cleared by useEffect when card is removed
     },
     onError: (error) => {
       console.error('Delete error:', error);
+      // Clear deleting state on error
+      setIsDeleting(false);
+      setDeletingRepoSlug(null);
     },
   });
 
@@ -604,150 +628,153 @@ export default function DashboardHomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-8">
-        {/* GitHub Actions Status Banner */}
-        <GitHubStatusBanner className="mb-6" />
-        
-        <div className="flex justify-end mb-6">
-          <div className="flex items-center gap-2">
-            {showAddForm && (
-              <form onSubmit={handleAddRepo} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newRepoUrl}
-                  onChange={(e) => setNewRepoUrl(e.target.value)}
-                  placeholder="owner/repo or GitHub URL"
-                  disabled={isValidating || isAdding}
-                  className={`w-80 px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary ${
-                    addError ? 'animate-shake' : ''
-                  }`}
-                  onAnimationEnd={() => {
-                    if (addError) {
-                      setNewRepoUrl("");
-                    }
-                  }}
-                  autoFocus
-                  onFocus={() => {
-                    if (addError) {
-                      setAddError(null);
-                      setNewRepoUrl("");
-                    }
-                  }}
-                  onBlur={() => {
-                    if (!isValidating && !isAdding) {
-                      setShowAddForm(false);
-                      setAddError(null);
-                      setNewRepoUrl("");
-                    }
-                  }}
-                />
-                <Button type="submit" size="sm" disabled={isValidating || isAdding} onMouseDown={(e) => e.preventDefault()} className="z-0">
-                  <Plus className="h-4 w-4 mr-2" />
-                  {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
-                </Button>
-              </form>
-            )}
-            {!showAddForm && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleAddRepoClick}
-                aria-label="Add repository"
-                className="flex items-center justify-center gap-2 px-3"
-              >
-                <Plus className="h-4 w-4" />
-                Add Repo
-              </Button>
-            )}
-            {repositories.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-label="Settings"
-                    className="flex items-center justify-center gap-0 px-2"
-                  >
-                    <span className="flex h-7 w-7 items-center justify-center">
-                      <Settings className="h-4 w-4" />
-                    </span>
+    <>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-6 space-y-8">
+          <div className="flex justify-end mb-6">
+            <div className="flex items-center gap-2">
+              {showAddForm && (
+                <form onSubmit={handleAddRepo} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newRepoUrl}
+                    onChange={(e) => setNewRepoUrl(e.target.value)}
+                    placeholder="owner/repo or GitHub URL"
+                    disabled={isValidating || isAdding}
+                    className={`w-80 px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary ${
+                      addError ? 'animate-shake' : ''
+                    }`}
+                    onAnimationEnd={() => {
+                      if (addError) {
+                        setNewRepoUrl("");
+                      }
+                    }}
+                    autoFocus
+                    onFocus={() => {
+                      if (addError) {
+                        setAddError(null);
+                        setNewRepoUrl("");
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!isValidating && !isAdding) {
+                        setShowAddForm(false);
+                        setAddError(null);
+                        setNewRepoUrl("");
+                      }
+                    }}
+                  />
+                  <Button type="submit" size="sm" disabled={isValidating || isAdding} onMouseDown={(e) => e.preventDefault()} className="z-0">
+                    <Plus className="h-4 w-4 mr-2" />
+                    {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem disabled className="cursor-default">
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayData.map((item, index) => {
-            // Check if this is a skeleton card
-            if (item.isSkeleton) {
-              return (
-                <SingleRepositorySkeleton key={`skeleton-${index}`} />
-              );
-            }
-
-            // Otherwise, render the real repository card
-            return (
-              <RepositoryCard
-                key={item.slug || `repo-${index}`}
-                repoSlug={item.slug!}
-                repoPath={item.repoPath!}
-                displayName={item.displayName}
-                avatarUrl={item.avatarUrl}
-                htmlUrl={item.htmlUrl}
-                hasError={item.hasError || false}
-                errorMessage={item.errorMessage}
-                hasWorkflows={item.hasWorkflows}
-                metrics={item.metrics}
-                isUserRepo={true}
-                onRequestDelete={() => setRepoToDelete({ slug: item.slug!, displayName: item.displayName })}
-              />
-            );
-          })}
-        </div>
-
-        {/* Confirmation Modal */}
-        {repoToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-            <div className="w-full max-w-md rounded-lg border border-border bg-background shadow-lg">
-              <div className="p-4 border-b border-border">
-                <h2 className="text-lg font-semibold">Remove repository</h2>
-              </div>
-              <div className="p-4 space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Are you sure you want to remove
-                  {" "}
-                  <span className="font-medium text-foreground">{formatRepoDisplayName(repoToDelete.displayName)}</span>?
-                </p>
-              </div>
-              <div className="p-4 border-t border-border flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => setRepoToDelete(null)}>Cancel</Button>
+                </form>
+              )}
+              {!showAddForm && (
                 <Button
-                  variant="destructive"
+                  variant="default"
                   size="sm"
-                  onClick={() => {
-                    if (!repoToDelete) return;
-                    deleteRepoMutation.mutate(repoToDelete.slug);
-                  }}
-                  disabled={deleteRepoMutation.isPending}
+                  onClick={handleAddRepoClick}
+                  aria-label="Add repository"
+                  className="flex items-center justify-center gap-2 px-3"
                 >
-                  {deleteRepoMutation.isPending ? 'Removing…' : 'Remove'}
+                  <Plus className="h-4 w-4" />
+                  Add Repo
                 </Button>
-              </div>
+              )}
+              {repositories.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      aria-label="Settings"
+                      className="flex items-center justify-center gap-0 px-2"
+                    >
+                      <span className="flex h-7 w-7 items-center justify-center">
+                        <Settings className="h-4 w-4" />
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem disabled className="cursor-default">
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>
+                      Log out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
-        )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayData.map((item, index) => {
+              // Check if this is a skeleton card
+              if (item.isSkeleton) {
+                return (
+                  <SingleRepositorySkeleton key={`skeleton-${index}`} />
+                );
+              }
+
+              // Otherwise, render the real repository card
+              return (
+                <RepositoryCard
+                  key={item.slug || `repo-${index}`}
+                  repoSlug={item.slug!}
+                  repoPath={item.repoPath!}
+                  displayName={item.displayName}
+                  avatarUrl={item.avatarUrl}
+                  htmlUrl={item.htmlUrl}
+                  hasError={item.hasError || false}
+                  errorMessage={item.errorMessage}
+                  hasWorkflows={item.hasWorkflows}
+                  metrics={item.metrics}
+                  isUserRepo={true}
+                  onRequestDelete={() => setRepoToDelete({ slug: item.slug!, displayName: item.displayName })}
+                />
+              );
+            })}
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* Confirmation Modal - Positioned at root level */}
+      {repoToDelete && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-lg border border-border bg-background shadow-2xl mx-4">
+            <div className="p-4 border-b border-border">
+              <h2 className="text-lg font-semibold">Remove repository</h2>
+            </div>
+            <div className="p-4 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to remove
+                {" "}
+                <span className="font-medium text-foreground">{formatRepoDisplayName(repoToDelete.displayName)}</span>?
+              </p>
+            </div>
+            <div className="p-4 border-t border-border flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                setRepoToDelete(null);
+                setIsDeleting(false);
+                setDeletingRepoSlug(null);
+              }}>Cancel</Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  if (!repoToDelete) return;
+                  deleteRepoMutation.mutate(repoToDelete.slug);
+                }}
+                disabled={deleteRepoMutation.isPending || (isDeleting && deletingRepoSlug === repoToDelete?.slug)}
+              >
+                {deleteRepoMutation.isPending || (isDeleting && deletingRepoSlug === repoToDelete?.slug) ? 'Deleting…' : 'Remove'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
