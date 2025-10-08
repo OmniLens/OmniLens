@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
-import RepositoryCardSkeleton from "@/components/RepositoryCardSkeleton";
+import RepositoryCardSkeleton, { SingleRepositorySkeleton } from "@/components/RepositoryCardSkeleton";
 import { cn } from "@/lib/utils";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useDashboardRepositoriesBatch } from "@/lib/hooks/use-dashboard-repositories-batch";
@@ -42,6 +42,38 @@ function formatRepoDisplayName(repoName: string): string {
     .replace(/\b\w/g, l => l.toUpperCase())
     .trim();
 }
+
+// Helper function to find where a new repository should be inserted in the sorted list
+function findInsertIndex(repositories: any[], newRepoDisplayName: string): number {
+  const formattedNewName = formatRepoDisplayName(newRepoDisplayName);
+
+  for (let i = 0; i < repositories.length; i++) {
+    const existingFormattedName = formatRepoDisplayName(repositories[i].displayName);
+    if (formattedNewName.localeCompare(existingFormattedName) < 0) {
+      return i; // Insert before this item
+    }
+  }
+
+  return repositories.length; // Insert at the end
+}
+
+// Type for display items (can be repository or skeleton)
+type DisplayItem = {
+  isSkeleton?: boolean;
+  displayName?: string;
+} & {
+  slug?: string;
+  repoPath?: string;
+  displayName: string;
+  avatarUrl?: string;
+  htmlUrl?: string;
+  hasError?: boolean;
+  errorMessage?: string;
+  hasWorkflows?: boolean;
+  metrics?: any;
+  isUserRepo?: boolean;
+  onRequestDelete?: () => void;
+};
 
 interface RepositoryCardProps {
   repoSlug: string;
@@ -183,12 +215,14 @@ function RepositoryCard({
 function NoRepositoriesFound({
   newRepoUrl,
   isValidating,
+  isAdding,
   addError,
   onUrlChange,
   onSubmit,
 }: {
   newRepoUrl: string;
   isValidating: boolean;
+  isAdding: boolean;
   addError: string | null;
   onUrlChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -211,12 +245,13 @@ function NoRepositoriesFound({
               value={newRepoUrl}
               onChange={(e) => onUrlChange(e.target.value)}
               placeholder="owner/repo or GitHub URL"
+              disabled={isValidating || isAdding}
               className="w-full sm:w-80 px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary"
             />
             <div className="flex gap-2 justify-center">
-              <Button type="submit" size="sm" disabled={isValidating} className="gap-2">
+              <Button type="submit" size="sm" disabled={isValidating || isAdding} className="gap-2">
                 <Plus className="h-4 w-4" />
-                {isValidating ? 'Validating…' : 'Add Repo'}
+                {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
               </Button>
             </div>
           </form>
@@ -250,6 +285,11 @@ export default function DashboardHomePage() {
   const [newRepoUrl, setNewRepoUrl] = React.useState("");
   const [addError, setAddError] = React.useState<string | null>(null);
   const [isValidating, setIsValidating] = React.useState(false);
+  const [isAdding, setIsAdding] = React.useState(false);
+  const [pendingRepo, setPendingRepo] = React.useState<{
+    displayName: string;
+    insertIndex: number;
+  } | null>(null);
   const [repoToDelete, setRepoToDelete] = React.useState<{
     slug: string;
     displayName: string;
@@ -263,6 +303,30 @@ export default function DashboardHomePage() {
     }
   }, [session, isPending, router]);
 
+  // Process each repository to check for errors and workflow data
+  const repositoryData: DisplayItem[] = repositories.map(repo => ({
+    ...repo,
+    hasError: false,
+    errorMessage: ''
+  })).sort((a, b) => {
+    const repoNameA = formatRepoDisplayName(a.displayName);
+    const repoNameB = formatRepoDisplayName(b.displayName);
+    return repoNameA.localeCompare(repoNameB);
+  });
+
+  // Insert pending repository skeleton if needed
+  const displayData: DisplayItem[] = React.useMemo(() => {
+    if (!pendingRepo) return repositoryData;
+
+    const result = [...repositoryData];
+    result.splice(pendingRepo.insertIndex, 0, {
+      isSkeleton: true,
+      displayName: pendingRepo.displayName
+    });
+
+    return result;
+  }, [repositoryData, pendingRepo]);
+
   // Add repository mutation
   const addRepoMutation = useMutation({
     mutationFn: async (repoData: any) => {
@@ -272,20 +336,57 @@ export default function DashboardHomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(repoData),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData?.error || 'Failed to add repository');
       }
-      
+
       return response.json();
     },
-    onSuccess: () => {
-      // Invalidate the new batch dashboard query
-      queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
+    onSuccess: (data) => {
+      // If workflow data was returned, optimistically update the cache
+      if (data.workflowData) {
+        // Get current dashboard data
+        const currentData = queryClient.getQueryData(['dashboard-repositories-batch']);
+
+        if (currentData && typeof currentData === 'object' && 'repositories' in currentData) {
+          const dashboardData = currentData as { repositories: any[]; totalCount: number; loadedAt: string };
+
+          // Create enhanced repository object with workflow data
+          const enhancedRepo = {
+            ...data.repo,
+            hasWorkflows: data.workflowData.workflows.length > 0,
+            metrics: data.workflowData.todayMetrics,
+            hasError: false,
+            errorMessage: null
+          };
+
+          // Find where this repository should be inserted (alphabetically sorted)
+          const insertIndex = findInsertIndex(dashboardData.repositories, enhancedRepo.displayName);
+
+          // Insert the new repository at the correct position
+          const updatedRepositories = [
+            ...dashboardData.repositories.slice(0, insertIndex),
+            enhancedRepo,
+            ...dashboardData.repositories.slice(insertIndex)
+          ];
+
+          queryClient.setQueryData(['dashboard-repositories-batch'], {
+            repositories: updatedRepositories,
+            totalCount: updatedRepositories.length,
+            loadedAt: new Date().toISOString()
+          });
+        }
+      } else {
+        // Fallback: invalidate and refetch
+        queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
+      }
+
       setNewRepoUrl('');
       setShowAddForm(false);
       setAddError(null);
+      setPendingRepo(null);
     },
     onError: (error) => {
       setAddError(error.message);
@@ -326,7 +427,8 @@ export default function DashboardHomePage() {
       setAddError('Please enter a GitHub repository URL or owner/repo');
       return;
     }
-    
+
+    // Start validation
     setIsValidating(true);
     try {
       // Step 1: Validate the repository
@@ -337,11 +439,22 @@ export default function DashboardHomePage() {
         body: JSON.stringify({ repoUrl: input }),
       });
       const validateJson = await validateRes.json();
-      
+
       if (!validateRes.ok || validateJson.valid === false) {
         setAddError(validateJson?.error || 'Repository validation failed');
         return;
       }
+
+      // Validation successful, now adding
+      setIsValidating(false);
+      setIsAdding(true);
+
+      // Predict where this repository will be inserted and show skeleton
+      const insertIndex = findInsertIndex(repositoryData, validateJson.displayName);
+      setPendingRepo({
+        displayName: validateJson.displayName,
+        insertIndex
+      });
 
       // Step 2: Add the repository using mutation
       await addRepoMutation.mutateAsync({
@@ -351,7 +464,7 @@ export default function DashboardHomePage() {
         defaultBranch: validateJson.defaultBranch,
         avatarUrl: validateJson.avatarUrl
       });
-      
+
     } catch (err) {
       if (err instanceof Error) {
         setAddError(err.message);
@@ -360,6 +473,8 @@ export default function DashboardHomePage() {
       }
     } finally {
       setIsValidating(false);
+      setIsAdding(false);
+      setPendingRepo(null);
     }
   }
 
@@ -478,6 +593,7 @@ export default function DashboardHomePage() {
           <NoRepositoriesFound
             newRepoUrl={newRepoUrl}
             isValidating={isValidating}
+            isAdding={isAdding}
             addError={addError}
             onUrlChange={(v) => setNewRepoUrl(v)}
             onSubmit={handleAddRepo}
@@ -486,17 +602,6 @@ export default function DashboardHomePage() {
       </div>
     );
   }
-
-  // Process each repository to check for errors and workflow data
-  const repositoryData = repositories.map(repo => ({
-    ...repo,
-    hasError: false,
-    errorMessage: ''
-  })).sort((a, b) => {
-    const repoNameA = formatRepoDisplayName(a.displayName);
-    const repoNameB = formatRepoDisplayName(b.displayName);
-    return repoNameA.localeCompare(repoNameB);
-  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -513,6 +618,7 @@ export default function DashboardHomePage() {
                   value={newRepoUrl}
                   onChange={(e) => setNewRepoUrl(e.target.value)}
                   placeholder="owner/repo or GitHub URL"
+                  disabled={isValidating || isAdding}
                   className={`w-80 px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary ${
                     addError ? 'animate-shake' : ''
                   }`}
@@ -529,16 +635,16 @@ export default function DashboardHomePage() {
                     }
                   }}
                   onBlur={() => {
-                    if (!isValidating) {
+                    if (!isValidating && !isAdding) {
                       setShowAddForm(false);
                       setAddError(null);
                       setNewRepoUrl("");
                     }
                   }}
                 />
-                <Button type="submit" size="sm" disabled={isValidating} onMouseDown={(e) => e.preventDefault()} className="z-0">
+                <Button type="submit" size="sm" disabled={isValidating || isAdding} onMouseDown={(e) => e.preventDefault()} className="z-0">
                   <Plus className="h-4 w-4 mr-2" />
-                  {isValidating ? 'Validating…' : 'Add Repo'}
+                  {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
                 </Button>
               </form>
             )}
@@ -582,22 +688,32 @@ export default function DashboardHomePage() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {repositoryData.map((repo) => (
-            <RepositoryCard
-              key={repo.slug}
-              repoSlug={repo.slug}
-              repoPath={repo.repoPath}
-              displayName={repo.displayName}
-              avatarUrl={repo.avatarUrl}
-              htmlUrl={repo.htmlUrl}
-              hasError={repo.hasError}
-              errorMessage={repo.errorMessage}
-              hasWorkflows={repo.hasWorkflows}
-              metrics={repo.metrics}
-              isUserRepo={true}
-              onRequestDelete={() => setRepoToDelete({ slug: repo.slug, displayName: repo.displayName })}
-            />
-          ))}
+          {displayData.map((item, index) => {
+            // Check if this is a skeleton card
+            if (item.isSkeleton) {
+              return (
+                <SingleRepositorySkeleton key={`skeleton-${index}`} />
+              );
+            }
+
+            // Otherwise, render the real repository card
+            return (
+              <RepositoryCard
+                key={item.slug || `repo-${index}`}
+                repoSlug={item.slug!}
+                repoPath={item.repoPath!}
+                displayName={item.displayName}
+                avatarUrl={item.avatarUrl}
+                htmlUrl={item.htmlUrl}
+                hasError={item.hasError || false}
+                errorMessage={item.errorMessage}
+                hasWorkflows={item.hasWorkflows}
+                metrics={item.metrics}
+                isUserRepo={true}
+                onRequestDelete={() => setRepoToDelete({ slug: item.slug!, displayName: item.displayName })}
+              />
+            );
+          })}
         </div>
 
         {/* Confirmation Modal */}

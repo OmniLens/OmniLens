@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { addUserRepo } from '@/lib/db-storage';
 import { withAuth } from '@/lib/auth-middleware';
 import { makeGitHubRequest } from '@/lib/github-auth';
+import { fetchWorkflowDataForNewRepo } from '@/lib/repo-workflow-fetch';
 
 // Zod schema for adding a repository
 const addRepoSchema = z.object({
@@ -69,16 +70,36 @@ export const POST = withAuth(async (request: NextRequest, _context, authData) =>
       // Add to storage
       const success = await addUserRepo(newRepo, authData.user.id);
       if (!success) {
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: 'Repository already exists in dashboard',
-          slug 
+          slug
         }, { status: 409 });
+      }
+
+      // Immediately fetch workflow data for the newly added repository
+      // This runs asynchronously and doesn't block the response
+      const workflowPromise = fetchWorkflowDataForNewRepo(repoPath, authData.user.id, slug);
+
+      // Try to get workflow data quickly (with timeout) to include in response
+      let workflowData = null;
+      try {
+        // Wait up to 3 seconds for workflow data
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), 3000)
+        );
+        workflowData = await Promise.race([workflowPromise, timeoutPromise]);
+      } catch (error) {
+        // Workflow data fetch is still running in background, that's fine
+        console.log(`Workflow data fetch initiated for ${repoPath}`);
       }
 
       return NextResponse.json({
         success: true,
         repo: newRepo,
-        message: 'Repository added to dashboard successfully'
+        workflowData,
+        message: workflowData
+          ? 'Repository added to dashboard successfully with workflow data'
+          : 'Repository added to dashboard successfully'
       });
     } catch (error) {
       if (error instanceof Error && error.message.includes('GitHub access token not found')) {
