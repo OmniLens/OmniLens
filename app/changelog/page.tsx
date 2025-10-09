@@ -23,7 +23,10 @@ const changelogData = [
         "Enhanced User Statistics with repository and workflow counts",
         "Streamlined Test Infrastructure with focused health and infrastructure testing",
         "Improved Modal Components with better UX for repository management",
-        "Enhanced Loading States with skeleton improvements for dashboard performance"
+        "Enhanced Loading States with skeleton improvements for dashboard performance",
+        "GitHub icon link in root page header for easy repository access",
+        "Open Source section on root page with repository information and GitHub link",
+        "Animated background effects on login page matching root page design"
       ],
       changed: [
         "Repository Addition Flow with immediate workflow data fetching",
@@ -31,7 +34,11 @@ const changelogData = [
         "API Endpoints with better error handling and validation",
         "Authentication System with enhanced GitHub token management",
         "Workflow Storage with optimistic updates and conflict resolution",
-        "Test Suite Structure with removal of redundant test files and focus on health testing"
+        "Test Suite Structure with removal of redundant test files and focus on health testing",
+        "Root page button styling unified to match Sign In button design",
+        "Feature section icons updated with distinct colors and consistent hover animations",
+        "Open Source section redesigned with two-column layout and interactive elements",
+        "Login page Continue button styling updated to match root page buttons"
       ],
       fixed: [
         "Repository Dashboard Loading Performance with optimized skeleton rendering",
@@ -41,7 +48,10 @@ const changelogData = [
         "Workflow Status Badge Display Issues",
         "Version Display Consistency across components",
         "Error Message Positioning in UI components",
-        "Modal Component Behavior and user interaction issues"
+        "Modal Component Behavior and user interaction issues",
+        "TypeScript errors in GitHubStatusBanner component with proper type handling",
+        "Button consistency across all pages with unified sizing and styling",
+        "Icon rotation animations standardized across all feature cards"
       ]
     }
   },
