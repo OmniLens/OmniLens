@@ -48,16 +48,16 @@ export async function GET(request: NextRequest) {
 
     const data: GitHubStatusResponse = await response.json();
     
-    // Filter for GitHub Actions related components
+    // Filter for GitHub Actions related components (more specific)
     const actionsComponents = data.components.filter(component => 
       component.name.toLowerCase().includes('actions') ||
-      component.name.toLowerCase().includes('workflow') ||
-      component.name.toLowerCase().includes('ci/cd')
+      component.name.toLowerCase().includes('workflows')
     );
 
     // Check if any Actions components have issues
+    // Only consider it an issue if there are actual problems (not just degraded performance)
     const hasIssues = actionsComponents.some(component => 
-      component.status !== 'operational'
+      component.status === 'partial_outage' || component.status === 'major_outage'
     );
 
     // Get the most severe status
@@ -103,10 +103,11 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching GitHub status:', error);
     
     // Return a fallback response indicating we couldn't fetch status
+    // Don't show banner when we can't fetch status - assume operational
     return NextResponse.json({
       hasIssues: false,
-      status: 'unknown',
-      message: 'Unable to fetch GitHub Actions status',
+      status: 'operational',
+      message: 'GitHub Actions status unavailable - assuming operational',
       components: [],
       lastUpdated: new Date().toISOString(),
       source: 'fallback',

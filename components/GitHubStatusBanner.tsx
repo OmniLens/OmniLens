@@ -18,8 +18,8 @@ export default function GitHubStatusBanner({
   const { data: statusData, isLoading, error, refetch } = useGitHubStatus();
   const [isDismissed, setIsDismissed] = useState(false);
 
-  // Don't show banner if dismissed or if operational and not requested
-  if (isDismissed || (!statusData?.hasIssues && !showWhenOperational)) {
+  // Don't show banner if dismissed
+  if (isDismissed) {
     return null;
   }
 
@@ -30,6 +30,19 @@ export default function GitHubStatusBanner({
 
   // Don't show banner if still loading and no cached data
   if (isLoading && !statusData) {
+    return null;
+  }
+
+  // Only show banner if there are actual issues (not operational, unknown, or degraded performance)
+  if (!statusData?.hasIssues || 
+      statusData?.status === 'operational' || 
+      statusData?.status === 'unknown' ||
+      statusData?.status === 'degraded_performance') {
+    return null;
+  }
+
+  // Don't show banner if showWhenOperational is false and status is operational
+  if (!showWhenOperational && statusData?.status === 'operational') {
     return null;
   }
 
