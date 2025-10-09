@@ -41,10 +41,7 @@ export default function GitHubStatusBanner({
     return null;
   }
 
-  // Don't show banner if showWhenOperational is false and status is operational
-  if (!showWhenOperational && statusData?.status === 'operational') {
-    return null;
-  }
+  // Note: operational status is already filtered out above
 
   const status = statusData?.status || 'unknown';
   const message = statusData?.message || 'GitHub Actions status unknown';
@@ -54,9 +51,6 @@ export default function GitHubStatusBanner({
 
   const getStatusIcon = () => {
     switch (status) {
-      case 'operational':
-        return <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />;
-      case 'degraded_performance':
       case 'partial_outage':
       case 'major_outage':
         return <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />;
@@ -67,10 +61,6 @@ export default function GitHubStatusBanner({
 
   const getStatusText = () => {
     switch (status) {
-      case 'operational':
-        return 'Operational';
-      case 'degraded_performance':
-        return 'Degraded';
       case 'partial_outage':
         return 'Partial Outage';
       case 'major_outage':
