@@ -12,8 +12,11 @@ import {
   Package,
   Github,
   Settings,
+  Loader,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Modal, ModalFooter } from "@/components/ui/modal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -292,14 +295,12 @@ export default function DashboardHomePage() {
 
   // Local state for UI interactions
   const [showAddForm, setShowAddForm] = React.useState(false);
+  const [showAddModal, setShowAddModal] = React.useState(false);
   const [newRepoUrl, setNewRepoUrl] = React.useState("");
   const [addError, setAddError] = React.useState<string | null>(null);
   const [isValidating, setIsValidating] = React.useState(false);
   const [isAdding, setIsAdding] = React.useState(false);
-  const [pendingRepo, setPendingRepo] = React.useState<{
-    displayName: string;
-    insertIndex: number;
-  } | null>(null);
+  const [currentStep, setCurrentStep] = React.useState<'idle' | 'validating' | 'adding' | 'getting-data'>('idle');
   const [repoToDelete, setRepoToDelete] = React.useState<{
     slug: string;
     displayName: string;
@@ -337,18 +338,8 @@ export default function DashboardHomePage() {
     return repoNameA.localeCompare(repoNameB);
   });
 
-  // Insert pending repository skeleton if needed
-  const displayData: DisplayItem[] = React.useMemo(() => {
-    if (!pendingRepo) return repositoryData;
-
-    const result = [...repositoryData];
-    result.splice(pendingRepo.insertIndex, 0, {
-      isSkeleton: true,
-      displayName: pendingRepo.displayName
-    });
-
-    return result;
-  }, [repositoryData, pendingRepo]);
+  // Use repository data directly (no skeleton needed with modal)
+  const displayData: DisplayItem[] = repositoryData;
 
   // Add repository mutation
   const addRepoMutation = useMutation({
@@ -368,6 +359,8 @@ export default function DashboardHomePage() {
       return response.json();
     },
     onSuccess: (data) => {
+      setCurrentStep('getting-data');
+      
       // If workflow data was returned, optimistically update the cache
       if (data.workflowData) {
         // Get current dashboard data
@@ -406,13 +399,18 @@ export default function DashboardHomePage() {
         queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
       }
 
-      setNewRepoUrl('');
-      setShowAddForm(false);
-      setAddError(null);
-      setPendingRepo(null);
+      // Small delay to show the "getting data" step before closing
+      setTimeout(() => {
+        setNewRepoUrl('');
+        setShowAddForm(false);
+        setShowAddModal(false);
+        setAddError(null);
+        setCurrentStep('idle');
+      }, 1000);
     },
     onError: (error) => {
       setAddError(error.message);
+      setCurrentStep('idle');
     },
   });
 
@@ -453,9 +451,10 @@ export default function DashboardHomePage() {
     },
   });
 
-  async function handleAddRepo(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleAddRepo(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     setAddError(null);
+    setCurrentStep('idle');
     const input = newRepoUrl.trim();
     if (!input) {
       setAddError('Please enter a GitHub repository URL or owner/repo');
@@ -464,6 +463,7 @@ export default function DashboardHomePage() {
 
     // Start validation
     setIsValidating(true);
+    setCurrentStep('validating');
     try {
       // Step 1: Validate the repository
       const validateRes = await fetch('/api/repo/validate', {
@@ -476,12 +476,14 @@ export default function DashboardHomePage() {
 
       if (!validateRes.ok || validateJson.valid === false) {
         setAddError(validateJson?.error || 'Repository validation failed');
+        setCurrentStep('idle');
         return;
       }
 
       // Validation successful, now adding
       setIsValidating(false);
       setIsAdding(true);
+      setCurrentStep('adding');
 
       // Step 2: Add the repository using mutation
       await addRepoMutation.mutateAsync({
@@ -498,15 +500,19 @@ export default function DashboardHomePage() {
       } else {
         setAddError('Network error processing repository');
       }
+      setCurrentStep('idle');
     } finally {
       setIsValidating(false);
       setIsAdding(false);
-      setPendingRepo(null);
     }
   }
 
   const handleAddRepoClick = () => {
-    setShowAddForm(true);
+    if (repositories.length > 0) {
+      setShowAddModal(true);
+    } else {
+      setShowAddForm(true);
+    }
   };
 
   const handleLogout = async () => {
@@ -722,79 +728,169 @@ export default function DashboardHomePage() {
                   </DropdownMenu>
                 )}
               </div>
-              {addError && (
-                <p className="text-sm text-red-500">{addError}</p>
-              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayData.map((item, index) => {
-              // Check if this is a skeleton card
-              if (item.isSkeleton) {
-                return (
-                  <SingleRepositorySkeleton key={`skeleton-${index}`} />
-                );
-              }
-
-              // Otherwise, render the real repository card
-              return (
-                <RepositoryCard
-                  key={item.slug || `repo-${index}`}
-                  repoSlug={item.slug!}
-                  repoPath={item.repoPath!}
-                  displayName={item.displayName}
-                  avatarUrl={item.avatarUrl}
-                  htmlUrl={item.htmlUrl}
-                  visibility={item.visibility}
-                  hasError={item.hasError || false}
-                  errorMessage={item.errorMessage}
-                  hasWorkflows={item.hasWorkflows}
-                  metrics={item.metrics}
-                  isUserRepo={true}
-                  onRequestDelete={() => setRepoToDelete({ slug: item.slug!, displayName: item.displayName })}
-                />
-              );
-            })}
+            {displayData.map((item, index) => (
+              <RepositoryCard
+                key={item.slug || `repo-${index}`}
+                repoSlug={item.slug!}
+                repoPath={item.repoPath!}
+                displayName={item.displayName}
+                avatarUrl={item.avatarUrl}
+                htmlUrl={item.htmlUrl}
+                visibility={item.visibility}
+                hasError={item.hasError || false}
+                errorMessage={item.errorMessage}
+                hasWorkflows={item.hasWorkflows}
+                metrics={item.metrics}
+                isUserRepo={true}
+                onRequestDelete={() => setRepoToDelete({ slug: item.slug!, displayName: item.displayName })}
+              />
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Confirmation Modal - Positioned at root level */}
-      {repoToDelete && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-lg border border-border bg-background shadow-2xl mx-4">
-            <div className="p-4 border-b border-border">
-              <h2 className="text-lg font-semibold">Remove repository</h2>
-            </div>
-            <div className="p-4 space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Are you sure you want to remove
-                {" "}
-                <span className="font-medium text-foreground">{formatRepoDisplayName(repoToDelete.displayName)}</span>?
-              </p>
-            </div>
-            <div className="p-4 border-t border-border flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => {
-                setRepoToDelete(null);
-                setIsDeleting(false);
-                setDeletingRepoSlug(null);
-              }}>Cancel</Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  if (!repoToDelete) return;
-                  deleteRepoMutation.mutate(repoToDelete.slug);
-                }}
-                disabled={deleteRepoMutation.isPending || (isDeleting && deletingRepoSlug === repoToDelete?.slug)}
-              >
-                {deleteRepoMutation.isPending || (isDeleting && deletingRepoSlug === repoToDelete?.slug) ? 'Deleting…' : 'Remove'}
-              </Button>
-            </div>
-          </div>
+      {/* Delete Repository Modal */}
+      <Modal
+        isOpen={!!repoToDelete}
+        onClose={() => {
+          setRepoToDelete(null);
+          setIsDeleting(false);
+          setDeletingRepoSlug(null);
+        }}
+        title="Remove repository"
+        footer={
+          <ModalFooter>
+            <Button variant="outline" size="sm" onClick={() => {
+              setRepoToDelete(null);
+              setIsDeleting(false);
+              setDeletingRepoSlug(null);
+            }}>Cancel</Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (!repoToDelete) return;
+                deleteRepoMutation.mutate(repoToDelete.slug);
+              }}
+              disabled={deleteRepoMutation.isPending || (isDeleting && deletingRepoSlug === repoToDelete?.slug)}
+            >
+              {deleteRepoMutation.isPending || (isDeleting && deletingRepoSlug === repoToDelete?.slug) ? 'Deleting…' : 'Remove'}
+            </Button>
+          </ModalFooter>
+        }
+      >
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to remove
+            {" "}
+            <span className="font-medium text-foreground">{formatRepoDisplayName(repoToDelete?.displayName || '')}</span>?
+          </p>
         </div>
-      )}
+      </Modal>
+
+      {/* Add Repository Modal */}
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setNewRepoUrl("");
+          setAddError(null);
+          setCurrentStep('idle');
+        }}
+        title="Add repository"
+        footer={
+          <ModalFooter>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setShowAddModal(false);
+                setNewRepoUrl("");
+                setAddError(null);
+                setCurrentStep('idle');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleAddRepo}
+              disabled={currentStep !== 'idle' || !newRepoUrl.trim()}
+            >
+              {currentStep !== 'idle' ? 'Adding...' : 'Add'}
+            </Button>
+          </ModalFooter>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <input
+              type="text"
+              value={newRepoUrl}
+              onChange={(e) => {
+                setNewRepoUrl(e.target.value);
+                // Clear error when user starts typing
+                if (addError) {
+                  setAddError(null);
+                }
+              }}
+              placeholder="owner/repo or GitHub URL"
+              disabled={currentStep !== 'idle'}
+              className={`w-full px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary ${
+                addError ? 'border-red-500' : ''
+              }`}
+              autoFocus
+            />
+            {addError && (
+              <p className="mt-2 text-sm text-red-500">{addError}</p>
+            )}
+          </div>
+          
+          {/* Progress Indicator */}
+          {currentStep !== 'idle' && (
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                {currentStep === 'validating' ? (
+                  <Loader className="h-4 w-4 text-blue-500 animate-spin" />
+                ) : currentStep === 'adding' || currentStep === 'getting-data' ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : (
+                  <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                )}
+                <span className={`text-sm ${currentStep === 'validating' ? 'text-blue-600' : currentStep === 'adding' || currentStep === 'getting-data' ? 'text-green-600' : 'text-gray-500'}`}>
+                  Validating repository
+                </span>
+              </div>
+              <div className="flex items-center space-x-3">
+                {currentStep === 'adding' ? (
+                  <Loader className="h-4 w-4 text-blue-500 animate-spin" />
+                ) : currentStep === 'getting-data' ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : (
+                  <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                )}
+                <span className={`text-sm ${currentStep === 'adding' ? 'text-blue-600' : currentStep === 'getting-data' ? 'text-green-600' : 'text-gray-500'}`}>
+                  Adding to dashboard
+                </span>
+              </div>
+              <div className="flex items-center space-x-3">
+                {currentStep === 'getting-data' ? (
+                  <Loader className="h-4 w-4 text-blue-500 animate-spin" />
+                ) : (
+                  <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                )}
+                <span className={`text-sm ${currentStep === 'getting-data' ? 'text-blue-600' : 'text-gray-500'}`}>
+                  Getting workflow data
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </>
   );
 }
