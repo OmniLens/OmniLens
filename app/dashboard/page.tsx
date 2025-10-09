@@ -11,7 +11,6 @@ import {
   Trash2,
   Package,
   Github,
-  LogOut,
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
 import RepositoryCardSkeleton, { SingleRepositorySkeleton } from "@/components/RepositoryCardSkeleton";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useDashboardRepositoriesBatch } from "@/lib/hooks/use-dashboard-repositories-batch";
@@ -67,6 +67,7 @@ type DisplayItem = {
   displayName: string;
   avatarUrl?: string;
   htmlUrl?: string;
+  visibility?: 'public' | 'private';
   hasError?: boolean;
   errorMessage?: string;
   hasWorkflows?: boolean;
@@ -81,6 +82,7 @@ interface RepositoryCardProps {
   displayName: string;
   avatarUrl?: string;
   htmlUrl?: string;
+  visibility?: 'public' | 'private';
   hasError: boolean;
   errorMessage?: string;
   hasWorkflows?: boolean;
@@ -96,18 +98,19 @@ interface RepositoryCardProps {
   onRequestDelete?: () => void;
 }
 
-function RepositoryCard({ 
-  repoSlug, 
-  repoPath, 
-  displayName, 
-  avatarUrl, 
-  htmlUrl, 
-  hasError, 
-  errorMessage, 
-  hasWorkflows, 
-  metrics, 
-  isUserRepo = false, 
-  onRequestDelete 
+function RepositoryCard({
+  repoSlug,
+  repoPath,
+  displayName,
+  avatarUrl,
+  htmlUrl,
+  visibility,
+  hasError,
+  errorMessage,
+  hasWorkflows,
+  metrics,
+  isUserRepo = false,
+  onRequestDelete
 }: RepositoryCardProps) {
   const owner = (repoPath || displayName || '').split('/')[0] || '';
   
@@ -131,9 +134,16 @@ function RepositoryCard({
                 priority
               />
             )}
-            <CardTitle className="text-lg font-semibold">
-              {formatRepoDisplayName(displayName)}
-            </CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg font-semibold">
+                {formatRepoDisplayName(displayName)}
+              </CardTitle>
+              {visibility && (
+                <Badge variant={visibility === 'private' ? 'secondary' : 'outline'} className="text-xs">
+                  {visibility === 'private' ? '🔒 Private' : '🌐 Public'}
+                </Badge>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {hasError && <AlertCircle className="h-5 w-5 text-red-500" />}
@@ -473,13 +483,6 @@ export default function DashboardHomePage() {
       setIsValidating(false);
       setIsAdding(true);
 
-      // Predict where this repository will be inserted and show skeleton
-      const insertIndex = findInsertIndex(repositoryData, validateJson.displayName);
-      setPendingRepo({
-        displayName: validateJson.displayName,
-        insertIndex
-      });
-
       // Step 2: Add the repository using mutation
       await addRepoMutation.mutateAsync({
         repoPath: validateJson.repoPath,
@@ -619,7 +622,13 @@ export default function DashboardHomePage() {
             isValidating={isValidating}
             isAdding={isAdding}
             addError={addError}
-            onUrlChange={(v) => setNewRepoUrl(v)}
+            onUrlChange={(v) => {
+              setNewRepoUrl(v);
+              // Clear error when user starts typing
+              if (addError) {
+                setAddError(null);
+              }
+            }}
             onSubmit={handleAddRepo}
           />
         </div>
@@ -631,80 +640,90 @@ export default function DashboardHomePage() {
     <>
       <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6 space-y-8">
-          <div className="flex justify-end mb-6">
-            <div className="flex items-center gap-2">
-              {showAddForm && (
-                <form onSubmit={handleAddRepo} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newRepoUrl}
-                    onChange={(e) => setNewRepoUrl(e.target.value)}
-                    placeholder="owner/repo or GitHub URL"
-                    disabled={isValidating || isAdding}
-                    className={`w-80 px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary ${
-                      addError ? 'animate-shake' : ''
-                    }`}
-                    onAnimationEnd={() => {
-                      if (addError) {
-                        setNewRepoUrl("");
-                      }
-                    }}
-                    autoFocus
-                    onFocus={() => {
-                      if (addError) {
-                        setAddError(null);
-                        setNewRepoUrl("");
-                      }
-                    }}
-                    onBlur={() => {
-                      if (!isValidating && !isAdding) {
-                        setShowAddForm(false);
-                        setAddError(null);
-                        setNewRepoUrl("");
-                      }
-                    }}
-                  />
-                  <Button type="submit" size="sm" disabled={isValidating || isAdding} onMouseDown={(e) => e.preventDefault()} className="z-0">
-                    <Plus className="h-4 w-4 mr-2" />
-                    {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
-                  </Button>
-                </form>
-              )}
-              {!showAddForm && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleAddRepoClick}
-                  aria-label="Add repository"
-                  className="flex items-center justify-center gap-2 px-3"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Repo
-                </Button>
-              )}
-              {repositories.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      aria-label="Settings"
-                      className="flex items-center justify-center gap-0 px-2"
-                    >
-                      <span className="flex h-7 w-7 items-center justify-center">
-                        <Settings className="h-4 w-4" />
-                      </span>
+          <div className="flex justify-end mb-8">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                {showAddForm && (
+                  <form onSubmit={handleAddRepo} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newRepoUrl}
+                      onChange={(e) => {
+                        setNewRepoUrl(e.target.value);
+                        // Clear error when user starts typing
+                        if (addError) {
+                          setAddError(null);
+                        }
+                      }}
+                      placeholder="owner/repo or GitHub URL"
+                      disabled={isValidating || isAdding}
+                      className={`w-80 px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary ${
+                        addError ? 'animate-shake' : ''
+                      }`}
+                      onAnimationEnd={() => {
+                        if (addError) {
+                          setNewRepoUrl("");
+                        }
+                      }}
+                      autoFocus
+                      onFocus={() => {
+                        if (addError) {
+                          setNewRepoUrl("");
+                        }
+                      }}
+                      onBlur={() => {
+                        if (!isValidating && !isAdding) {
+                          setShowAddForm(false);
+                          setAddError(null);
+                          setNewRepoUrl("");
+                        }
+                      }}
+                    />
+                    <Button type="submit" size="sm" disabled={isValidating || isAdding} onMouseDown={(e) => e.preventDefault()} className="z-0">
+                      <Plus className="h-4 w-4 mr-2" />
+                      {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem disabled className="cursor-default">
-                      Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Log out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </form>
+                )}
+                {!showAddForm && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleAddRepoClick}
+                    aria-label="Add repository"
+                    className="flex items-center justify-center gap-2 px-3"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Repo
+                  </Button>
+                )}
+                {repositories.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label="Settings"
+                        className="flex items-center justify-center gap-0 px-2"
+                      >
+                        <span className="flex h-7 w-7 items-center justify-center">
+                          <Settings className="h-4 w-4" />
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem disabled className="cursor-default">
+                        Settings
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleLogout}>
+                        Log out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+              {addError && (
+                <p className="text-sm text-red-500">{addError}</p>
               )}
             </div>
           </div>
@@ -727,6 +746,7 @@ export default function DashboardHomePage() {
                   displayName={item.displayName}
                   avatarUrl={item.avatarUrl}
                   htmlUrl={item.htmlUrl}
+                  visibility={item.visibility}
                   hasError={item.hasError || false}
                   errorMessage={item.errorMessage}
                   hasWorkflows={item.hasWorkflows}
