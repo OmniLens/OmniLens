@@ -104,49 +104,8 @@ export const POST = withAuth(async (request: NextRequest, _context, authData) =>
     // Filter to only active workflows (GitHub's state=active filter is broken)
     const activeWorkflows = (workflowsData.workflows || []).filter((w: any) => w.state === 'active');
 
-    // Now filter workflows the same way the workflow API does - only include workflows that have runs
-    let usableWorkflowCount = 0;
-    for (const workflow of activeWorkflows) {
-      try {
-        // Check if this workflow has runs on the default branch
-        const runsResponse = await makeGitHubRequest(
-          authData.user.id,
-          `${API_BASE}/repos/${repoPath}/actions/workflows/${workflow.id}/runs?branch=${defaultBranch}&per_page=1`,
-          { cache: 'no-store' }
-        );
-        
-        if (runsResponse.ok) {
-          const runsData = await runsResponse.json();
-          if (runsData.workflow_runs && runsData.workflow_runs.length > 0) {
-            usableWorkflowCount++;
-            continue;
-          }
-          
-          // If no runs on default branch, check if it has any runs at all
-          const allRunsResponse = await makeGitHubRequest(
-            authData.user.id,
-            `${API_BASE}/repos/${repoPath}/actions/workflows/${workflow.id}/runs?per_page=1`,
-            { cache: 'no-store' }
-          );
-          
-          if (allRunsResponse.ok) {
-            const allRunsData = await allRunsResponse.json();
-            if (allRunsData.workflow_runs && allRunsData.workflow_runs.length > 0) {
-              usableWorkflowCount++;
-            }
-          }
-        }
-      } catch (error) {
-        console.warn(`Validation: Failed to check runs for workflow ${workflow.id}:`, error);
-      }
-    }
-
-    if (usableWorkflowCount === 0) {
-      return NextResponse.json({ 
-        valid: false, 
-        error: 'Repository has no workflows with runs. OmniLens requires workflows that have executed at least once.' 
-      }, { status: 400 });
-    }
+    // Count active workflows (we now allow repositories without workflows for future workflow creation)
+    const usableWorkflowCount = activeWorkflows.length;
 
     return NextResponse.json({
       valid: true,
@@ -156,6 +115,7 @@ export const POST = withAuth(async (request: NextRequest, _context, authData) =>
       displayName: repoName,
       owner,
       avatarUrl,
+      visibility: json.private ? 'private' : 'public',
       workflowsAccessible: true,
       workflowCount: usableWorkflowCount
     });

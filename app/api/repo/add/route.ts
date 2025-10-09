@@ -69,12 +69,18 @@ export const POST = withAuth(async (request: NextRequest, _context, authData) =>
       };
 
       // Add to storage
-      const success = await addUserRepo(newRepo, authData.user.id);
-      if (!success) {
-        return NextResponse.json({
-          error: 'Repository already exists in dashboard',
-          slug
-        }, { status: 409 });
+      const addResult = await addUserRepo(newRepo, authData.user.id);
+      if (!addResult.success) {
+        if (addResult.error?.includes('Maximum repository limit')) {
+          return NextResponse.json({
+            error: addResult.error
+          }, { status: 400 });
+        } else {
+          return NextResponse.json({
+            error: 'Repository already exists in dashboard',
+            slug
+          }, { status: 409 });
+        }
       }
 
       // Immediately fetch workflow data for the newly added repository

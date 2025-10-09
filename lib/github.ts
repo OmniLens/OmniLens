@@ -121,7 +121,8 @@ export function getLatestWorkflowRuns(workflowRuns: WorkflowRun[]): WorkflowRun[
   return result;
 }
 
-// Get workflow runs for a specific date and repository (for daily metrics - returns all runs)
+// Get workflow runs for a specific date and repository from ALL branches (for daily metrics - returns all runs)
+// Note: branch parameter is kept for backward compatibility but is no longer used for filtering
 export async function getWorkflowRunsForDate(date: Date, repoSlug: string, userId: string, branch?: string): Promise<WorkflowRun[]> {
   try {
     const { token, repo } = await getRepoInfo(repoSlug, userId);
@@ -136,7 +137,7 @@ export async function getWorkflowRunsForDate(date: Date, repoSlug: string, userI
     const startTime = startOfDay;
     const endTime = endOfDay;
 
-    // Fetch all workflow runs for the date, handling pagination
+    // Fetch all workflow runs for the date from ALL branches, handling pagination
     let allRuns: WorkflowRun[] = [];
     let page = 1;
     let hasMorePages = true;
@@ -144,9 +145,9 @@ export async function getWorkflowRunsForDate(date: Date, repoSlug: string, userI
 
     while (hasMorePages) {
       // Use the correct time range: from midnight of target date until now
-      const branchParam = branch ? `&branch=${encodeURIComponent(branch)}` : '';
+      // Fetch runs from ALL branches (removed branch filtering)
       const res = await fetch(
-        `${API_BASE}/repos/${repo}/actions/runs?created=${startTime}..${endTime}&per_page=100&page=${page}${branchParam}&_t=${Date.now()}`,
+        `${API_BASE}/repos/${repo}/actions/runs?created=${startTime}..${endTime}&per_page=100&page=${page}&_t=${Date.now()}`,
         {
           headers: {
             Accept: "application/vnd.github+json",
@@ -220,7 +221,8 @@ export async function getWorkflowRunsForDate(date: Date, repoSlug: string, userI
   }
 }
 
-// Get workflow runs for a specific date and repository (for workflow cards - returns grouped data)
+// Get workflow runs for a specific date and repository from ALL branches (for workflow cards - returns grouped data)
+// Note: branch parameter is kept for backward compatibility but is no longer used for filtering
 export async function getWorkflowRunsForDateGrouped(date: Date, repoSlug: string, userId: string, branch?: string): Promise<WorkflowRun[]> {
   try {
     const { token, repo } = await getRepoInfo(repoSlug, userId);
@@ -233,7 +235,7 @@ export async function getWorkflowRunsForDateGrouped(date: Date, repoSlug: string
     const startTime = new Date(targetDate.getTime() - 12 * 60 * 60 * 1000).toISOString(); // 12 hours before
     const endTime = new Date(targetDate.getTime() + 36 * 60 * 60 * 1000).toISOString(); // 36 hours after (next day + 12 hours)
 
-    // Fetch all workflow runs for the date, handling pagination
+    // Fetch all workflow runs for the date from ALL branches, handling pagination
     let allRuns: WorkflowRun[] = [];
     let page = 1;
     let hasMorePages = true;
@@ -241,9 +243,9 @@ export async function getWorkflowRunsForDateGrouped(date: Date, repoSlug: string
 
     while (hasMorePages) {
       // Use the correct time range: from midnight of target date until now
-      const branchParam = branch ? `&branch=${encodeURIComponent(branch)}` : '';
+      // Fetch runs from ALL branches (removed branch filtering)
       const res = await fetch(
-        `${API_BASE}/repos/${repo}/actions/runs?created=${startTime}..${endTime}&per_page=100&page=${page}${branchParam}&_t=${Date.now()}`,
+        `${API_BASE}/repos/${repo}/actions/runs?created=${startTime}..${endTime}&per_page=100&page=${page}&_t=${Date.now()}`,
         {
           headers: {
             Accept: "application/vnd.github+json",

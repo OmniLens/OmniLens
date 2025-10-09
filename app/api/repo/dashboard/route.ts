@@ -55,22 +55,9 @@ export const GET = withAuth(async (request: NextRequest, _context, authData) => 
                 const workflowsData = await workflowsResponse.json();
                 const activeWorkflows = workflowsData.workflows.filter((w: any) => w.state === 'active');
 
-                // Get the repository's default branch (same as individual repository API)
-                const repoResponse = await makeGitHubRequest(
-                  authData.user.id,
-                  `https://api.github.com/repos/${owner}/${repoName}`,
-                  { cache: 'no-store' }
-                );
-                
-                let defaultBranch = 'main'; // fallback
-                if (repoResponse.ok) {
-                  const repoData = await repoResponse.json();
-                  defaultBranch = repoData.default_branch;
-                }
-
-                // Fetch today's workflow runs using the same logic as individual repository API (with default branch)
+                // Fetch today's workflow runs from ALL branches (no branch filtering)
                 const todayDate = new Date(todayStr);
-                const allRuns = await getWorkflowRunsForDate(todayDate, repo.slug, authData.user.id, defaultBranch);
+                const allRuns = await getWorkflowRunsForDate(todayDate, repo.slug, authData.user.id);
 
                 // For dashboard metrics, only count runs that actually STARTED today (not just currently running)
                 const todayStart = new Date(todayStr + 'T00:00:00Z');

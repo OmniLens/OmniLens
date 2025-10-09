@@ -28,16 +28,34 @@ export async function loadUserAddedRepos(userId: string): Promise<Repository[]> 
 }
 
 // Add a new repository to the database for a specific user
-export async function addUserRepo(repo: Repository, userId: string): Promise<boolean> {
+export async function addUserRepo(repo: Repository, userId: string): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check current repository count for the user
+    const countResult = await pool.query(
+      'SELECT COUNT(*) as count FROM repositories WHERE user_id = $1',
+      [userId]
+    );
+    
+    const currentCount = parseInt(countResult.rows[0].count);
+    const MAX_REPOSITORIES = 12;
+    
+    if (currentCount >= MAX_REPOSITORIES) {
+      return {
+        success: false,
+        error: `Maximum repository limit reached. You can add up to ${MAX_REPOSITORIES} repositories. Please remove some repositories before adding new ones.`
+      };
+    }
+    
     const result = await pool.query(
       'INSERT INTO repositories (slug, repo_path, display_name, html_url, default_branch, avatar_url, visibility, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (user_id, slug) DO NOTHING RETURNING id',
       [repo.slug, repo.repoPath, repo.displayName, repo.htmlUrl, repo.defaultBranch, repo.avatarUrl, repo.visibility || 'public', userId]
     );
-    return (result.rowCount ?? 0) > 0;
+    
+    const success = (result.rowCount ?? 0) > 0;
+    return { success };
   } catch (error) {
     console.error('Error adding repository:', error);
-    return false;
+    return { success: false, error: 'Failed to add repository' };
   }
 }
 

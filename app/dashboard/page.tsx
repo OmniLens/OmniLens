@@ -671,7 +671,13 @@ export default function DashboardHomePage() {
                         }
                       }}
                     />
-                    <Button type="submit" size="sm" disabled={isValidating || isAdding} onMouseDown={(e) => e.preventDefault()} className="z-0">
+                    <Button 
+                      type="submit" 
+                      size="sm" 
+                      disabled={isValidating || isAdding || repositories.length >= 12} 
+                      onMouseDown={(e) => e.preventDefault()} 
+                      className="z-0"
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
                     </Button>
@@ -682,6 +688,7 @@ export default function DashboardHomePage() {
                     variant="default"
                     size="sm"
                     onClick={handleAddRepoClick}
+                    disabled={repositories.length >= 12}
                     aria-label="Add repository"
                     className="flex items-center justify-center gap-2 px-3"
                   >

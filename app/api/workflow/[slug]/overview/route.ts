@@ -102,12 +102,9 @@ export const GET = withAuth(async (
       );
     }
     
-    const repoData = await repoResponse.json();
-    const defaultBranch = repoData.default_branch;
-    
-    // Get workflow runs for the specified date (from default branch only)
+    // Get workflow runs for the specified date from ALL branches
     const dateObj = new Date(date!); // date is guaranteed to be defined by this point
-    const workflowRuns = await getWorkflowRunsForDate(dateObj, validatedSlug, authData.user.id, defaultBranch);
+    const workflowRuns = await getWorkflowRunsForDate(dateObj, validatedSlug, authData.user.id);
     
     // Calculate overview data using the existing function
     const overviewData = calculateOverviewData(workflowRuns);

@@ -80,28 +80,10 @@ export async function fetchWorkflowDataForNewRepo(
       await saveWorkflows(slug, activeWorkflows, userId);
     }
 
-    // Get the repository's default branch (same as dashboard API)
-    const branchResponse = await makeGitHubRequest(
-      userId,
-      `https://api.github.com/repos/${owner}/${repoName}`,
-      {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'OmniLens-Dashboard'
-        }
-      }
-    );
-    
-    let repoDefaultBranch = 'main'; // fallback
-    if (branchResponse.ok) {
-      const repoData = await branchResponse.json();
-      repoDefaultBranch = repoData.default_branch;
-    }
-
-    // Fetch today's workflow runs using the same logic as dashboard API (with default branch)
+    // Fetch today's workflow runs from ALL branches (no branch filtering)
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayDate = new Date(todayStr);
-    const allRuns = await getWorkflowRunsForDate(todayDate, slug, userId, repoDefaultBranch);
+    const allRuns = await getWorkflowRunsForDate(todayDate, slug, userId);
 
     // For metrics, only count runs that actually STARTED today (not just currently running)
     const todayStart = new Date(todayStr + 'T00:00:00Z');
