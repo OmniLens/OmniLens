@@ -1,4 +1,5 @@
 import { makeGitHubRequest } from './github-auth';
+import { getWorkflowRunsForDate } from './github';
 import { saveWorkflows } from './db-storage';
 
 export interface WorkflowData {
@@ -79,11 +80,10 @@ export async function fetchWorkflowDataForNewRepo(
       await saveWorkflows(slug, activeWorkflows, userId);
     }
 
-    // Fetch today's workflow runs for metrics
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const runsResponse = await makeGitHubRequest(
+    // Get the repository's default branch (same as dashboard API)
+    const branchResponse = await makeGitHubRequest(
       userId,
-      `https://api.github.com/repos/${owner}/${repoName}/actions/runs?created=${todayStr}T00:00:00Z..${todayStr}T23:59:59Z`,
+      `https://api.github.com/repos/${owner}/${repoName}`,
       {
         headers: {
           'Accept': 'application/vnd.github.v3+json',
@@ -91,34 +91,40 @@ export async function fetchWorkflowDataForNewRepo(
         }
       }
     );
-
-    let todayMetrics = {
-      totalWorkflows: activeWorkflows.length,
-      passedRuns: 0,
-      failedRuns: 0,
-      inProgressRuns: 0,
-      successRate: 0,
-      hasActivity: false
-    };
-
-    if (runsResponse.ok) {
-      const runsData = await runsResponse.json();
-      const runs = runsData.workflow_runs || [];
-
-      const completedRuns = runs.filter((run: any) => run.status === 'completed').length;
-      const inProgressRuns = runs.filter((run: any) => run.status === 'in_progress' || run.status === 'queued').length;
-      const passedRuns = runs.filter((run: any) => run.conclusion === 'success').length;
-      const failedRuns = runs.filter((run: any) => run.conclusion === 'failure').length;
-
-      todayMetrics = {
-        totalWorkflows: activeWorkflows.length,
-        passedRuns,
-        failedRuns,
-        inProgressRuns,
-        successRate: completedRuns > 0 ? Math.round((passedRuns / completedRuns) * 100) : 0,
-        hasActivity: completedRuns > 0 || inProgressRuns > 0
-      };
+    
+    let repoDefaultBranch = 'main'; // fallback
+    if (branchResponse.ok) {
+      const repoData = await branchResponse.json();
+      repoDefaultBranch = repoData.default_branch;
     }
+
+    // Fetch today's workflow runs using the same logic as dashboard API (with default branch)
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayDate = new Date(todayStr);
+    const allRuns = await getWorkflowRunsForDate(todayDate, slug, userId, repoDefaultBranch);
+
+    // For metrics, only count runs that actually STARTED today (not just currently running)
+    const todayStart = new Date(todayStr + 'T00:00:00Z');
+    const todayEnd = new Date(todayStr + 'T23:59:59Z');
+    
+    const runs = allRuns.filter((run: any) => {
+      const runStartTime = new Date(run.run_started_at);
+      return runStartTime >= todayStart && runStartTime <= todayEnd;
+    });
+
+    const completedRuns = runs.filter((run: any) => run.status === 'completed').length;
+    const inProgressRuns = runs.filter((run: any) => run.status === 'in_progress' || run.status === 'queued').length;
+    const passedRuns = runs.filter((run: any) => run.conclusion === 'success').length;
+    const failedRuns = runs.filter((run: any) => run.conclusion === 'failure').length;
+
+    const todayMetrics = {
+      totalWorkflows: activeWorkflows.length,
+      passedRuns,
+      failedRuns,
+      inProgressRuns,
+      successRate: completedRuns > 0 ? Math.round((passedRuns / completedRuns) * 100) : 0,
+      hasActivity: completedRuns > 0 || inProgressRuns > 0
+    };
 
     return {
       workflows: activeWorkflows,

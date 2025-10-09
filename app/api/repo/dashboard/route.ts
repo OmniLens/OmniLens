@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadUserAddedRepos } from '@/lib/db-storage';
 import { withAuth } from '@/lib/auth-middleware';
 import { makeGitHubRequest } from '@/lib/github-auth';
+import { getWorkflowRunsForDate } from '@/lib/github';
 
 // Force dynamic rendering since this API route requires authentication and request headers
 export const dynamic = 'force-dynamic';
@@ -54,31 +55,46 @@ export const GET = withAuth(async (request: NextRequest, _context, authData) => 
                 const workflowsData = await workflowsResponse.json();
                 const activeWorkflows = workflowsData.workflows.filter((w: any) => w.state === 'active');
 
-                // Fetch today's workflow runs
-                const runsResponse = await makeGitHubRequest(
+                // Get the repository's default branch (same as individual repository API)
+                const repoResponse = await makeGitHubRequest(
                   authData.user.id,
-                  `https://api.github.com/repos/${owner}/${repoName}/actions/runs?created=${todayStr}T00:00:00Z..${todayStr}T23:59:59Z`,
+                  `https://api.github.com/repos/${owner}/${repoName}`,
                   { cache: 'no-store' }
                 );
-
-                if (runsResponse.ok) {
-                  const runsData = await runsResponse.json();
-                  const runs = runsData.workflow_runs || [];
-
-                  const completedRuns = runs.filter((run: any) => run.status === 'completed').length;
-                  const inProgressRuns = runs.filter((run: any) => run.status === 'in_progress' || run.status === 'queued').length;
-                  const passedRuns = runs.filter((run: any) => run.conclusion === 'success').length;
-                  const failedRuns = runs.filter((run: any) => run.conclusion === 'failure').length;
-
-                  metrics = {
-                    totalWorkflows: activeWorkflows.length,
-                    passedRuns,
-                    failedRuns,
-                    inProgressRuns,
-                    successRate: completedRuns > 0 ? Math.round((passedRuns / completedRuns) * 100) : 0,
-                    hasActivity: completedRuns > 0 || inProgressRuns > 0
-                  };
+                
+                let defaultBranch = 'main'; // fallback
+                if (repoResponse.ok) {
+                  const repoData = await repoResponse.json();
+                  defaultBranch = repoData.default_branch;
                 }
+
+                // Fetch today's workflow runs using the same logic as individual repository API (with default branch)
+                const todayDate = new Date(todayStr);
+                const allRuns = await getWorkflowRunsForDate(todayDate, repo.slug, authData.user.id, defaultBranch);
+
+                // For dashboard metrics, only count runs that actually STARTED today (not just currently running)
+                const todayStart = new Date(todayStr + 'T00:00:00Z');
+                const todayEnd = new Date(todayStr + 'T23:59:59Z');
+                
+                const runs = allRuns.filter((run: any) => {
+                  const runStartTime = new Date(run.run_started_at);
+                  return runStartTime >= todayStart && runStartTime <= todayEnd;
+                });
+
+                const completedRuns = runs.filter((run: any) => run.status === 'completed').length;
+                const inProgressRuns = runs.filter((run: any) => run.status === 'in_progress' || run.status === 'queued').length;
+                const passedRuns = runs.filter((run: any) => run.conclusion === 'success').length;
+                const failedRuns = runs.filter((run: any) => run.conclusion === 'failure').length;
+
+
+                metrics = {
+                  totalWorkflows: activeWorkflows.length,
+                  passedRuns,
+                  failedRuns,
+                  inProgressRuns,
+                  successRate: completedRuns > 0 ? Math.round((passedRuns / completedRuns) * 100) : 0,
+                  hasActivity: completedRuns > 0 || inProgressRuns > 0
+                };
               }
             }
           } catch (error) {
