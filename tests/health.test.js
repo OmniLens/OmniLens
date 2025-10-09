@@ -18,75 +18,74 @@
  * Or via package.json: bun run test:health
  */
 
-import {
-  BASE_URL,
-  log,
-  logTest,
-  logSuccess,
-  logError,
-  logWarning,
-  logInfo,
-  makeRequest,
-  checkServer,
-  SLUG_TEST_CASES
-} from './test-utils.js';
+const API_BASE = process.env.API_BASE || 'http://localhost:3000';
 
 // Test functions
 async function testServerHealth() {
-  logTest('Server Health Check');
-  
-  const response = await makeRequest(`${BASE_URL}/api/health`);
-  
-  if (response.ok) {
-    logSuccess('Server is running and responding');
-    return true;
-  } else {
-    logError(`Server health check failed: ${response.status}`);
+  try {
+    console.log('Testing server health...');
+    
+    const response = await fetch(`${API_BASE}/api/health`);
+    
+    if (response.ok) {
+      console.log('✅ Server is running and responding');
+      return true;
+    } else {
+      console.log(`❌ Server health check failed: ${response.status}`);
+      return false;
+    }
+  } catch (error) {
+    console.log(`❌ Server health test failed: ${error.message}`);
     return false;
   }
 }
 
 async function testEnvironmentVariables() {
-  logTest('Environment Variables Health');
-  
-  const requiredVars = {
-    'GITHUB_CLIENT_ID': process.env.GITHUB_CLIENT_ID,
-    'GITHUB_CLIENT_SECRET': process.env.GITHUB_CLIENT_SECRET,
-    'BETTER_AUTH_SECRET': process.env.BETTER_AUTH_SECRET,
-    'BETTER_AUTH_URL': process.env.BETTER_AUTH_URL,
-    'DB_PASSWORD': process.env.DB_PASSWORD,
-    'DB_USER': process.env.DB_USER,
-    'DB_HOST': process.env.DB_HOST,
-    'DB_NAME': process.env.DB_NAME
-  };
-  
-  let allPassed = true;
-  
-  for (const [varName, value] of Object.entries(requiredVars)) {
-    if (!value) {
-      logError(`❌ Missing required environment variable: ${varName}`);
+  try {
+    console.log('Testing environment variables...');
+    
+    const requiredVars = [
+      'GITHUB_CLIENT_ID',
+      'GITHUB_CLIENT_SECRET', 
+      'BETTER_AUTH_SECRET',
+      'BETTER_AUTH_URL',
+      'DB_PASSWORD',
+      'DB_USER',
+      'DB_HOST',
+      'DB_NAME'
+    ];
+    
+    let allPassed = true;
+    
+    for (const varName of requiredVars) {
+      if (!process.env[varName]) {
+        console.log(`❌ Missing required environment variable: ${varName}`);
+        allPassed = false;
+      } else {
+        console.log(`✅ ${varName} is configured`);
+      }
+    }
+    
+    // Test DB_PORT (optional, defaults to 5432)
+    const dbPort = process.env.DB_PORT || '5432';
+    if (isNaN(parseInt(dbPort))) {
+      console.log(`❌ DB_PORT is not a valid number: ${dbPort}`);
       allPassed = false;
     } else {
-      logSuccess(`✅ ${varName} is configured`);
+      console.log(`✅ DB_PORT is valid: ${dbPort}`);
     }
+    
+    return allPassed;
+  } catch (error) {
+    console.log(`❌ Environment variables test failed: ${error.message}`);
+    return false;
   }
-  
-  // Test DB_PORT (optional, defaults to 5432)
-  const dbPort = process.env.DB_PORT || '5432';
-  if (isNaN(parseInt(dbPort))) {
-    logError(`❌ DB_PORT is not a valid number: ${dbPort}`);
-    allPassed = false;
-  } else {
-    logSuccess(`✅ DB_PORT is valid: ${dbPort}`);
-  }
-  
-  return allPassed;
 }
 
 async function testExternalDependencies() {
-  logTest('External Dependencies Health');
-  
   try {
+    console.log('Testing external dependencies...');
+    
     // Test GitHub API connectivity (no auth required)
     const response = await fetch('https://api.github.com/repos/Visi0ncore/StealthList', {
       headers: {
@@ -96,115 +95,131 @@ async function testExternalDependencies() {
     });
     
     if (response.ok) {
-      logSuccess('✅ GitHub API is accessible');
+      console.log('✅ GitHub API is accessible');
       return true;
     } else {
-      logError(`❌ GitHub API returned status: ${response.status}`);
+      console.log(`❌ GitHub API returned status: ${response.status}`);
       return false;
     }
   } catch (error) {
-    logError(`❌ External dependency test failed: ${error.message}`);
+    console.log(`❌ External dependency test failed: ${error.message}`);
     return false;
   }
 }
 
 async function testDatabaseConnection() {
-  logTest('Database Connection Health');
-  
   try {
+    console.log('Testing database connection...');
+    
     // Test basic connectivity using health endpoint (no auth required)
-    const response = await makeRequest(`${BASE_URL}/api/health`);
+    const response = await fetch(`${API_BASE}/api/health`);
     
     if (response.ok) {
-      logSuccess('✅ Server is responding (database connectivity assumed)');
+      console.log('✅ Server is responding (database connectivity assumed)');
       return true;
     } else if (response.status === 500) {
-      logError('❌ Server health check failed (API returned 500)');
+      console.log('❌ Server health check failed (API returned 500)');
       return false;
     } else {
-      logWarning(`⚠️  Unexpected API response: ${response.status}`);
+      console.log(`⚠️  Unexpected API response: ${response.status}`);
       return true; // API is responding, server is healthy
     }
   } catch (error) {
-    logError(`❌ Database connection test failed: ${error.message}`);
+    console.log(`❌ Database connection test failed: ${error.message}`);
     return false;
   }
 }
 
 async function testPerformanceBaseline() {
-  logTest('Performance Baseline Health');
-  
   try {
+    console.log('Testing performance baseline...');
+    
     const start = Date.now();
-    const response = await fetch(`${BASE_URL}/api/health`);
+    const response = await fetch(`${API_BASE}/api/health`);
     const duration = Date.now() - start;
     
     if (response.ok && duration < 1000) {
-      logSuccess(`✅ API response time: ${duration}ms (under 1000ms threshold)`);
+      console.log(`✅ API response time: ${duration}ms (under 1000ms threshold)`);
       return true;
     } else if (response.ok) {
-      logWarning(`⚠️  API response time: ${duration}ms (over 1000ms threshold)`);
+      console.log(`⚠️  API response time: ${duration}ms (over 1000ms threshold)`);
       return true; // Still consider it healthy, just slow
     } else {
-      logError(`❌ API returned status: ${response.status}`);
+      console.log(`❌ API returned status: ${response.status}`);
       return false;
     }
   } catch (error) {
-    logError(`❌ Performance test failed: ${error.message}`);
+    console.log(`❌ Performance test failed: ${error.message}`);
     return false;
   }
 }
 
 async function testErrorBoundaries() {
-  logTest('Error Boundaries Health');
-  
   try {
+    console.log('Testing error boundaries...');
+    
     // Test that invalid requests return proper error codes, not server crashes
     // Use a non-authenticated endpoint for error boundary testing
-    const response = await fetch(`${BASE_URL}/api/health/invalid-endpoint`);
+    const response = await fetch(`${API_BASE}/api/health/invalid-endpoint`);
     
     if (response.status === 404) {
-      logSuccess('✅ Error boundaries working - invalid requests return 404');
+      console.log('✅ Error boundaries working - invalid requests return 404');
       return true;
     } else if (response.status === 500) {
-      logError('❌ Server error on invalid request - error boundaries not working');
+      console.log('❌ Server error on invalid request - error boundaries not working');
       return false;
     } else {
-      logWarning(`⚠️  Unexpected status for invalid request: ${response.status}`);
+      console.log(`⚠️  Unexpected status for invalid request: ${response.status}`);
       return true; // Not a critical failure
     }
   } catch (error) {
-    logError(`❌ Error boundary test failed: ${error.message}`);
+    console.log(`❌ Error boundary test failed: ${error.message}`);
     return false;
   }
 }
 
 async function testSlugGeneration() {
-  logTest('Slug Generation (Clean URLs)');
-  
-  // Test the slug generation logic
-  const testCases = SLUG_TEST_CASES;
-  
-  let allPassed = true;
-  
-  for (const testCase of testCases) {
-    const actualSlug = testCase.repoPath.replace('/', '-');
+  try {
+    console.log('Testing slug generation...');
     
-    if (actualSlug === testCase.expectedSlug) {
-      logSuccess(`✅ ${testCase.description}: "${actualSlug}"`);
-    } else {
-      logError(`❌ ${testCase.description}: Expected "${testCase.expectedSlug}", got "${actualSlug}"`);
-      allPassed = false;
+    // Test the slug generation logic
+    const testCases = [
+      {
+        repoPath: 'OmniLens/OmniLens',
+        expectedSlug: 'OmniLens-OmniLens',
+        description: 'Should generate unique slug even when org matches repo name'
+      },
+      {
+        repoPath: 'microsoft/vscode',
+        expectedSlug: 'microsoft-vscode',
+        description: 'Should include organization name for uniqueness'
+      }
+    ];
+    
+    let allPassed = true;
+    
+    for (const testCase of testCases) {
+      const actualSlug = testCase.repoPath.replace('/', '-');
+      
+      if (actualSlug === testCase.expectedSlug) {
+        console.log(`✅ ${testCase.description}: "${actualSlug}"`);
+      } else {
+        console.log(`❌ ${testCase.description}: Expected "${testCase.expectedSlug}", got "${actualSlug}"`);
+        allPassed = false;
+      }
     }
+    
+    return allPassed;
+  } catch (error) {
+    console.log(`❌ Slug generation test failed: ${error.message}`);
+    return false;
   }
-  
-  return allPassed;
 }
 
 // Main test runner
 async function runHealthTests() {
-  log('\n🏥 Starting OmniLens Health & Infrastructure Test Suite', 'bright');
-  log('=' .repeat(60), 'bright');
+  console.log('\n🏥 Starting OmniLens Health & Infrastructure Test Suite');
+  console.log('='.repeat(60));
   
   const tests = [
     { name: 'Server Health', fn: testServerHealth },
@@ -223,7 +238,7 @@ async function runHealthTests() {
       const result = await test.fn();
       results.push({ name: test.name, passed: result });
     } catch (error) {
-      logError(`Test ${test.name} threw an error: ${error.message}`);
+      console.log(`❌ Test ${test.name} threw an error: ${error.message}`);
       results.push({ name: test.name, passed: false, error: error.message });
     }
   }
@@ -232,24 +247,23 @@ async function runHealthTests() {
   const passed = results.filter(r => r.passed).length;
   const total = results.length;
   
-  log('\n📊 Health Test Results:', 'bright');
+  console.log('\n📊 Health Test Results:');
   results.forEach(result => {
     if (result.passed) {
-      logSuccess(`${result.name}`);
+      console.log(`✅ ${result.name}`);
     } else {
-      logError(`${result.name}${result.error ? ` - ${result.error}` : ''}`);
+      console.log(`❌ ${result.name}${result.error ? ` - ${result.error}` : ''}`);
     }
   });
   
-  log('\n' + '=' .repeat(60), 'bright');
-  log(`🎯 Overall: ${passed}/${total} health tests passed`, passed === total ? 'green' : 'red');
+  console.log('\n' + '='.repeat(60));
+  console.log(`🎯 Overall: ${passed}/${total} health tests passed`);
   
   if (passed === total) {
-    log('\n🎉 All health tests passed! System is healthy!', 'green');
+    console.log('\n🎉 All health tests passed! System is healthy!');
     return true;
   } else {
-    log('\n🚨 Some health tests failed. Please check the errors above.', 'yellow');
-
+    console.log('\n🚨 Some health tests failed. Please check the errors above.');
     return false;
   }
 }
@@ -257,15 +271,10 @@ async function runHealthTests() {
 // Main execution
 async function main() {
   try {
-    const serverRunning = await checkServer();
-    if (!serverRunning) {
-      process.exit(1);
-    }
-    
     const success = await runHealthTests();
     process.exit(success ? 0 : 1);
   } catch (error) {
-    logError(`Health test suite failed: ${error.message}`);
+    console.error(`❌ Health test suite failed: ${error.message}`);
     process.exit(1);
   }
 }
@@ -274,14 +283,3 @@ async function main() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
-
-export {
-  runHealthTests,
-  testEnvironmentVariables,
-  testServerHealth,
-  testDatabaseConnection,
-  testExternalDependencies,
-  testPerformanceBaseline,
-  testErrorBoundaries,
-  testSlugGeneration
-};
