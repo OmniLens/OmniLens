@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
+import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 import RepositoryCardSkeleton, { SingleRepositorySkeleton } from "@/components/RepositoryCardSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -629,9 +630,10 @@ export default function DashboardHomePage() {
   }
 
   return (
-    <>
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto p-6 space-y-8">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 space-y-8">
+        {/* GitHub Actions Status Banner */}
+        <GitHubStatusBanner className="mb-6" />
           <div className="flex justify-end mb-8">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
@@ -744,9 +746,8 @@ export default function DashboardHomePage() {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Delete Repository Modal */}
+        {/* Delete Repository Modal */}
       <Modal
         isOpen={!!repoToDelete}
         onClose={() => {
@@ -884,6 +885,6 @@ export default function DashboardHomePage() {
           )}
         </div>
       </Modal>
-    </>
+    </div>
   );
 }
