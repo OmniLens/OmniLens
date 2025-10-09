@@ -25,6 +25,12 @@ import DailyMetrics from "@/components/DailyMetrics";
 // Helper function to format repository name for display
 function formatRepoDisplayName(repoName: string): string {
   const repoNamePart = repoName.split('/').pop() || repoName;
+  
+  // Special case for nuqs - keep it lowercase
+  if (repoNamePart.toLowerCase() === 'nuqs') {
+    return 'nuqs';
+  }
+  
   return repoNamePart
     .replace(/[-_]/g, ' ')
     .replace(/\b\w/g, l => l.toUpperCase())

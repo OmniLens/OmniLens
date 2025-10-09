@@ -11,5 +11,5 @@ export default function ConditionalVersionIndicator() {
     return null;
   }
   
-  return <VersionIndicator version="0.7.1" />;
+  return <VersionIndicator version="0.7.3" />;
 }
