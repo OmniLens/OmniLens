@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
+import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 import { cn } from "@/lib/utils";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useDashboardRepositories } from "@/lib/hooks/use-dashboard-repositories";
@@ -485,6 +486,9 @@ export default function DashboardHomePage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-8">
+        {/* GitHub Actions Status Banner */}
+        <GitHubStatusBanner className="mb-6" />
+        
         <div className="flex justify-end mb-6">
           <div className="flex items-center gap-2">
             {showAddForm && (

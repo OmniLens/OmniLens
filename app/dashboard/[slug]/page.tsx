@@ -21,6 +21,7 @@ import {
 } from "@/lib/hooks/use-repository-dashboard";
 import WorkflowCard from "@/components/WorkflowCard";
 import DailyMetrics from "@/components/DailyMetrics";
+import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 
 // Helper function to format repository name for display
 function formatRepoDisplayName(repoName: string): string {
@@ -326,44 +327,49 @@ export default function DashboardPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-8">
+        {/* GitHub Actions Status Banner */}
+        <GitHubStatusBanner className="mb-6" />
+        
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard">
               <Button variant="outline" size="sm" className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
-                Back
+                <span className="hidden sm:inline">Back</span>
               </Button>
             </Link>
-            <div>
-              <h1 className="text-2xl font-bold">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold truncate">
                 {formatRepoDisplayName(repoSlug.replace(/-/g, '/'))}
               </h1>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
                 setSelectedDate(new Date().toISOString().slice(0, 10));
               }}
-              className={selectedDate === new Date().toISOString().slice(0, 10) ? "bg-primary text-primary-foreground" : ""}
+              className={`flex-shrink-0 ${selectedDate === new Date().toISOString().slice(0, 10) ? "bg-primary text-primary-foreground" : ""}`}
             >
               Today
             </Button>
-            <DatePicker
-              date={new Date(selectedDate)}
-              onDateChange={(date) => {
-                if (date) {
-                  // Use local date formatting to avoid timezone issues
-                  const year = date.getFullYear();
-                  const month = String(date.getMonth() + 1).padStart(2, '0');
-                  const day = String(date.getDate()).padStart(2, '0');
-                  setSelectedDate(`${year}-${month}-${day}`);
-                }
-              }}
-            />
+            <div className="hidden sm:block">
+              <DatePicker
+                date={new Date(selectedDate)}
+                onDateChange={(date) => {
+                  if (date) {
+                    // Use local date formatting to avoid timezone issues
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    setSelectedDate(`${year}-${month}-${day}`);
+                  }
+                }}
+              />
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -372,10 +378,27 @@ export default function DashboardPage({ params }: PageProps) {
                 window.location.reload();
               }}
               aria-label="Refresh data"
+              className="flex-shrink-0"
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+        
+        {/* Mobile-only date picker row */}
+        <div className="sm:hidden">
+          <DatePicker
+            date={new Date(selectedDate)}
+            onDateChange={(date) => {
+              if (date) {
+                // Use local date formatting to avoid timezone issues
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                setSelectedDate(`${year}-${month}-${day}`);
+              }
+            }}
+          />
         </div>
 
         {/* Daily Metrics */}

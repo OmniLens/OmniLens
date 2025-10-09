@@ -50,10 +50,32 @@ body {
   100% { transform: translateX(100%); }
 }
 
+@keyframes slide-in-down {
+  0% { 
+    transform: translateY(-100%); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
 .animate-shake {
   animation: shake 0.5s ease-in-out;
 }
 
 .animate-shimmer {
   animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-slide-in-down {
+  animation: slide-in-down 0.3s ease-out;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 } 
