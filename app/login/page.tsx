@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Github, ArrowLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { signIn, useSession } from "@/lib/auth-client";
 
 export default function LoginPage() {
@@ -38,9 +37,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black flex flex-col relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute top-40 right-20 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl animate-pulse delay-1000"></div>
+      <div className="absolute bottom-20 left-1/4 w-28 h-28 bg-cyan-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
+      <div className="absolute top-1/2 right-10 w-20 h-20 bg-emerald-500/5 rounded-full blur-2xl animate-pulse delay-3000"></div>
+      <div className="absolute bottom-1/3 right-1/3 w-16 h-16 bg-yellow-500/5 rounded-full blur-xl animate-pulse delay-4000"></div>
+      
       {/* Back to Home Link */}
-      <div className="container mx-auto p-6">
+      <div className="p-6 relative z-10">
         <Link href="/">
           <Button variant="ghost" size="sm" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
@@ -50,7 +56,7 @@ export default function LoginPage() {
       </div>
 
       {/* Main Content - Centered */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-md flex flex-col items-center space-y-8">
           {/* Logo */}
           <div className="flex justify-center">
@@ -86,15 +92,9 @@ export default function LoginPage() {
           {/* Login Button */}
           <Button
             onClick={handleGitHubSignIn}
-            variant={isGithubHovered ? "default" : "outline"}
-            size="lg"
+            variant="outline"
             disabled={isLoading}
-            onMouseEnter={() => setIsGithubHovered(true)}
-            onMouseLeave={() => setIsGithubHovered(false)}
-            className={cn(
-              "w-full max-w-xs flex items-center justify-center gap-2 px-6 transition-all duration-200",
-              !isGithubHovered && "shadow-none"
-            )}
+            className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white hover:bg-white/20 px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-white/25"
           >
             <Github className="h-5 w-5" />
             {isLoading ? "Signing in..." : "Continue with GitHub"}
@@ -103,7 +103,7 @@ export default function LoginPage() {
       </div>
 
       {/* Footer - Bottom */}
-      <div className="p-4">
+      <div className="p-4 relative z-10">
         <div className="text-center w-full max-w-md mx-auto space-y-2">
           <p className="text-sm text-muted-foreground">
             By signing in, you agree to our{" "}
