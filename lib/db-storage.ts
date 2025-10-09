@@ -8,6 +8,7 @@ export interface Repository {
   htmlUrl: string;
   defaultBranch: string;
   avatarUrl?: string;
+  visibility?: 'public' | 'private';
   addedAt?: string;
   updatedAt?: string;
 }
@@ -16,7 +17,7 @@ export interface Repository {
 export async function loadUserAddedRepos(userId: string): Promise<Repository[]> {
   try {
     const result = await pool.query(
-      'SELECT id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", added_at as "addedAt", updated_at as "updatedAt" FROM repositories WHERE user_id = $1 ORDER BY added_at DESC',
+      'SELECT id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", COALESCE(visibility, \'public\') as "visibility", added_at as "addedAt", updated_at as "updatedAt" FROM repositories WHERE user_id = $1 ORDER BY added_at DESC',
       [userId]
     );
     return result.rows;
@@ -27,16 +28,34 @@ export async function loadUserAddedRepos(userId: string): Promise<Repository[]> 
 }
 
 // Add a new repository to the database for a specific user
-export async function addUserRepo(repo: Repository, userId: string): Promise<boolean> {
+export async function addUserRepo(repo: Repository, userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const result = await pool.query(
-      'INSERT INTO repositories (slug, repo_path, display_name, html_url, default_branch, avatar_url, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (user_id, slug) DO NOTHING RETURNING id',
-      [repo.slug, repo.repoPath, repo.displayName, repo.htmlUrl, repo.defaultBranch, repo.avatarUrl, userId]
+    // Check current repository count for the user
+    const countResult = await pool.query(
+      'SELECT COUNT(*) as count FROM repositories WHERE user_id = $1',
+      [userId]
     );
-    return (result.rowCount ?? 0) > 0;
+    
+    const currentCount = parseInt(countResult.rows[0].count);
+    const MAX_REPOSITORIES = 12;
+    
+    if (currentCount >= MAX_REPOSITORIES) {
+      return {
+        success: false,
+        error: `Maximum repository limit reached. You can add up to ${MAX_REPOSITORIES} repositories. Please remove some repositories before adding new ones.`
+      };
+    }
+    
+    const result = await pool.query(
+      'INSERT INTO repositories (slug, repo_path, display_name, html_url, default_branch, avatar_url, visibility, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (user_id, slug) DO NOTHING RETURNING id',
+      [repo.slug, repo.repoPath, repo.displayName, repo.htmlUrl, repo.defaultBranch, repo.avatarUrl, repo.visibility || 'public', userId]
+    );
+    
+    const success = (result.rowCount ?? 0) > 0;
+    return { success };
   } catch (error) {
     console.error('Error adding repository:', error);
-    return false;
+    return { success: false, error: 'Failed to add repository' };
   }
 }
 
@@ -44,7 +63,7 @@ export async function addUserRepo(repo: Repository, userId: string): Promise<boo
 export async function removeUserRepo(slug: string, userId: string): Promise<Repository | null> {
   try {
     const result = await pool.query(
-      'DELETE FROM repositories WHERE slug = $1 AND user_id = $2 RETURNING id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", added_at as "addedAt", updated_at as "updatedAt"',
+      'DELETE FROM repositories WHERE slug = $1 AND user_id = $2 RETURNING id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", COALESCE(visibility, \'public\') as "visibility", added_at as "addedAt", updated_at as "updatedAt"',
       [slug, userId]
     );
     return result.rows[0] || null;
@@ -58,7 +77,7 @@ export async function removeUserRepo(slug: string, userId: string): Promise<Repo
 export async function getUserRepo(slug: string, userId: string): Promise<Repository | null> {
   try {
     const result = await pool.query(
-      'SELECT id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", added_at as "addedAt", updated_at as "updatedAt" FROM repositories WHERE slug = $1 AND user_id = $2',
+      'SELECT id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", COALESCE(visibility, \'public\') as "visibility", added_at as "addedAt", updated_at as "updatedAt" FROM repositories WHERE slug = $1 AND user_id = $2',
       [slug, userId]
     );
     return result.rows[0] || null;

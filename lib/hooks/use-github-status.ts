@@ -32,13 +32,15 @@ export function useGitHubStatus() {
   return useQuery({
     queryKey: ['github-status'],
     queryFn: fetchGitHubStatus,
-    refetchInterval: 60000, // Refetch every minute
-    refetchIntervalInBackground: true,
-    staleTime: 30000, // Consider data stale after 30 seconds
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    refetchInterval: 300000, // Refetch every 5 minutes (less aggressive)
+    refetchIntervalInBackground: false, // Don't refetch in background
+    staleTime: 120000, // Consider data stale after 2 minutes
+    retry: 2, // Reduce retries
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     // Don't show loading state for status - it's not critical
     placeholderData: (previousData) => previousData,
+    // Only refetch on window focus if data is stale
+    refetchOnWindowFocus: false,
   });
 }
 

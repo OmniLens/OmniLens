@@ -18,8 +18,8 @@ export default function GitHubStatusBanner({
   const { data: statusData, isLoading, error, refetch } = useGitHubStatus();
   const [isDismissed, setIsDismissed] = useState(false);
 
-  // Don't show banner if dismissed or if operational and not requested
-  if (isDismissed || (!statusData?.hasIssues && !showWhenOperational)) {
+  // Don't show banner if dismissed
+  if (isDismissed) {
     return null;
   }
 
@@ -33,6 +33,16 @@ export default function GitHubStatusBanner({
     return null;
   }
 
+  // Only show banner if there are actual issues (not operational, unknown, or degraded performance)
+  if (!statusData?.hasIssues || 
+      statusData?.status === 'operational' || 
+      statusData?.status === 'unknown' ||
+      statusData?.status === 'degraded_performance') {
+    return null;
+  }
+
+  // Note: operational status is already filtered out above
+
   const status = statusData?.status || 'unknown';
   const message = statusData?.message || 'GitHub Actions status unknown';
   const lastUpdated = statusData?.lastUpdated;
@@ -41,9 +51,6 @@ export default function GitHubStatusBanner({
 
   const getStatusIcon = () => {
     switch (status) {
-      case 'operational':
-        return <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />;
-      case 'degraded_performance':
       case 'partial_outage':
       case 'major_outage':
         return <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />;
@@ -54,10 +61,6 @@ export default function GitHubStatusBanner({
 
   const getStatusText = () => {
     switch (status) {
-      case 'operational':
-        return 'Operational';
-      case 'degraded_performance':
-        return 'Degraded';
       case 'partial_outage':
         return 'Partial Outage';
       case 'major_outage':

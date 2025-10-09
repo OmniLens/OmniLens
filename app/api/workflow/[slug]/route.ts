@@ -349,15 +349,13 @@ async function handleWorkflowRunsRequest(
       );
     }
     
-    const repoData = await repoResponse.json();
-    const defaultBranch = repoData.default_branch;
-    
     // The getWorkflowRunsForDate function handles all GitHub API calls and error handling
+    // Fetch runs from ALL branches (no branch filtering)
     const dateObj = new Date(date);
     
     const allWorkflowRuns = grouped 
-      ? await getWorkflowRunsForDateGrouped(dateObj, slug, authData.user.id, defaultBranch)
-      : await getWorkflowRunsForDate(dateObj, slug, authData.user.id, defaultBranch);
+      ? await getWorkflowRunsForDateGrouped(dateObj, slug, authData.user.id)
+      : await getWorkflowRunsForDate(dateObj, slug, authData.user.id);
     
     // Filter to only include runs from active workflows
     const workflowRuns = allWorkflowRuns.filter(run => activeWorkflowIds.has(run.workflow_id));

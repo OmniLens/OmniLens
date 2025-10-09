@@ -5,7 +5,6 @@ import { QueryProvider } from "@/lib/query-client";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-import { VersionIndicator } from "@/components/VersionIndicator";
 import ConditionalVersionIndicator from "@/components/ConditionalVersionIndicator";
 import * as Sentry from '@sentry/nextjs';
 import type { Metadata } from "next";

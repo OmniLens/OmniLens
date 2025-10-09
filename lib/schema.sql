@@ -7,11 +7,20 @@ CREATE TABLE IF NOT EXISTS repositories (
   html_url TEXT NOT NULL,
   default_branch VARCHAR(100) NOT NULL,
   avatar_url TEXT,
+  visibility VARCHAR(10) DEFAULT 'public',
   user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
   added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (user_id, slug)
 );
+
+-- Add visibility column if it doesn't exist (for existing installations)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'repositories' AND column_name = 'visibility') THEN
+    ALTER TABLE repositories ADD COLUMN visibility VARCHAR(10) DEFAULT 'public';
+  END IF;
+END $$;
 
 -- Create indexes for repositories table
 CREATE INDEX IF NOT EXISTS idx_repositories_slug ON repositories(slug);
