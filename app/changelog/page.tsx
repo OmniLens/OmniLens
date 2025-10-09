@@ -266,11 +266,10 @@ export default function ChangelogPage() {
                         {changeType}
                       </h3>
                     </div>
-                    <ul className="space-y-2 ml-6">
+                    <ul className="space-y-2 ml-6 list-disc list-inside">
                       {changes.map((change: string, changeIndex: number) => (
-                        <li key={changeIndex} className="flex items-start gap-2">
-                          <span className="text-muted-foreground mt-1.5">•</span>
-                          <span className="text-sm leading-relaxed">{change}</span>
+                        <li key={changeIndex} className="text-sm leading-relaxed">
+                          {change}
                         </li>
                       ))}
                     </ul>
