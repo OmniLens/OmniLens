@@ -56,7 +56,7 @@ export const POST = withAuth(async (request: NextRequest, _context, authData) =>
       // Generate slug from the full repository path (org-repo format for uniqueness)
       const slug = repoPath.replace('/', '-');
 
-      // Create new repo object with avatar URL from GitHub API
+      // Create new repo object with avatar URL and visibility from GitHub API
       const newRepo = {
         slug,
         repoPath,
@@ -64,6 +64,7 @@ export const POST = withAuth(async (request: NextRequest, _context, authData) =>
         htmlUrl,
         defaultBranch,
         avatarUrl: avatarUrl || repoData.owner?.avatar_url || null,
+        visibility: (repoData.private ? 'private' : 'public') as 'public' | 'private',
         addedAt: new Date().toISOString()
       };
 

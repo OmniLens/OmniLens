@@ -93,6 +93,7 @@ export const GET = withAuth(async (request: NextRequest, _context, authData) => 
           displayName: repo.displayName,
           avatarUrl: repo.avatarUrl,
           htmlUrl: repo.htmlUrl,
+          visibility: repo.visibility || 'public',
           hasWorkflows,
           metrics,
           // Add error state if needed
@@ -107,6 +108,7 @@ export const GET = withAuth(async (request: NextRequest, _context, authData) => 
           displayName: repo.displayName,
           avatarUrl: repo.avatarUrl,
           htmlUrl: repo.htmlUrl,
+          visibility: repo.visibility || 'public',
           hasWorkflows: false,
           metrics: {
             totalWorkflows: 0,

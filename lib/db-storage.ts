@@ -8,6 +8,7 @@ export interface Repository {
   htmlUrl: string;
   defaultBranch: string;
   avatarUrl?: string;
+  visibility?: 'public' | 'private';
   addedAt?: string;
   updatedAt?: string;
 }
@@ -16,7 +17,7 @@ export interface Repository {
 export async function loadUserAddedRepos(userId: string): Promise<Repository[]> {
   try {
     const result = await pool.query(
-      'SELECT id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", added_at as "addedAt", updated_at as "updatedAt" FROM repositories WHERE user_id = $1 ORDER BY added_at DESC',
+      'SELECT id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", COALESCE(visibility, \'public\') as "visibility", added_at as "addedAt", updated_at as "updatedAt" FROM repositories WHERE user_id = $1 ORDER BY added_at DESC',
       [userId]
     );
     return result.rows;
@@ -30,8 +31,8 @@ export async function loadUserAddedRepos(userId: string): Promise<Repository[]> 
 export async function addUserRepo(repo: Repository, userId: string): Promise<boolean> {
   try {
     const result = await pool.query(
-      'INSERT INTO repositories (slug, repo_path, display_name, html_url, default_branch, avatar_url, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (user_id, slug) DO NOTHING RETURNING id',
-      [repo.slug, repo.repoPath, repo.displayName, repo.htmlUrl, repo.defaultBranch, repo.avatarUrl, userId]
+      'INSERT INTO repositories (slug, repo_path, display_name, html_url, default_branch, avatar_url, visibility, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (user_id, slug) DO NOTHING RETURNING id',
+      [repo.slug, repo.repoPath, repo.displayName, repo.htmlUrl, repo.defaultBranch, repo.avatarUrl, repo.visibility || 'public', userId]
     );
     return (result.rowCount ?? 0) > 0;
   } catch (error) {
@@ -44,7 +45,7 @@ export async function addUserRepo(repo: Repository, userId: string): Promise<boo
 export async function removeUserRepo(slug: string, userId: string): Promise<Repository | null> {
   try {
     const result = await pool.query(
-      'DELETE FROM repositories WHERE slug = $1 AND user_id = $2 RETURNING id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", added_at as "addedAt", updated_at as "updatedAt"',
+      'DELETE FROM repositories WHERE slug = $1 AND user_id = $2 RETURNING id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", COALESCE(visibility, \'public\') as "visibility", added_at as "addedAt", updated_at as "updatedAt"',
       [slug, userId]
     );
     return result.rows[0] || null;
@@ -58,7 +59,7 @@ export async function removeUserRepo(slug: string, userId: string): Promise<Repo
 export async function getUserRepo(slug: string, userId: string): Promise<Repository | null> {
   try {
     const result = await pool.query(
-      'SELECT id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", added_at as "addedAt", updated_at as "updatedAt" FROM repositories WHERE slug = $1 AND user_id = $2',
+      'SELECT id, slug, repo_path as "repoPath", display_name as "displayName", html_url as "htmlUrl", default_branch as "defaultBranch", avatar_url as "avatarUrl", COALESCE(visibility, \'public\') as "visibility", added_at as "addedAt", updated_at as "updatedAt" FROM repositories WHERE slug = $1 AND user_id = $2',
       [slug, userId]
     );
     return result.rows[0] || null;
