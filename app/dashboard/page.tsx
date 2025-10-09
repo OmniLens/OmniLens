@@ -560,29 +560,15 @@ export default function DashboardHomePage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6 space-y-8">
-          <div className="flex justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label="Settings"
-                  className="flex items-center justify-center gap-0 px-2"
-                >
-                  <span className="flex h-7 w-7 items-center justify-center">
-                    <Settings className="h-4 w-4" />
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled className="cursor-default">
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex justify-end mb-8">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                {/* Add Repo button skeleton */}
+                <div className="h-8 w-24 bg-muted animate-pulse rounded-md"></div>
+                {/* Settings button skeleton */}
+                <div className="h-8 w-8 bg-muted animate-pulse rounded-md"></div>
+              </div>
+            </div>
           </div>
 
           {/* Show skeleton cards while loading */}
