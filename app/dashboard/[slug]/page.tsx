@@ -38,30 +38,49 @@ function formatRepoDisplayName(repoName: string): string {
     .trim();
 }
 
-// Workflow Definition Card Component
-function WorkflowDefinitionCard({ workflow }: { workflow: Workflow }) {
+// Workflow Definition Card Component - uses WorkflowCard with inactive data
+function WorkflowDefinitionCard({ workflow, repoSlug }: { workflow: Workflow; repoSlug: string }) {
+  // Create a mock run object for inactive workflows
+  const mockRun: WorkflowRun = {
+    id: workflow.id,
+    workflow_id: workflow.id,
+    name: workflow.name,
+    head_branch: 'main',
+    head_sha: '',
+    run_number: 0,
+    event: 'push',
+    status: 'no_runs',
+    conclusion: null,
+    url: '',
+    html_url: '',
+    created_at: '',
+    updated_at: '',
+    run_attempt: 1,
+    run_started_at: '',
+    jobs_url: '',
+    logs_url: '',
+    check_suite_url: '',
+    artifacts_url: '',
+    cancel_url: '',
+    rerun_url: '',
+    workflow_url: '',
+    head_commit: {},
+    repository: {},
+    head_repository: {}
+  };
+
   return (
-    <Card className="relative h-full transition-all duration-200 border-border bg-card hover:border-border/80 hover:shadow-md">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CardTitle className="text-lg font-semibold">
-              {workflow.name}
-            </CardTitle>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
-              -
-            </Badge>
-            <Badge variant={workflow.state === 'active' ? 'success' : 'secondary'}>
-              {workflow.state === 'active' ? 'Active' : 'Disabled'}
-            </Badge>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-      </CardContent>
-    </Card>
+    <WorkflowCard
+      run={mockRun}
+      repoSlug={repoSlug}
+      healthStatus="no_runs_today"
+      healthMetrics={{
+        status: 'no_runs_today',
+        totalRuns: 0,
+        successfulRuns: 0,
+        failedRuns: 0
+      }}
+    />
   );
 }
 
@@ -446,7 +465,7 @@ export default function DashboardPage({ params }: PageProps) {
                 
                 if (!hasRuns) {
                   return (
-                    <WorkflowDefinitionCard key={workflow.id} workflow={workflow} />
+                    <WorkflowDefinitionCard key={workflow.id} workflow={workflow} repoSlug={repoSlug} />
                   );
                 }
 
