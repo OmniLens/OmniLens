@@ -9,6 +9,17 @@ import { useSession } from "@/lib/auth-client";
 
 const changelogData = [
   {
+    version: "0.8.1-alpha",
+    date: "2025-01-27",
+    type: "patch",
+    changes: {
+      fixed: [
+        "Repository addition error in production environments",
+        "Database constraint issues preventing repository creation"
+      ]
+    }
+  },
+  {
     version: "0.8.0-alpha",
     date: "2025-10-10",
     type: "major",
