@@ -15,10 +15,31 @@ const pool = new Pool({
   } : false,
 });
 
+// Get the base URL dynamically for different environments
+function getBaseURL(): string {
+  // In Vercel (production/preview), use the Vercel URL
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // For local development or custom deployments
+  return process.env.BETTER_AUTH_URL || "http://localhost:3000";
+}
+
 export const auth = betterAuth({
   database: pool,
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: getBaseURL(),
   secret: process.env.BETTER_AUTH_SECRET,
+  trustedOrigins: [
+    // Production
+    "https://www.omnilens.xyz",
+    // Local development
+    "http://localhost:3000",
+    // Vercel preview deployments (wildcard pattern)
+    "https://omnilens-*-christopher-zeuchs-projects.vercel.app",
+    // Dynamic Vercel URL (for current deployment)
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+  ],
   socialProviders: { 
     github: { 
       clientId: process.env.GITHUB_CLIENT_ID as string, 
