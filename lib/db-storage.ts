@@ -30,9 +30,11 @@ export async function loadUserAddedRepos(userId: string): Promise<Repository[]> 
 // Add a new repository to the database for a specific user
 export async function addUserRepo(repo: Repository, userId: string): Promise<{ success: boolean; error?: string }> {
   const client = await pool.connect();
+  let transactionStarted = false;
   
   try {
     await client.query('BEGIN');
+    transactionStarted = true;
     
     // Check current repository count for the user
     const countResult = await client.query(
@@ -45,34 +47,33 @@ export async function addUserRepo(repo: Repository, userId: string): Promise<{ s
     
     if (currentCount >= MAX_REPOSITORIES) {
       await client.query('ROLLBACK');
+      transactionStarted = false;
       return {
         success: false,
         error: `Maximum repository limit reached. You can add up to ${MAX_REPOSITORIES} repositories. Please remove some repositories before adding new ones.`
       };
     }
     
-    // Check if repository already exists for this user
-    const existingRepo = await client.query(
-      'SELECT id FROM repositories WHERE user_id = $1 AND slug = $2',
-      [userId, repo.slug]
-    );
-    
-    if (existingRepo.rows.length > 0) {
-      await client.query('ROLLBACK');
-      return { success: false, error: 'Repository already exists' };
-    }
-    
-    // Insert the new repository
+    // Use atomic INSERT with ON CONFLICT to handle race conditions
     const result = await client.query(
-      'INSERT INTO repositories (slug, repo_path, display_name, html_url, default_branch, avatar_url, visibility, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+      'INSERT INTO repositories (slug, repo_path, display_name, html_url, default_branch, avatar_url, visibility, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (user_id, slug) DO NOTHING RETURNING id',
       [repo.slug, repo.repoPath, repo.displayName, repo.htmlUrl, repo.defaultBranch, repo.avatarUrl, repo.visibility || 'public', userId]
     );
     
+    // If no rows were inserted, the repository already exists
+    if (result.rowCount === 0) {
+      await client.query('ROLLBACK');
+      transactionStarted = false;
+      return { success: false, error: 'Repository already exists' };
+    }
+    
     await client.query('COMMIT');
-    const success = (result.rowCount ?? 0) > 0;
-    return { success };
+    transactionStarted = false;
+    return { success: true };
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (transactionStarted) {
+      await client.query('ROLLBACK');
+    }
     console.error('Error adding repository:', error);
     return { success: false, error: 'Failed to add repository' };
   } finally {
