@@ -16,14 +16,16 @@ const changelogData = [
       fixed: [
         "PostgreSQL ON CONFLICT constraint error in production",
         "Missing unique constraint on workflows table",
-        "Repository data not loading after adding new repositories"
+        "Repository data not loading after adding new repositories",
+        "OAuth redirect URI configuration for Vercel preview deployments"
       ],
       added: [
         "Automatic database constraint detection and creation",
         "Runtime database constraint validation"
       ],
       changed: [
-        "Increased workflow data fetch timeout from 3 to 10 seconds"
+        "Increased workflow data fetch timeout from 3 to 10 seconds",
+        "Simplified auth baseURL configuration for better Vercel compatibility"
       ]
     }
   },

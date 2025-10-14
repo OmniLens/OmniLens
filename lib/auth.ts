@@ -17,29 +17,33 @@ const pool = new Pool({
 
 // Get the base URL dynamically for different environments
 function getBaseURL(): string {
-  // In Vercel (production/preview), use the Vercel URL
+  // Use VERCEL_URL if available (for preview deployments)
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
   
-  // For local development or custom deployments
-  return process.env.BETTER_AUTH_URL || "http://localhost:3000";
+  // Use BETTER_AUTH_URL if set (for custom deployments)
+  if (process.env.BETTER_AUTH_URL) {
+    return process.env.BETTER_AUTH_URL;
+  }
+  
+  // Default to localhost for development
+  return "http://localhost:3000";
 }
+
+const baseURL = getBaseURL();
+const trustedOrigins = [
+  "https://www.omnilens.xyz", // Production
+  "http://localhost:3000", // Local development
+  "https://omnilens-*-christopher-zeuchs-projects.vercel.app", // Vercel preview pattern
+  ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []), // Current deployment
+];
 
 export const auth = betterAuth({
   database: pool,
-  baseURL: getBaseURL(),
+  baseURL,
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: [
-    // Production
-    "https://www.omnilens.xyz",
-    // Local development
-    "http://localhost:3000",
-    // Vercel preview deployments (wildcard pattern)
-    "https://omnilens-*-christopher-zeuchs-projects.vercel.app",
-    // Dynamic Vercel URL (for current deployment)
-    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
-  ],
+  trustedOrigins,
   socialProviders: { 
     github: { 
       clientId: process.env.GITHUB_CLIENT_ID as string, 
