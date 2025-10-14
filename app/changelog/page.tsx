@@ -9,8 +9,21 @@ import { useSession } from "@/lib/auth-client";
 
 const changelogData = [
   {
+    version: "0.8.2-alpha",
+    date: "2025-10-14",
+    type: "patch",
+    changes: {
+      fixed: [
+        "Production OAuth redirect URI using Vercel URL instead of production domain"
+      ],
+      changed: [
+        "Improved auth baseURL logic to distinguish between production and preview deployments"
+      ]
+    }
+  },
+  {
     version: "0.8.1-alpha",
-    date: "2025-01-27",
+    date: "2025-10-14",
     type: "patch",
     changes: {
       fixed: [

@@ -17,6 +17,11 @@ const pool = new Pool({
 
 // Get the base URL dynamically for different environments
 function getBaseURL(): string {
+  // For production, always use the production domain
+  if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
+    return "https://www.omnilens.xyz";
+  }
+  
   // Use VERCEL_URL if available (for preview deployments)
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
