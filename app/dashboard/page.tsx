@@ -396,7 +396,7 @@ export default function DashboardHomePage() {
           });
         }
       } else {
-        // Fallback: invalidate and refetch
+        // Invalidate and refetch to get the latest data
         queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
       }
 

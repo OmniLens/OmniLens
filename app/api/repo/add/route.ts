@@ -90,14 +90,14 @@ export const POST = withAuth(async (request: NextRequest, _context, authData) =>
       // Try to get workflow data quickly (with timeout) to include in response
       let workflowData = null;
       try {
-        // Wait up to 3 seconds for workflow data
+        // Wait up to 10 seconds for workflow data (increased from 3 seconds)
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), 3000)
+          setTimeout(() => reject(new Error('timeout')), 10000)
         );
         workflowData = await Promise.race([workflowPromise, timeoutPromise]);
       } catch (error) {
         // Workflow data fetch is still running in background, that's fine
-        console.log(`Workflow data fetch initiated for ${repoPath}`);
+        console.log(`Workflow data fetch initiated for ${repoPath} (timeout after 10s)`);
       }
 
       return NextResponse.json({
