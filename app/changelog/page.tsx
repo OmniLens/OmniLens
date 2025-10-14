@@ -10,12 +10,20 @@ import { useSession } from "@/lib/auth-client";
 const changelogData = [
   {
     version: "0.8.1-alpha",
-    date: "2025-10-11",
+    date: "2025-01-27",
     type: "patch",
     changes: {
       fixed: [
-        "Repository addition error in production environments",
-        "Database constraint issues preventing repository creation"
+        "PostgreSQL ON CONFLICT constraint error in production",
+        "Missing unique constraint on workflows table",
+        "Repository data not loading after adding new repositories"
+      ],
+      added: [
+        "Automatic database constraint detection and creation",
+        "Runtime database constraint validation"
+      ],
+      changed: [
+        "Increased workflow data fetch timeout from 3 to 10 seconds"
       ]
     }
   },
