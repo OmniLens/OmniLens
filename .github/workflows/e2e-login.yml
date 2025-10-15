@@ -1,140 +1,111 @@
-name: 🎭 Login
+name: 🎭 E2E Login Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: main
   pull_request:
-    branches: [ main, develop ]
+    branches: main
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to test against'
+        required: true
+        default: 'main'
+        type: string
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'localhost'
+        type: choice
+        options:
+          - localhost
+          # - preview
+          # - production
 
 jobs:
-  test:
-    timeout-minutes: 60
+  test-e2e-login:
+    name: 🧪 Run E2E login tests
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        project: [localhost, preview, production]
-    
+    timeout-minutes: 60
+
+    env:
+      TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
+      TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
+      PLAYWRIGHT_BASE_URL: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.environment == 'localhost' && 'http://localhost:3000' || github.event.inputs.environment == 'preview' && 'https://omnilens-git-main-christopher-zeuchs-projects.vercel.app' || 'https://www.omnilens.xyz') || 'http://localhost:3000' }}
+      NODE_ENV: test
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - uses: actions/setup-node@v4
+      
+    - name: 📥 Checkout code
+      uses: actions/checkout@v5
       with:
-        node-version: lts/*
-        cache: 'npm'
-    
-    - name: Install Bun
-      uses: oven-sh/setup-bun@v1
+        ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
+
+    - name: 🍞 Setup Bun
+      uses: oven-sh/setup-bun@v2
       with:
         bun-version: latest
-    
-    - name: Install dependencies
+
+    - name: 🧰 Install dependencies
       run: bun install
-    
-    - name: Install Playwright Browsers
+
+    - name: 🎭 Install Playwright Browsers
       run: bunx playwright install --with-deps chromium
-    
-    - name: Setup environment variables
+
+    - name: 🗄️ Setup database schema (localhost only)
+      if: github.event_name != 'workflow_dispatch' || github.event.inputs.environment == 'localhost'
       run: |
-        echo "TEST_GITHUB_USERNAME=${{ secrets.TEST_GITHUB_USERNAME }}" >> $GITHUB_ENV
-        echo "TEST_GITHUB_PASSWORD=${{ secrets.TEST_GITHUB_PASSWORD }}" >> $GITHUB_ENV
+        # Install PostgreSQL client
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
         
-        # Set base URL based on project
-        if [ "${{ matrix.project }}" = "localhost" ]; then
-          echo "PLAYWRIGHT_BASE_URL=http://localhost:3000" >> $GITHUB_ENV
-        elif [ "${{ matrix.project }}" = "preview" ]; then
-          echo "PLAYWRIGHT_BASE_URL=https://${{ github.event.deployment.payload.web_url || 'omnilens-git-main-christopher-zeuchs-projects.vercel.app' }}" >> $GITHUB_ENV
-        else
-          echo "PLAYWRIGHT_BASE_URL=https://www.omnilens.xyz" >> $GITHUB_ENV
-        fi
-    
-    - name: Setup database (for localhost tests)
-      if: matrix.project == 'localhost'
+        # Wait for PostgreSQL to be ready
+        sleep 5
+        
+        # Create database schema
+        psql -h localhost -U ${{ secrets.DB_USER }} -d ${{ secrets.DB_NAME }} -f lib/schema.sql
+      env:
+        PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+
+    - name: 🚀 Start development server (localhost only)
+      if: github.event_name != 'workflow_dispatch' || github.event.inputs.environment == 'localhost'
       run: |
-        # Add database setup commands here if needed for localhost testing
-        # For example: bun run setup
-        echo "Database setup would go here"
-    
-    - name: Start development server (for localhost tests)
-      if: matrix.project == 'localhost'
-      run: |
+        # Start server in background with environment variables
         bun run dev &
         sleep 30  # Wait for server to start
       env:
-        # Add any required environment variables for localhost
+        GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+        GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+        BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+        BETTER_AUTH_URL: http://localhost:3000
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_HOST: localhost
+        DB_NAME: ${{ secrets.DB_NAME }}
+        DB_PORT: 5432
         NODE_ENV: test
-    
-    - name: Run Playwright tests
-      run: cd e2e && bunx playwright test --project=${{ matrix.project }}
+
+    - name: 🧪 Run E2E login tests
+      run: cd e2e && bunx playwright test --project=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'localhost' }}
       env:
         TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
         TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
         PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
-    
-    - name: Upload test results
+
+    - name: 📤 Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: playwright-report-${{ matrix.project }}
+        name: playwright-report-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'localhost' }}
         path: |
           e2e/playwright-report/
           e2e/test-results/
         retention-days: 30
-    
-    - name: Upload videos
+
+    - name: 📹 Upload videos
       uses: actions/upload-artifact@v4
       if: failure()
       with:
-        name: playwright-videos-${{ matrix.project }}
+        name: playwright-videos-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'localhost' }}
         path: e2e/test-results/
-        retention-days: 30
-
-  # Separate job for running tests against preview deployments
-  test-preview:
-    if: github.event_name == 'pull_request'
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
-    needs: test
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-        cache: 'npm'
-    
-    - name: Install Bun
-      uses: oven-sh/setup-bun@v1
-      with:
-        bun-version: latest
-    
-    - name: Install dependencies
-      run: bun install
-    
-    - name: Install Playwright Browsers
-      run: bunx playwright install --with-deps chromium
-    
-    - name: Wait for Vercel deployment
-      run: |
-        # Wait for Vercel deployment to be ready
-        # This is a placeholder - you might need to implement actual deployment waiting logic
-        echo "Waiting for Vercel deployment..."
-        sleep 60
-    
-    - name: Run Playwright tests against preview
-      run: cd e2e && bunx playwright test --project=preview
-      env:
-        TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
-        TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
-        VERCEL_PREVIEW_URL: ${{ github.event.deployment.payload.web_url }}
-    
-    - name: Upload preview test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: playwright-report-preview
-        path: |
-          e2e/playwright-report/
-          e2e/test-results/
         retention-days: 30
