@@ -13,14 +13,14 @@ config({ path: path.join(__dirname, '../.env') });
  */
 export default defineConfig({
   testDir: './tests',
-  /* Run tests in files in parallel */
-  fullyParallel: true,
+  /* Run tests in files sequentially */
+  fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* No retries */
+  retries: 0,
+  /* Use single worker for sequential execution */
+  workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI 
     ? [
@@ -79,29 +79,6 @@ export default defineConfig({
       dependencies: ['setup'],
     },
 
-    // Preview environment (Vercel preview deployments)
-    {
-      name: 'preview',
-      testMatch: /.*\.spec\.ts/,
-      use: { 
-        ...devices['Desktop Chrome'],
-        baseURL: process.env.VERCEL_PREVIEW_URL || 'https://omnilens-git-main-christopher-zeuchs-projects.vercel.app',
-        storageState: '.auth/preview.json',
-      },
-      dependencies: ['setup'],
-    },
-
-    // Production environment
-    {
-      name: 'production',
-      testMatch: /.*\.spec\.ts/,
-      use: { 
-        ...devices['Desktop Chrome'],
-        baseURL: 'https://www.omnilens.xyz',
-        storageState: '.auth/production.json',
-      },
-      dependencies: ['setup'],
-    },
   ],
 
   /* Run your local dev server before starting the tests */

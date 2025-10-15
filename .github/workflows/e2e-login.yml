@@ -88,7 +88,7 @@ jobs:
       run: |
         # Start server in background with environment variables
         bun run dev &
-        sleep 30  # Wait for server to start
+        sleep 10
       env:
         GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
         GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
@@ -104,8 +104,8 @@ jobs:
     - name: 🧪 Run E2E login tests
       run: cd e2e && bun run ci:local:login --project=localhost
       env:
-        TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
-        TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
+        TEST_GITHUB_USERNAME: ${{ env.TEST_GITHUB_USERNAME }}
+        TEST_GITHUB_PASSWORD: ${{ env.TEST_GITHUB_PASSWORD }}
         PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
 
     - name: 📤 Upload test results

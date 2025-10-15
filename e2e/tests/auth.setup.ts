@@ -1,28 +1,38 @@
-import { test as setup, expect } from '@playwright/test';
+import { test as setup } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import { setAuthenticatedSession, waitForAuthentication } from '../helpers/auth-helpers.js';
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Determine which environment we're setting up auth for
+// Auth file path for localhost environment
 const getAuthFilePath = () => {
-  const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
-  
-  if (baseURL.includes('localhost')) {
-    return path.join(__dirname, '../.auth/localhost.json');
-  } else if (baseURL.includes('vercel.app') || baseURL.includes('preview')) {
-    return path.join(__dirname, '../.auth/preview.json');
-  } else {
-    return path.join(__dirname, '../.auth/production.json');
+  return path.join(__dirname, '../.auth/localhost.json');
+};
+
+// Clear any existing auth file to force fresh authentication
+const clearAuthFile = () => {
+  const authFile = getAuthFilePath();
+  if (fs.existsSync(authFile)) {
+    fs.unlinkSync(authFile);
+    console.log('🗑️ Cleared existing auth file to force fresh authentication');
   }
 };
 
 setup('authenticate', async ({ page }) => {
   const authFile = getAuthFilePath();
-  const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
+  const baseURL = 'http://localhost:3000';
+  
+  // Clear any existing auth file to force fresh authentication
+  clearAuthFile();
+  
+  // Clear browser storage and cookies for fresh session
+  await page.context().clearCookies();
+  await page.context().clearPermissions();
+  console.log('🧹 Cleared browser storage and cookies for fresh session');
   
   console.log(`🔐 Setting up authentication for: ${baseURL}`);
   console.log(`💾 Auth file will be saved to: ${authFile}`);
