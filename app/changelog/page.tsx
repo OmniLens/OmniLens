@@ -9,6 +9,32 @@ import { useSession } from "@/lib/auth-client";
 
 const changelogData = [
   {
+    version: "0.8.3-alpha",
+    date: "2025-01-27",
+    type: "minor",
+    changes: {
+      added: [
+        "Playwright E2E Testing Framework with comprehensive test suite",
+        "Automated GitHub OAuth login flow testing with secure credential handling",
+        "Multi-environment testing support (localhost, preview, production)",
+        "Authentication setup and session management for E2E tests",
+        "Login and logout flow testing with proper session validation",
+        "Monorepo structure with dedicated E2E testing workspace",
+        "GitHub Actions CI/CD integration for automated E2E testing"
+      ],
+      changed: [
+        "Updated project structure to support monorepo architecture",
+        "Enhanced security for test credentials using dotenv and secure form filling",
+        "Improved test organization with separate setup and test projects"
+      ],
+      fixed: [
+        "Environment variable loading in Playwright configuration",
+        "TypeScript error handling for unknown error types",
+        "Test project dependencies and execution order"
+      ]
+    }
+  },
+  {
     version: "0.8.2-alpha",
     date: "2025-10-14",
     type: "patch",
