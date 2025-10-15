@@ -10,6 +10,10 @@ const __dirname = path.dirname(__filename);
 
 // Auth file path for localhost environment
 const getAuthFilePath = () => {
+  // In CI, use a more reliable path
+  if (process.env.CI) {
+    return path.join(process.cwd(), '.auth/localhost.json');
+  }
   return path.join(__dirname, '../.auth/localhost.json');
 };
 
@@ -22,12 +26,25 @@ const clearAuthFile = () => {
   }
 };
 
+// Ensure auth directory exists
+const ensureAuthDirectory = () => {
+  const authFile = getAuthFilePath();
+  const authDir = path.dirname(authFile);
+  if (!fs.existsSync(authDir)) {
+    fs.mkdirSync(authDir, { recursive: true });
+    console.log(`📁 Created auth directory: ${authDir}`);
+  }
+};
+
 setup('authenticate', async ({ page }) => {
   const authFile = getAuthFilePath();
   const baseURL = 'http://localhost:3000';
   
   // Clear any existing auth file to force fresh authentication
   clearAuthFile();
+  
+  // Ensure auth directory exists
+  ensureAuthDirectory();
   
   // Clear browser storage and cookies for fresh session
   await page.context().clearCookies();
@@ -52,11 +69,18 @@ setup('authenticate', async ({ page }) => {
   } catch (error) {
     console.error('❌ Authentication setup failed:', error instanceof Error ? error.message : String(error));
     
-    // Take a screenshot for debugging (without sensitive data)
-    await page.screenshot({ 
-      path: `test-results/auth-setup-failure-${Date.now()}.png`,
-      fullPage: true 
-    });
+    // Take a screenshot for debugging (without sensitive data) - only if page is still available
+    try {
+      if (!page.isClosed()) {
+        await page.screenshot({ 
+          path: `test-results/auth-setup-failure-${Date.now()}.png`,
+          fullPage: true 
+        });
+        console.log('📸 Screenshot saved for debugging');
+      }
+    } catch (screenshotError) {
+      console.log('⚠️ Could not take screenshot (page may be closed)');
+    }
     
     throw error;
   }
