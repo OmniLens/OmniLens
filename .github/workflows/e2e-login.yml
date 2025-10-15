@@ -33,6 +33,27 @@ jobs:
       TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
       PLAYWRIGHT_BASE_URL: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.environment == 'localhost' && 'http://localhost:3000' || github.event.inputs.environment == 'preview' && 'https://omnilens-git-main-christopher-zeuchs-projects.vercel.app' || 'https://www.omnilens.xyz') || 'http://localhost:3000' }}
       NODE_ENV: test
+      # Database environment variables
+      DB_HOST: localhost
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_PORT: 5432
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       
@@ -63,7 +84,7 @@ jobs:
         sleep 5
         
         # Create database schema
-        psql -h localhost -U ${{ secrets.DB_USER }} -d ${{ secrets.DB_NAME }} -f lib/schema.sql
+        psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f lib/schema.sql
       env:
         PGPASSWORD: ${{ secrets.DB_PASSWORD }}
 
