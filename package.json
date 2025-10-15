@@ -14,7 +14,15 @@
     "test:auth": "bun tests/test-auth.js",
     "test:auth:basic": "bun tests/test-auth-basic.js",
     "test:auth:valid": "bun tests/test-auth-valid.js",
-    "test:github-status": "bun tests/test-github-status.js"
+    "test:github-status": "bun tests/test-github-status.js",
+    "test:e2e": "cd e2e && bunx playwright test",
+    "test:e2e:ui": "cd e2e && bunx playwright test --ui",
+    "test:e2e:localhost": "cd e2e && bunx playwright test --project=localhost",
+    "test:e2e:preview": "cd e2e && bunx playwright test --project=preview",
+    "test:e2e:production": "cd e2e && bunx playwright test --project=production",
+    "test:e2e:headed": "cd e2e && bunx playwright test --headed",
+    "test:e2e:debug": "cd e2e && bunx playwright test --debug",
+    "test:e2e:report": "cd e2e && bunx playwright show-report"
   },
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.16",
@@ -43,6 +51,7 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.0",
     "@types/node": "24.1.0",
     "@types/react": "18.3.24",
     "@types/react-dom": "^18.2.0",
