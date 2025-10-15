@@ -86,7 +86,7 @@ jobs:
         NODE_ENV: test
 
     - name: 🧪 Run E2E login tests
-      run: cd e2e && bunx playwright test --project=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'localhost' }}
+      run: cd e2e && bun run ci:local:login --project=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'localhost' }}
       env:
         TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
         TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}

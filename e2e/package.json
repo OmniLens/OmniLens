@@ -4,13 +4,22 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "ci:local:login": "playwright test login.spec.ts",
+
+
+
+
     "test": "playwright test",
-    "test:ui": "playwright test --project=setup --ui",
-    "test:localhost": "playwright test --project=localhost --ui",
-    "test:preview": "playwright test --project=preview",
-    "test:production": "playwright test --project=production",
-    "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug",
+
+    "test:setup": "playwright test --project=setup",
+    "test:setup:ui": "playwright test --project=setup --headed",
+
+    "test:local:login": "playwright test login.spec.ts --project=localhost",
+    "test:local:login:ui": "playwright test login.spec.ts --project=localhost --headed",
+
+    "test:local:logout": "playwright test logout.spec.ts --project=localhost",
+    "test:local:logout:ui": "playwright test logout.spec.ts --project=localhost --headed",
+
     "test:report": "playwright show-report",
     "install:browsers": "playwright install --with-deps chromium"
   },
