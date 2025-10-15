@@ -6,21 +6,6 @@ on:
   pull_request:
     branches: main
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to test against'
-        required: true
-        default: 'main'
-        type: string
-      environment:
-        description: 'Environment to test'
-        required: true
-        default: 'localhost'
-        type: choice
-        options:
-          - localhost
-          # - preview
-          # - production
 
 jobs:
   test-e2e-login:
@@ -31,7 +16,7 @@ jobs:
     env:
       TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
       TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
-      PLAYWRIGHT_BASE_URL: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.environment == 'localhost' && 'http://localhost:3000' || github.event.inputs.environment == 'preview' && 'https://omnilens-git-main-christopher-zeuchs-projects.vercel.app' || 'https://www.omnilens.xyz') || 'http://localhost:3000' }}
+      PLAYWRIGHT_BASE_URL: http://localhost:3000
       NODE_ENV: test
       # Database environment variables
       DB_HOST: localhost
@@ -85,8 +70,7 @@ jobs:
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: bunx playwright install chromium
 
-    - name: 🗄️ Setup database schema (localhost only)
-      if: github.event_name != 'workflow_dispatch' || github.event.inputs.environment == 'localhost'
+    - name: 🗄️ Setup database schema
       run: |
         # Install PostgreSQL client
         sudo apt-get update
@@ -100,8 +84,7 @@ jobs:
       env:
         PGPASSWORD: ${{ secrets.DB_PASSWORD }}
 
-    - name: 🚀 Start development server (localhost only)
-      if: github.event_name != 'workflow_dispatch' || github.event.inputs.environment == 'localhost'
+    - name: 🚀 Start development server
       run: |
         # Start server in background with environment variables
         bun run dev &
@@ -119,7 +102,7 @@ jobs:
         NODE_ENV: test
 
     - name: 🧪 Run E2E login tests
-      run: cd e2e && bun run ci:local:login --project=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'localhost' }}
+      run: cd e2e && bun run ci:local:login --project=localhost
       env:
         TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
         TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
@@ -129,7 +112,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: playwright-report-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'localhost' }}
+        name: playwright-report-localhost
         path: |
           e2e/playwright-report/
           e2e/test-results/
@@ -139,6 +122,6 @@ jobs:
       uses: actions/upload-artifact@v4
       if: failure()
       with:
-        name: playwright-videos-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'localhost' }}
+        name: playwright-videos-localhost
         path: e2e/test-results/
         retention-days: 30
