@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { isLoggedIn } from '../helpers/auth-helpers.js';
 
-test.describe('Login Flow', () => {
+test.describe.serial('Login Flow', () => {
   test('should redirect to dashboard when already authenticated', async ({ page }) => {
     // Since we're already authenticated via setup, navigating to login should redirect
     await page.goto('/login');
