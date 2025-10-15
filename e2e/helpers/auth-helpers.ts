@@ -278,3 +278,19 @@ export async function verifyLoggedOut(page: Page) {
   // Should be redirected to login page
   await expect(page).toHaveURL(/.*\/login/);
 }
+
+/**
+ * Load authentication state from GitHub environment variable (for CI)
+ */
+export function loadAuthStateFromEnv(): any | null {
+  if (process.env.CI && process.env.PLAYWRIGHT_AUTH_STATE) {
+    try {
+      console.log('🔄 Loading auth state from GitHub environment variable');
+      return JSON.parse(process.env.PLAYWRIGHT_AUTH_STATE);
+    } catch (error) {
+      console.error('❌ Failed to parse auth state from environment variable:', error);
+      return null;
+    }
+  }
+  return null;
+}
