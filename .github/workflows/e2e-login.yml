@@ -1,4 +1,4 @@
-name: 🎭 E2E Login Test
+name: 🎭 E2E Tests
 
 on:
   push:
@@ -8,21 +8,24 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-e2e-login:
-    name: 🧪 Run E2E login tests
+  test-e2e:
+    name: 🧪 Run E2E tests
     runs-on: ubuntu-latest
 
     env:
-      TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
-      TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
       PLAYWRIGHT_BASE_URL: http://localhost:3000
       NODE_ENV: test
-      # Database environment variables
-      DB_HOST: localhost
+      # Database
       DB_USER: ${{ secrets.DB_USER }}
       DB_NAME: ${{ secrets.DB_NAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_PORT: 5432
+      # GitHub OAuth
+      GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+      GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      # Test credentials
+      TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
+      TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
 
     services:
       postgres:
@@ -79,9 +82,7 @@ jobs:
         sleep 5
         
         # Create database schema
-        psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f lib/schema.sql
-      env:
-        PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+        psql -h localhost -U $DB_USER -d $DB_NAME -f lib/schema.sql
 
     - name: 🚀 Start development server
       run: |
@@ -89,23 +90,12 @@ jobs:
         bun run dev &
         sleep 10
       env:
-        GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
-        GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
-        BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
         BETTER_AUTH_URL: http://localhost:3000
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        DB_USER: ${{ secrets.DB_USER }}
         DB_HOST: localhost
-        DB_NAME: ${{ secrets.DB_NAME }}
         DB_PORT: 5432
-        NODE_ENV: test
 
     - name: 🧪 Run E2E tests
       run: cd e2e && bun run test:login
-      env:
-        TEST_GITHUB_USERNAME: ${{ env.TEST_GITHUB_USERNAME }}
-        TEST_GITHUB_PASSWORD: ${{ env.TEST_GITHUB_PASSWORD }}
-        PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
 
     - name: 📤 Upload test results
       uses: actions/upload-artifact@v4

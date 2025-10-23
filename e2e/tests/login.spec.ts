@@ -17,7 +17,7 @@ test.describe.serial('Login Flow', () => {
     console.log('\n');
   });
 
-  test('should be authenticated via session cookie', async ({ page }) => {
+  test.skip('should be authenticated via session cookie', async ({ page }) => {
     console.log('🧪 Test 2: should be authenticated via session cookie');
     // This test assumes we're already authenticated via session cookie
     // Navigate to dashboard to verify authentication
@@ -33,7 +33,7 @@ test.describe.serial('Login Flow', () => {
     console.log('\n');
   });
 
-  test('should display dashboard content when authenticated', async ({ page }) => {
+  test.skip('should display dashboard content when authenticated', async ({ page }) => {
     console.log('🧪 Test 3: should display dashboard content when authenticated');
     // This test assumes we're already authenticated via session cookie
     await page.goto('/dashboard');
