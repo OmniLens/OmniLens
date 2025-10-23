@@ -24,6 +24,118 @@ function getTestCredentials() {
 }
 
 /**
+ * Perform OAuth Device Authorization Flow
+ * This is designed for CI/headless environments where device verification is required
+ */
+async function performDeviceAuthorizationFlow(page: Page) {
+  console.log('🔐 Starting OAuth Device Authorization Flow...');
+  
+  try {
+    // Get the client ID from environment
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    if (!clientId) {
+      throw new Error('GITHUB_CLIENT_ID environment variable is required for device flow');
+    }
+    
+    // Step 1: Request device and user verification codes
+    console.log('📱 Requesting device authorization codes...');
+    const deviceResponse = await fetch('https://github.com/login/device/code', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: clientId,
+        scope: 'user:email'
+      })
+    });
+    
+    if (!deviceResponse.ok) {
+      throw new Error(`Failed to request device codes: ${deviceResponse.statusText}`);
+    }
+    
+    const deviceData = await deviceResponse.json();
+    console.log('✅ Device codes received');
+    console.log(`🔍 User code: ${deviceData.user_code}`);
+    console.log(`🔍 Verification URI: ${deviceData.verification_uri}`);
+    
+    // Step 2: Navigate to verification URI and enter user code
+    console.log('🌐 Navigating to verification URI...');
+    await page.goto(deviceData.verification_uri);
+    await page.waitForLoadState('networkidle');
+    
+    // Enter the user code
+    const userCodeField = page.locator('input[name="user_code"]');
+    await userCodeField.fill(deviceData.user_code);
+    
+    // Click authorize button
+    const authorizeButton = page.locator('button[type="submit"]');
+    await authorizeButton.click();
+    console.log('✅ User code submitted');
+    
+    // Step 3: Poll for access token
+    console.log('⏳ Polling for access token...');
+    const pollInterval = deviceData.interval * 1000; // Convert to milliseconds
+    const expiresIn = deviceData.expires_in * 1000;
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < expiresIn) {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: clientId,
+          device_code: deviceData.device_code,
+          grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+        })
+      });
+      
+      const tokenData = await tokenResponse.json();
+      
+      if (tokenData.access_token) {
+        console.log('✅ Access token received via device flow');
+        
+        // Store the token for the session
+        await page.evaluate((token) => {
+          localStorage.setItem('github_access_token', token);
+        }, tokenData.access_token);
+        
+        // Navigate back to the app
+        await page.goto('/dashboard');
+        return;
+      }
+      
+      if (tokenData.error === 'authorization_pending') {
+        console.log('⏳ Authorization still pending...');
+        continue;
+      }
+      
+      if (tokenData.error === 'slow_down') {
+        console.log('⏳ Rate limited, waiting longer...');
+        await new Promise(resolve => setTimeout(resolve, pollInterval * 2));
+        continue;
+      }
+      
+      if (tokenData.error) {
+        throw new Error(`Device flow error: ${tokenData.error_description || tokenData.error}`);
+      }
+    }
+    
+    throw new Error('Device authorization timed out');
+    
+  } catch (error) {
+    console.error('❌ Device authorization flow failed:', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+}
+
+/**
  * Perform GitHub OAuth login flow
  * This handles the complete GitHub OAuth flow including GitHub login
  */
@@ -45,23 +157,14 @@ export async function performGitHubLogin(page: Page) {
     // Wait for GitHub OAuth page to load
     await page.waitForURL('**/github.com/**', { timeout: 10000 });
     console.log('✅ Redirected to GitHub');
+    console.log('🔍 Current URL after redirect:', page.url());
     
-    // Check if we're on device verification page
+    // Check if we're on device verification page FIRST
     if (page.url().includes('github.com/sessions/verified-device')) {
-      console.log('⚠️ GitHub device verification detected - using mock authentication');
-      // Mock the authentication by directly setting session data
-      await page.evaluate(() => {
-        // Set mock session data that your app will recognize
-        localStorage.setItem('mock_auth', 'true');
-        localStorage.setItem('mock_user', JSON.stringify({
-          id: 'test-user-id',
-          name: 'Test User',
-          email: 'test@example.com'
-        }));
-      });
+      console.log('⚠️ GitHub device verification detected - using OAuth Device Flow');
       
-      // Navigate back to your app
-      await page.goto('/dashboard');
+      // Use OAuth Device Authorization Flow for CI environments
+      await performDeviceAuthorizationFlow(page);
       return;
     }
     
@@ -87,6 +190,13 @@ export async function performGitHubLogin(page: Page) {
       // Wait for GitHub to process login and check for errors
       await page.waitForTimeout(3000);
       
+      // Check if we're now on device verification page
+      if (page.url().includes('github.com/sessions/verified-device')) {
+        console.log('⚠️ GitHub device verification detected after login - using OAuth Device Flow');
+        await performDeviceAuthorizationFlow(page);
+        return;
+      }
+      
       // Check for the specific "Incorrect username or password" error
       const incorrectCredentials = page.locator('text=Incorrect username or password');
       if (await incorrectCredentials.isVisible({ timeout: 2000 })) {
@@ -98,11 +208,6 @@ export async function performGitHubLogin(page: Page) {
       console.log('🔍 Current URL:', page.url());
       console.log('🔍 Page title:', await page.title());
       
-      // Check if we're on a different GitHub page that requires different handling
-      if (page.url().includes('github.com/sessions/verified-device')) {
-        console.log('⚠️ GitHub device verification page detected - this might require manual intervention');
-        throw new Error('GitHub device verification required - cannot automate');
-      }
     }
     
     // Handle GitHub OAuth authorization
