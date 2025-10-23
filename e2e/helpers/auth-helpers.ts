@@ -12,6 +12,14 @@ function getTestCredentials() {
     throw new Error('TEST_GITHUB_USERNAME and TEST_GITHUB_PASSWORD environment variables are required');
   }
   
+  // Debug: Log environment info (without credentials)
+  console.log('🔍 Environment Debug Info:');
+  console.log(`  - Username length: ${username.length}`);
+  console.log(`  - Password length: ${password.length}`);
+  console.log(`  - CI Environment: ${process.env.CI ? 'Yes' : 'No'}`);
+  console.log(`  - Node Environment: ${process.env.NODE_ENV || 'undefined'}`);
+  console.log(`  - Base URL: ${process.env.PLAYWRIGHT_BASE_URL || 'undefined'}`);
+  
   return { username, password };
 }
 
@@ -43,27 +51,28 @@ export async function performGitHubLogin(page: Page) {
     if (await loginField.isVisible({ timeout: 5000 })) {
       console.log('📝 Filling GitHub credentials...');
       
-      // Use proper Playwright form filling that triggers all DOM events
+      // Fill username first
       await loginField.fill(username);
-      await page.locator('#password').fill(password);
       
-      // Wait a moment for form validation
+      // Fill password
+      const passwordField = page.locator('#password');
+      await passwordField.click(); // Focus the field
+      await passwordField.fill(password);
+      
+      // Wait for form to be ready
       await page.waitForTimeout(1000);
       
-      // Try to submit the form - handle different submit button variations
-      const submitButton = page.locator('input[type="submit"], button[type="submit"], input[value*="Sign"], button:has-text("Sign")').first();
-      await submitButton.click();
-      console.log('✅ Submitted GitHub credentials');
+      // Submit the form
+      await page.click('input[type="submit"]');
       
       // Wait for GitHub to process login and check for errors
       await page.waitForTimeout(3000);
       
-      // Check if there are any error messages
-      const errorMessage = page.locator('.flash-error, .error, [class*="error"], .alert-danger');
-      if (await errorMessage.isVisible({ timeout: 2000 })) {
-        const errorText = await errorMessage.textContent();
-        console.error('❌ GitHub login error:', errorText);
-        throw new Error(`GitHub login failed: ${errorText}`);
+      // Check for the specific "Incorrect username or password" error
+      const incorrectCredentials = page.locator('text=Incorrect username or password');
+      if (await incorrectCredentials.isVisible({ timeout: 2000 })) {
+        console.error('❌ GitHub login error: Incorrect username or password');
+        throw new Error('GitHub login failed: Incorrect username or password');
       }
     }
     
