@@ -84,7 +84,7 @@ jobs:
         # Create database schema
         psql -h localhost -U $DB_USER -d $DB_NAME -f lib/schema.sql
       env:
-        PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+        PGPASSWORD: ${{ env.DB_PASSWORD }}
 
     - name: 🚀 Start development server
       run: |
@@ -92,12 +92,18 @@ jobs:
         bun run dev &
         sleep 10
       env:
-        BETTER_AUTH_URL: http://localhost:3000
+        BETTER_AUTH_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
         DB_HOST: localhost
         DB_PORT: 5432
 
     - name: 🧪 Run E2E tests
       run: cd e2e && bun run test:login
+      env:
+        GITHUB_CLIENT_ID: ${{ env.GITHUB_CLIENT_ID }}
+        GITHUB_CLIENT_SECRET: ${{ env.GITHUB_CLIENT_SECRET }}
+        BETTER_AUTH_SECRET: ${{ env.BETTER_AUTH_SECRET }}
+        TEST_GITHUB_USERNAME: ${{ env.TEST_GITHUB_USERNAME }}
+        TEST_GITHUB_PASSWORD: ${{ env.TEST_GITHUB_PASSWORD }}
 
     - name: 📤 Upload test results
       uses: actions/upload-artifact@v4
