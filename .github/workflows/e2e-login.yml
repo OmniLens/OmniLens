@@ -23,9 +23,6 @@ jobs:
       GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
       GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
       BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-      # Test credentials
-      TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
-      TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
 
     services:
       postgres:
@@ -99,11 +96,8 @@ jobs:
     - name: 🧪 Run E2E tests
       run: cd e2e && bun run test:login
       env:
-        GITHUB_CLIENT_ID: ${{ env.GITHUB_CLIENT_ID }}
-        GITHUB_CLIENT_SECRET: ${{ env.GITHUB_CLIENT_SECRET }}
-        BETTER_AUTH_SECRET: ${{ env.BETTER_AUTH_SECRET }}
-        TEST_GITHUB_USERNAME: ${{ env.TEST_GITHUB_USERNAME }}
-        TEST_GITHUB_PASSWORD: ${{ env.TEST_GITHUB_PASSWORD }}
+        TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
+        TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
 
     - name: 📤 Upload test results
       uses: actions/upload-artifact@v4
