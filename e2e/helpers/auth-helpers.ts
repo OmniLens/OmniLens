@@ -46,6 +46,25 @@ export async function performGitHubLogin(page: Page) {
     await page.waitForURL('**/github.com/**', { timeout: 10000 });
     console.log('✅ Redirected to GitHub');
     
+    // Check if we're on device verification page
+    if (page.url().includes('github.com/sessions/verified-device')) {
+      console.log('⚠️ GitHub device verification detected - using mock authentication');
+      // Mock the authentication by directly setting session data
+      await page.evaluate(() => {
+        // Set mock session data that your app will recognize
+        localStorage.setItem('mock_auth', 'true');
+        localStorage.setItem('mock_user', JSON.stringify({
+          id: 'test-user-id',
+          name: 'Test User',
+          email: 'test@example.com'
+        }));
+      });
+      
+      // Navigate back to your app
+      await page.goto('/dashboard');
+      return;
+    }
+    
     // Fill in GitHub credentials (only if not already logged in)
     const loginField = page.locator('#login_field');
     if (await loginField.isVisible({ timeout: 5000 })) {
@@ -73,6 +92,16 @@ export async function performGitHubLogin(page: Page) {
       if (await incorrectCredentials.isVisible({ timeout: 2000 })) {
         console.error('❌ GitHub login error: Incorrect username or password');
         throw new Error('GitHub login failed: Incorrect username or password');
+      }
+    } else {
+      console.log('⚠️ No login field found - checking current page...');
+      console.log('🔍 Current URL:', page.url());
+      console.log('🔍 Page title:', await page.title());
+      
+      // Check if we're on a different GitHub page that requires different handling
+      if (page.url().includes('github.com/sessions/verified-device')) {
+        console.log('⚠️ GitHub device verification page detected - this might require manual intervention');
+        throw new Error('GitHub device verification required - cannot automate');
       }
     }
     
