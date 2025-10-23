@@ -1,0 +1,118 @@
+name: 🎭 E2E Tests
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+  workflow_dispatch:
+
+jobs:
+  test-e2e:
+    name: 🧪 Run E2E tests
+    runs-on: ubuntu-latest
+
+    env:
+      PLAYWRIGHT_BASE_URL: http://localhost:3000
+      NODE_ENV: test
+      # Database
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      # GitHub OAuth
+      GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+      GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      
+    - name: 📥 Checkout code
+      uses: actions/checkout@v5
+      with:
+        ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
+
+    - name: 🍞 Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: 🧰 Install dependencies
+      run: bun install
+
+    - name: 🎭 Cache Playwright browsers
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: |
+          ~/.cache/ms-playwright
+        key: playwright-${{ hashFiles('e2e/package.json') }}-${{ hashFiles('e2e/bun.lock') }}
+        restore-keys: |
+          playwright-${{ hashFiles('e2e/package.json') }}-
+          playwright-
+
+    - name: 🎭 Install Playwright Browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: bunx playwright install chromium
+
+    - name: 🗄️ Setup database schema
+      run: |
+        # Install PostgreSQL client
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+        
+        # Wait for PostgreSQL to be ready
+        sleep 5
+        
+        # Create database schema
+        psql -h localhost -U $DB_USER -d $DB_NAME -f lib/schema.sql
+      env:
+        PGPASSWORD: ${{ env.DB_PASSWORD }}
+
+    - name: 🚀 Start development server
+      run: |
+        # Start server in background with environment variables
+        bun run dev &
+        sleep 10
+      env:
+        BETTER_AUTH_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
+        DB_HOST: localhost
+        DB_PORT: 5432
+
+    - name: 🧪 Run Auth test
+      run: cd e2e && bun run test:auth
+      env:
+        TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
+        TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}
+
+    - name: 📤 Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report-localhost
+        path: |
+          e2e/playwright-report/
+          e2e/test-results/
+        retention-days: 30
+
+    - name: 📹 Upload videos
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: playwright-videos-localhost
+        path: e2e/test-results/
+        retention-days: 30
