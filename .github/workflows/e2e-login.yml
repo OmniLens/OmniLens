@@ -100,15 +100,8 @@ jobs:
         DB_PORT: 5432
         NODE_ENV: test
 
-    - name: 🧪 Run Login tests
-      run: cd e2e && bun run ci:local:login --project=localhost
-      env:
-        TEST_GITHUB_USERNAME: ${{ env.TEST_GITHUB_USERNAME }}
-        TEST_GITHUB_PASSWORD: ${{ env.TEST_GITHUB_PASSWORD }}
-        PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
-
-    - name: 🧪 Run Logout tests
-      run: cd e2e && bun run ci:local:logout --project=localhost
+    - name: 🧪 Run E2E tests
+      run: cd e2e && bun run test:login
       env:
         TEST_GITHUB_USERNAME: ${{ env.TEST_GITHUB_USERNAME }}
         TEST_GITHUB_PASSWORD: ${{ env.TEST_GITHUB_PASSWORD }}

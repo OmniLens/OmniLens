@@ -60,35 +60,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    // CI auth setup (only runs in CI)
-    ...(process.env.CI ? [{
-      name: 'ci-auth',
-      testMatch: /.*ci-auth\.setup\.ts/,
-      use: { ...devices['Desktop Chrome'] },
-    }] : []),
-
-    // Default project for all test specs (localhost)
+    // Main test project - works everywhere
     {
       name: 'chromium',
+      testMatch: /.*\.spec\.ts/,
       use: { 
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3000',
         storageState: '.auth/localhost.json',
       },
       dependencies: ['setup'],
-    },
-
-    // Localhost environment
-    {
-      name: 'localhost',
-      testMatch: /.*\.spec\.ts/,
-      use: { 
-        ...devices['Desktop Chrome'],
-        baseURL: 'http://localhost:3000',
-        // In CI, use environment variable; locally use file
-        storageState: process.env.CI ? undefined : '.auth/localhost.json',
-      },
-      dependencies: process.env.CI ? ['setup', 'ci-auth'] : ['setup'],
     },
 
   ],

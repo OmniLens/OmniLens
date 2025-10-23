@@ -10,10 +10,6 @@ const __dirname = path.dirname(__filename);
 
 // Auth file path for localhost environment
 const getAuthFilePath = () => {
-  // In CI, use a more reliable path
-  if (process.env.CI) {
-    return path.join(process.cwd(), '.auth/localhost.json');
-  }
   return path.join(__dirname, '../.auth/localhost.json');
 };
 
@@ -62,21 +58,7 @@ setup('authenticate', async ({ page }) => {
     await waitForAuthentication(page);
     
     // Save authenticated state
-    if (process.env.CI) {
-      // In CI, save to GitHub environment variable instead of file
-      const storageState = await page.context().storageState();
-      const authData = JSON.stringify(storageState);
-      
-      // Set GitHub environment variable (this will be available to subsequent steps)
-      console.log('💾 Saving auth state to GitHub environment variable');
-      process.env.PLAYWRIGHT_AUTH_STATE = authData;
-      
-      // Also write to a file for debugging (but don't rely on it)
-      await page.context().storageState({ path: authFile });
-    } else {
-      // Local development - save to file as usual
-      await page.context().storageState({ path: authFile });
-    }
+    await page.context().storageState({ path: authFile });
     
     console.log('✅ Authentication setup completed successfully');
     
