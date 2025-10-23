@@ -17,7 +17,16 @@
     "test:github-status": "bun tests/test-github-status.js",
     "test:e2e": "cd e2e && bunx playwright test",
     "test:e2e:ui": "cd e2e && bunx playwright test --ui",
+
     "test:e2e:localhost": "cd e2e && bunx playwright test --project=localhost",
+    "test:e2e:login:localhost": "cd e2e && bunx playwright test login.spec.ts --project=localhost",
+    "test:e2e:logout:localhost": "cd e2e && bunx playwright test logout.spec.ts --project=localhost",
+
+
+
+
+
+
     "test:e2e:preview": "cd e2e && bunx playwright test --project=preview",
     "test:e2e:production": "cd e2e && bunx playwright test --project=production",
     "test:e2e:headed": "cd e2e && bunx playwright test --headed",

@@ -100,21 +100,19 @@ jobs:
         DB_PORT: 5432
         NODE_ENV: test
 
-    - name: 🔐 Setup authentication
-      id: auth-setup
-      run: cd e2e && bun run test:setup
-      env:
-        TEST_GITHUB_USERNAME: ${{ env.TEST_GITHUB_USERNAME }}
-        TEST_GITHUB_PASSWORD: ${{ env.TEST_GITHUB_PASSWORD }}
-        PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
-
-    - name: 🧪 Run E2E login tests
+    - name: 🧪 Run Login tests
       run: cd e2e && bun run ci:local:login --project=localhost
       env:
         TEST_GITHUB_USERNAME: ${{ env.TEST_GITHUB_USERNAME }}
         TEST_GITHUB_PASSWORD: ${{ env.TEST_GITHUB_PASSWORD }}
         PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
-        PLAYWRIGHT_AUTH_STATE: ${{ env.PLAYWRIGHT_AUTH_STATE }}
+
+    - name: 🧪 Run Logout tests
+      run: cd e2e && bun run ci:local:logout --project=localhost
+      env:
+        TEST_GITHUB_USERNAME: ${{ env.TEST_GITHUB_USERNAME }}
+        TEST_GITHUB_PASSWORD: ${{ env.TEST_GITHUB_PASSWORD }}
+        PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
 
     - name: 📤 Upload test results
       uses: actions/upload-artifact@v4
