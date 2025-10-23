@@ -43,19 +43,28 @@ export async function performGitHubLogin(page: Page) {
     if (await loginField.isVisible({ timeout: 5000 })) {
       console.log('📝 Filling GitHub credentials...');
       
-      // Use evaluate to fill fields without logging sensitive data
-      await page.evaluate(({ username, password }) => {
-        const usernameField = document.querySelector('#login_field') as HTMLInputElement;
-        const passwordField = document.querySelector('#password') as HTMLInputElement;
-        if (usernameField) usernameField.value = username;
-        if (passwordField) passwordField.value = password;
-      }, { username, password });
+      // Use proper Playwright form filling that triggers all DOM events
+      await loginField.fill(username);
+      await page.locator('#password').fill(password);
       
-      await page.click('input[type="submit"]');
+      // Wait a moment for form validation
+      await page.waitForTimeout(1000);
+      
+      // Try to submit the form - handle different submit button variations
+      const submitButton = page.locator('input[type="submit"], button[type="submit"], input[value*="Sign"], button:has-text("Sign")').first();
+      await submitButton.click();
       console.log('✅ Submitted GitHub credentials');
       
-      // Wait for GitHub to process login
+      // Wait for GitHub to process login and check for errors
       await page.waitForTimeout(3000);
+      
+      // Check if there are any error messages
+      const errorMessage = page.locator('.flash-error, .error, [class*="error"], .alert-danger');
+      if (await errorMessage.isVisible({ timeout: 2000 })) {
+        const errorText = await errorMessage.textContent();
+        console.error('❌ GitHub login error:', errorText);
+        throw new Error(`GitHub login failed: ${errorText}`);
+      }
     }
     
     // Handle GitHub OAuth authorization
