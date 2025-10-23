@@ -1,12 +1,12 @@
 name: 🔐 Auth Test
 
 on:
-  push:
-    branches: main
-  pull_request:
-    branches: main
-  schedule:
-    - cron: '0 3 * * *'  # Run daily at 05:00 AM UTC+2
+  # push:
+  #   branches: main
+  # pull_request:
+  #   branches: main
+  # schedule:
+  #   - cron: '0 3 * * *'  # Run daily at 05:00 AM UTC+2
   workflow_dispatch:
 jobs:
   test-auth:

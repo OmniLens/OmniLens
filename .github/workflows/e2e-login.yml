@@ -83,6 +83,8 @@ jobs:
         
         # Create database schema
         psql -h localhost -U $DB_USER -d $DB_NAME -f lib/schema.sql
+      env:
+        PGPASSWORD: ${{ secrets.DB_PASSWORD }}
 
     - name: 🚀 Start development server
       run: |
