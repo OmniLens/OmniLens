@@ -1,46 +1,23 @@
 import { test as setup } from '@playwright/test';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { setAuthenticatedSession, waitForAuthentication } from '../helpers/auth-helpers.js';
 
-// Get __dirname equivalent for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Auth file path for localhost environment
-const getAuthFilePath = () => {
-  return path.join(__dirname, '../.auth/localhost.json');
-};
+// Auth file path - using Playwright's standard convention
+const AUTH_FILE = '.auth/localhost.json';
 
 // Clear any existing auth file to force fresh authentication
 const clearAuthFile = () => {
-  const authFile = getAuthFilePath();
-  if (fs.existsSync(authFile)) {
-    fs.unlinkSync(authFile);
+  if (fs.existsSync(AUTH_FILE)) {
+    fs.unlinkSync(AUTH_FILE);
     console.log('🗑️ Cleared existing auth file to force fresh authentication');
   }
 };
 
-// Ensure auth directory exists
-const ensureAuthDirectory = () => {
-  const authFile = getAuthFilePath();
-  const authDir = path.dirname(authFile);
-  if (!fs.existsSync(authDir)) {
-    fs.mkdirSync(authDir, { recursive: true });
-    console.log(`📁 Created auth directory: ${authDir}`);
-  }
-};
-
 setup('authenticate', async ({ page }) => {
-  const authFile = getAuthFilePath();
   const baseURL = 'http://localhost:3000';
   
   // Clear any existing auth file to force fresh authentication
   clearAuthFile();
-  
-  // Ensure auth directory exists
-  ensureAuthDirectory();
   
   // Clear browser storage and cookies for fresh session
   await page.context().clearCookies();
@@ -48,7 +25,7 @@ setup('authenticate', async ({ page }) => {
   console.log('🧹 Cleared browser storage and cookies for fresh session');
   
   console.log(`🔐 Setting up authentication for: ${baseURL}`);
-  console.log(`💾 Auth file will be saved to: ${authFile}`);
+  console.log(`💾 Auth file will be saved to: ${AUTH_FILE}`);
   
   try {
     // Set authenticated session using GitHub OAuth flow
@@ -57,8 +34,8 @@ setup('authenticate', async ({ page }) => {
     // Wait for authentication to complete
     await waitForAuthentication(page);
     
-    // Save authenticated state
-    await page.context().storageState({ path: authFile });
+    // Save authenticated state - Playwright will create the directory automatically
+    await page.context().storageState({ path: AUTH_FILE });
     
     console.log('✅ Authentication setup completed successfully');
     
