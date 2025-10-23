@@ -10,8 +10,9 @@
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
 
-    "test:login": "playwright test login.spec.ts",
-    "test:logout": "playwright test logout.spec.ts",
+    "test:auth": "playwright test auth.spec.ts --reporter=list",
+    "test:login": "playwright test login.spec.ts --reporter=list",
+    "test:logout": "playwright test logout.spec.ts --reporter=list",
     "test:report": "playwright show-report"
   },
   "devDependencies": {

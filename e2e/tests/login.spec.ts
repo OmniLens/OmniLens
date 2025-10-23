@@ -1,47 +1,44 @@
 import { test, expect } from '@playwright/test';
-import { isLoggedIn } from '../helpers/auth-helpers.js';
+import { setAuthenticatedSession } from '../helpers/auth-helpers.js';
 
-test.describe.serial('Login Flow', () => {
-  test('should redirect to dashboard when already authenticated', async ({ page }) => {
-    console.log('🧪 Test 1: should redirect to dashboard when already authenticated');
-    // Since we're already authenticated via setup, navigating to login should redirect
+test.describe('Login Flow', () => {
+  test('should show login page when not authenticated', async ({ page }) => {
+    // Navigate to login page
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
     
-    // Should be redirected to dashboard when already authenticated
-    await expect(page).toHaveURL(/.*\/dashboard/);
+    // Should be on login page
+    await expect(page).toHaveURL(/.*\/login/);
     
-    // Verify we're actually logged in
-    const loggedIn = await isLoggedIn(page);
-    expect(loggedIn).toBe(true);
-    console.log('\n');
+    // Should show GitHub login button
+    await expect(page.locator('text=Continue with GitHub')).toBeVisible();
   });
 
-  test.skip('should be authenticated via session cookie', async ({ page }) => {
-    console.log('🧪 Test 2: should be authenticated via session cookie');
-    // This test assumes we're already authenticated via session cookie
-    // Navigate to dashboard to verify authentication
-    await page.goto('/dashboard');
+  test('should redirect to dashboard when already authenticated', async ({ page }) => {
+    // Setup: Authenticate first
+    await setAuthenticatedSession(page);
+    
+    // Navigate to login page when already authenticated
+    await page.goto('/login');
     await page.waitForLoadState('networkidle');
     
-    // Verify we're on dashboard and authenticated
+    // Should be redirected to dashboard
     await expect(page).toHaveURL(/.*\/dashboard/);
-    
-    // Verify we're logged in
-    const loggedIn = await isLoggedIn(page);
-    expect(loggedIn).toBe(true);
-    console.log('\n');
   });
 
-  test.skip('should display dashboard content when authenticated', async ({ page }) => {
-    console.log('🧪 Test 3: should display dashboard content when authenticated');
-    // This test assumes we're already authenticated via session cookie
-    await page.goto('/dashboard');
+  test('should perform GitHub OAuth login flow', async ({ page }) => {
+    // Navigate to login page
+    await page.goto('/login');
     await page.waitForLoadState('networkidle');
     
-    // Verify dashboard content is visible
-    await expect(page.locator('h1, h2, h3')).toBeVisible();
-    console.log('\n');
+    // Click GitHub login button
+    await page.click('text=Continue with GitHub');
+    
+    // Should redirect to GitHub OAuth
+    await page.waitForURL('**/github.com/**', { timeout: 10000 });
+    
+    // Should eventually redirect back to dashboard
+    await page.waitForURL('**/dashboard', { timeout: 30000 });
+    await expect(page).toHaveURL(/.*\/dashboard/);
   });
-
 });

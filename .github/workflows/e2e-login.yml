@@ -93,8 +93,8 @@ jobs:
         DB_HOST: localhost
         DB_PORT: 5432
 
-    - name: 🧪 Run E2E tests
-      run: cd e2e && bun run test:login
+    - name: 🧪 Run Auth test
+      run: cd e2e && bun run test:auth
       env:
         TEST_GITHUB_USERNAME: ${{ secrets.TEST_GITHUB_USERNAME }}
         TEST_GITHUB_PASSWORD: ${{ secrets.TEST_GITHUB_PASSWORD }}

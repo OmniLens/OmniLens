@@ -1,6 +1,6 @@
 import { test as setup } from '@playwright/test';
 import fs from 'fs';
-import { setAuthenticatedSession, waitForAuthentication } from '../helpers/auth-helpers.js';
+import { setAuthenticatedSession } from '../helpers/auth-helpers.js';
 
 // Auth file path - using Playwright's standard convention
 const AUTH_FILE = '.auth/localhost.json';
@@ -30,9 +30,6 @@ setup('authenticate', async ({ page }) => {
   try {
     // Set authenticated session using GitHub OAuth flow
     await setAuthenticatedSession(page);
-    
-    // Wait for authentication to complete
-    await waitForAuthentication(page);
     
     // Save authenticated state - Playwright will create the directory automatically
     await page.context().storageState({ path: AUTH_FILE });
