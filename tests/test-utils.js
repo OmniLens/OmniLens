@@ -100,7 +100,7 @@ export async function checkServer() {
       log('✅ Server is running!', 'green');
       return true;
     }
-  } catch (error) {
+  } catch {
     log('❌ Server is not running. Please start the development server:', 'red');
     log('   bun run dev', 'yellow');
     return false;

@@ -2,7 +2,7 @@
 node_modules/
 
 # Next.js
-/.next/
+.next/
 /out/
 
 # Production
@@ -44,5 +44,9 @@ logs
 # Temporary folders
 tmp/
 temp/ 
+
+# Turbo
+.turbo/
+
 # Sentry Config File
 .env.sentry-build-plugin
