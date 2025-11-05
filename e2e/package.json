@@ -1,0 +1,23 @@
+{
+  "name": "@omnilens/e2e",
+  "version": "0.8.3",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install:browsers": "playwright install --with-deps chromium",
+
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+
+    "test:auth": "playwright test auth.spec.ts --reporter=list",
+    "test:login": "playwright test login.spec.ts --reporter=list",
+    "test:logout": "playwright test logout.spec.ts --reporter=list",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "dotenv": "^16.0.0"
+  }
+}
+
