@@ -1,0 +1,81 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --background: 0 0% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 9%;
+  --secondary: 0 0% 14.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 25%;
+  --muted-foreground: 0 0% 75%;
+  --accent: 0 0% 25%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 20%;
+  --input: 0 0% 14.9%;
+  --ring: 0 0% 83.1%;
+  --chart-1: 142 76% 36%;
+  --chart-2: 0 84% 60%;
+  --chart-3: 30 80% 55%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes slide-in-down {
+  0% { 
+    transform: translateY(-100%); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-slide-in-down {
+  animation: slide-in-down 0.3s ease-out;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+} 
