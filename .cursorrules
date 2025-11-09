@@ -1,0 +1,182 @@
+# Code Review and Refactoring Guidelines
+
+## Code Review Process
+
+When reviewing a file, follow these steps in order:
+
+### 1. Add Comments Following Convention
+
+#### Import Organization
+- Group imports by category with section comments:
+  - External library imports (React, Next.js, third-party)
+  - Internal component imports
+  - Utility imports
+  - Hook imports
+  - Type imports (if using `type` keyword)
+
+#### File Structure
+Use section separators (`// ============================================================================`) for:
+- Helper Functions
+- Type Definitions
+- Component-Specific Utilities
+- Sub-Components
+- Main Component
+- Data Fetching (TanStack Query)
+- Local State
+- Effects
+- Computed Values
+- Mutations (TanStack Query)
+- Event Handlers
+- Render Logic - Early Returns
+- Main Render
+
+#### Comment Types
+- **JSDoc comments** for:
+  - Functions (with `@param`, `@returns`, `@example` if helpful)
+  - Interfaces/Types
+  - Main component exports
+  
+- **Inline comments** for:
+  - Complex logic
+  - Non-obvious code patterns
+  - UI sections (using `{/* Comment */}` in JSX)
+  - State management explanations
+
+#### Commenting Convention
+- Be concise but descriptive
+- Explain "why" not just "what" when non-obvious
+- Use consistent formatting
+- Follow the pattern established in `WorkflowCard.tsx` and `dashboard/[slug]/page.tsx`
+
+### 2. Determine if Functions Should Move to utils.ts
+
+**Move to utils.ts if:**
+- Function is used in multiple files
+- Function is a pure utility (no component-specific logic)
+- Function is reusable across the codebase
+- Function is testable in isolation
+
+**Keep in component file if:**
+- Function is only used once in that file
+- Function is tightly coupled to component logic
+- Function uses component-specific types/props
+
+**Examples:**
+- ✅ `formatRepoDisplayName()` - moved (used in multiple files)
+- ✅ `duration()`, `formatRunTime()` - moved (reusable utilities)
+- ❌ `findInsertIndex()` - kept local (only used once, component-specific)
+- ❌ `createMockRunFromWorkflow()` - kept local (component-specific)
+
+### 3. Determine if Code Should Be Extracted to Components
+
+**Extract to component file if:**
+- Component is substantial (>50-100 lines)
+- Component has its own props interface
+- Component is self-contained
+- Component could be reused elsewhere
+- Component follows pattern of other extracted components (e.g., `WorkflowCard.tsx`)
+
+**Keep in page file if:**
+- Component is small (<50 lines)
+- Component is tightly coupled to page logic
+- Component is only used once and unlikely to be reused
+
+**Examples:**
+- ✅ `RepositoryCard` - extracted (120+ lines, reusable)
+- ✅ `WorkflowCard` - extracted (substantial, reusable)
+- ❌ `NoRepositoriesFound` - could stay (smaller, page-specific)
+
+### 4. Lint and Type Check
+
+**Run both linters:**
+```bash
+bunx eslint <file>
+bunx tsc --noEmit
+```
+
+**Fix all errors before proceeding:**
+- Remove unused imports
+- Fix type errors
+- Address `any` types with proper types
+- Fix ESLint rule violations
+
+**Provide summary:**
+- List all errors found
+- List all warnings (if any)
+- Confirm all fixes applied
+
+## Type Safety Guidelines
+
+### Avoid `any` Types
+- Always use proper TypeScript types
+- Import types from hooks/interfaces when available
+- Create specific types for API payloads (e.g., `AddRepoData`)
+- Use type assertions sparingly and with proper types
+
+### Type Import Pattern
+```typescript
+import { useHook, type TypeFromHook } from "@/lib/hooks/hook-name";
+```
+
+## Component Extraction Pattern
+
+When extracting a component, follow this structure:
+
+```typescript
+// External library imports
+import ...
+
+// Type imports
+import type { ... } from "...";
+
+// Internal component imports
+import { ... } from "@/components/...";
+
+// Utility imports
+import { ... } from "@/lib/utils";
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+export interface ComponentProps {
+  // ...
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
+export default function Component({ ... }: ComponentProps) {
+  // ...
+}
+```
+
+## File Organization Best Practices
+
+### Page Files (`app/**/page.tsx`)
+- Should focus on page-level logic
+- Can contain small, page-specific components
+- Should import reusable components from `components/`
+
+### Component Files (`components/*.tsx`)
+- Should be self-contained
+- Should export props interfaces
+- Should follow consistent commenting convention
+- Should be reusable
+
+### Utility Files (`lib/utils.ts`)
+- Should contain pure functions
+- Should be framework-agnostic where possible
+- Should have clear JSDoc comments
+- Should be organized by category with section separators
+
+## Code Quality Standards
+
+- **No unused imports** - Remove all unused imports
+- **No `any` types** - Use proper types (warnings acceptable if documented)
+- **Consistent formatting** - Follow existing code style
+- **Clear naming** - Use descriptive names
+- **Proper separation** - Separate concerns appropriately
+- **Documentation** - Comment complex logic and non-obvious patterns
+
