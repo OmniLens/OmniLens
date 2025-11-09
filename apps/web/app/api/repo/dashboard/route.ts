@@ -48,7 +48,39 @@ export const dynamic = 'force-dynamic';
  * Batch endpoint that returns all user repositories with today's workflow metrics.
  * Processes repositories in parallel for better performance.
  * 
- * @returns List of repositories with workflow metrics, total count, and load timestamp
+ * @openapi
+ * /api/repo/dashboard:
+ *   get:
+ *     summary: Get dashboard data with workflow metrics
+ *     description: Returns all user repositories with today's workflow metrics, processed in parallel
+ *     tags:
+ *       - Repositories
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved dashboard data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 repositories:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     description: Repository with workflow metrics
+ *                 totalCount:
+ *                   type: number
+ *                   description: Total number of repositories
+ *                 loadedAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Timestamp when data was loaded
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       500:
+ *         description: Internal server error
  */
 export const GET = withAuth(async (request: NextRequest, _context, authData) => {
   try {

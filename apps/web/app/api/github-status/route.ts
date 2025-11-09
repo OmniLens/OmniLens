@@ -1,5 +1,13 @@
+// External library imports
 import { NextResponse } from 'next/server';
 
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+/**
+ * GitHub Status API component structure
+ */
 interface GitHubStatusComponent {
   id: string;
   name: string;
@@ -17,6 +25,9 @@ interface GitHubStatusComponent {
   only_show_if_degraded: boolean;
 }
 
+/**
+ * GitHub Status API page structure
+ */
 interface GitHubStatusPage {
   id: string;
   name: string;
@@ -25,30 +36,93 @@ interface GitHubStatusPage {
   updated_at: string;
 }
 
+/**
+ * GitHub Status API response structure
+ */
 interface GitHubStatusResponse {
   page: GitHubStatusPage;
   components: GitHubStatusComponent[];
 }
 
+// ============================================================================
+// API Route Handlers
+// ============================================================================
+
+/**
+ * GET /api/github-status
+ * 
+ * Fetches GitHub Actions status from GitHub Status API.
+ * Filters for Actions-related components and returns simplified status information.
+ * 
+ * @openapi
+ * /api/github-status:
+ *   get:
+ *     summary: Get GitHub Actions status
+ *     description: Fetches GitHub Actions status from GitHub Status API and returns simplified status information
+ *     tags:
+ *       - Status
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved GitHub Actions status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 hasIssues:
+ *                   type: boolean
+ *                   description: Whether GitHub Actions has any issues
+ *                 status:
+ *                   type: string
+ *                   enum: [operational, degraded_performance, partial_outage, major_outage]
+ *                   description: Current status of GitHub Actions
+ *                 message:
+ *                   type: string
+ *                   description: Human-readable status message
+ *                 components:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                         nullable: true
+ *                 lastUpdated:
+ *                   type: string
+ *                   format: date-time
+ *                 source:
+ *                   type: string
+ *                   enum: [GitHub Status API, fallback]
+ *                 error:
+ *                   type: string
+ *                   description: Error message if status fetch failed (only in fallback)
+ *       500:
+ *         description: Internal server error (fallback response still returns 200)
+ */
 export async function GET() {
   try {
-    // Fetch GitHub Status API data
+    // Fetch GitHub Status API data with caching to avoid rate limits
     const response = await fetch('https://www.githubstatus.com/api/v2/components.json', {
       headers: {
         'User-Agent': 'OmniLens/1.0',
         'Accept': 'application/json',
       },
-      // Add cache control to avoid hitting rate limits
-      next: { revalidate: 60 }, // Cache for 1 minute
+      // Cache for 1 minute to avoid hitting rate limits
+      next: { revalidate: 60 },
     });
 
     if (!response.ok) {
       throw new Error(`GitHub Status API responded with ${response.status}`);
     }
 
+    // Parse GitHub Status API response
     const data: GitHubStatusResponse = await response.json();
     
-    // Filter for GitHub Actions related components (more specific)
+    // Filter for GitHub Actions related components (more specific filtering)
     const actionsComponents = data.components.filter(component => 
       component.name.toLowerCase().includes('actions') ||
       component.name.toLowerCase().includes('workflows')
@@ -60,8 +134,8 @@ export async function GET() {
       component.status === 'partial_outage' || component.status === 'major_outage'
     );
 
-    // Get the most severe status
-    const getStatusSeverity = (status: string) => {
+    // Helper function to get status severity for comparison
+    const getStatusSeverity = (status: string): number => {
       switch (status) {
         case 'major_outage': return 4;
         case 'partial_outage': return 3;
@@ -71,13 +145,14 @@ export async function GET() {
       }
     };
 
+    // Find the most severe component status
     const mostSevereComponent = actionsComponents.reduce((prev, current) => {
       const prevSeverity = getStatusSeverity(prev.status);
       const currentSeverity = getStatusSeverity(current.status);
       return currentSeverity > prevSeverity ? current : prev;
     }, actionsComponents[0]);
 
-    // Return simplified status information
+    // Build simplified status information response
     const statusInfo = {
       hasIssues,
       status: hasIssues ? mostSevereComponent?.status || 'operational' : 'operational',
@@ -90,7 +165,7 @@ export async function GET() {
         description: component.description
       })),
       lastUpdated: new Date().toISOString(),
-      source: 'GitHub Status API'
+      source: 'GitHub Status API' as const
     };
 
     return NextResponse.json(statusInfo, {
@@ -99,10 +174,11 @@ export async function GET() {
       },
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
+    // Handle errors gracefully - return fallback response instead of failing
     console.error('Error fetching GitHub status:', error);
     
-    // Return a fallback response indicating we couldn't fetch status
+    // Return fallback response (assume operational when status unavailable)
     // Don't show banner when we can't fetch status - assume operational
     return NextResponse.json({
       hasIssues: false,
@@ -110,7 +186,7 @@ export async function GET() {
       message: 'GitHub Actions status unavailable - assuming operational',
       components: [],
       lastUpdated: new Date().toISOString(),
-      source: 'fallback',
+      source: 'fallback' as const,
       error: error instanceof Error ? error.message : 'Unknown error'
     }, {
       status: 200, // Don't fail the request, just return unknown status

@@ -61,9 +61,43 @@ const deleteResponseSchema = z.object({
  * 
  * Retrieves a specific repository by slug for the authenticated user.
  * 
- * @param request - Next.js request object
- * @param context - Route context containing params
- * @returns Repository details if found, 404 if not found
+ * @openapi
+ * /api/repo/{slug}:
+ *   get:
+ *     summary: Get repository by slug
+ *     description: Retrieves a specific repository by slug for the authenticated user
+ *     tags:
+ *       - Repositories
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: slug
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Repository slug identifier
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved repository
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 repo:
+ *                   type: object
+ *                   description: Repository details
+ *       400:
+ *         description: Bad request - Invalid slug format
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       404:
+ *         description: Repository not found
+ *       500:
+ *         description: Internal server error
  */
 export const GET = withAuth(async (
   request: NextRequest,
@@ -108,9 +142,45 @@ export const GET = withAuth(async (
  * 
  * Deletes a specific repository and its associated workflows from the dashboard.
  * 
- * @param request - Next.js request object
- * @param context - Route context containing params
- * @returns Success message with deleted repository details
+ * @openapi
+ * /api/repo/{slug}:
+ *   delete:
+ *     summary: Delete repository from dashboard
+ *     description: Deletes a specific repository and its associated workflows from the user's dashboard
+ *     tags:
+ *       - Repositories
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: slug
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Repository slug identifier
+ *     responses:
+ *       200:
+ *         description: Repository deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 deletedRepo:
+ *                   type: object
+ *                   description: Details of the deleted repository
+ *       400:
+ *         description: Bad request - Invalid slug format
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       404:
+ *         description: Repository not found
+ *       500:
+ *         description: Internal server error
  */
 export const DELETE = withAuth(async (
   request: NextRequest,

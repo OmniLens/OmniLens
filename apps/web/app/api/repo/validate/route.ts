@@ -97,8 +97,70 @@ function normalizeRepoInput(input: string): string | null {
  * Validates a GitHub repository URL and checks if it's accessible.
  * Also verifies workflow access and counts active workflows.
  * 
- * @param request - Next.js request object containing repoUrl in body
- * @returns Validation result with repository details and workflow count
+ * @openapi
+ * /api/repo/validate:
+ *   post:
+ *     summary: Validate repository access and workflows
+ *     description: Validates a GitHub repository URL, checks accessibility, and counts active workflows
+ *     tags:
+ *       - Repositories
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - repoUrl
+ *             properties:
+ *               repoUrl:
+ *                 type: string
+ *                 description: Repository URL (full GitHub URL or owner/repo format)
+ *                 example: "https://github.com/owner/repo"
+ *     responses:
+ *       200:
+ *         description: Validation successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 valid:
+ *                   type: boolean
+ *                 repoPath:
+ *                   type: string
+ *                   description: Normalized repository path (owner/repo)
+ *                 htmlUrl:
+ *                   type: string
+ *                   format: uri
+ *                 defaultBranch:
+ *                   type: string
+ *                 displayName:
+ *                   type: string
+ *                 owner:
+ *                   type: string
+ *                 avatarUrl:
+ *                   type: string
+ *                   format: uri
+ *                 visibility:
+ *                   type: string
+ *                   enum: [public, private]
+ *                 workflowsAccessible:
+ *                   type: boolean
+ *                 workflowCount:
+ *                   type: number
+ *       400:
+ *         description: Bad request - Invalid repository URL format
+ *       401:
+ *         description: Unauthorized - GitHub token not found
+ *       403:
+ *         description: Forbidden - Repository or workflow access denied
+ *       404:
+ *         description: Repository not found or workflows not accessible
+ *       500:
+ *         description: Internal server error
  */
 export const POST = withAuth(async (request: NextRequest, _context, authData) => {
   try {

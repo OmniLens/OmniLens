@@ -38,7 +38,46 @@ const repositoriesResponseSchema = z.object({
  * 
  * Retrieves all repositories added by the authenticated user.
  * 
- * @returns List of user's repositories with slug, displayName, avatarUrl, and htmlUrl
+ * @openapi
+ * /api/repo:
+ *   get:
+ *     summary: List all repositories for authenticated user
+ *     description: Returns a list of all repositories that the authenticated user has added to their dashboard
+ *     tags:
+ *       - Repositories
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved repositories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 repositories:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       slug:
+ *                         type: string
+ *                         description: Repository slug identifier
+ *                       displayName:
+ *                         type: string
+ *                         description: Display name of the repository
+ *                       avatarUrl:
+ *                         type: string
+ *                         nullable: true
+ *                         description: URL to repository avatar image
+ *                       htmlUrl:
+ *                         type: string
+ *                         nullable: true
+ *                         description: URL to repository on GitHub
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       500:
+ *         description: Internal server error
  */
 export const GET = withAuth(async (request: NextRequest, _context, authData) => {
   try {

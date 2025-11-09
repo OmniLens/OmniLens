@@ -308,6 +308,93 @@ export async function getWorkflowRunsForDateGrouped(date: Date, repoSlug: string
     return latestRuns;
 }
 
+// ============================================================================
+// Workflow Metrics Calculation Utilities
+// ============================================================================
+
+/**
+ * Hourly breakdown data structure
+ */
+export interface HourlyBreakdown {
+  hour: number;
+  passed: number;
+  failed: number;
+  total: number;
+}
+
+/**
+ * Hourly statistics data structure
+ */
+export interface HourlyStatistics {
+  avgRunsPerHour: number;
+  minRunsPerHour: number;
+  maxRunsPerHour: number;
+  totalRuns: number;
+}
+
+/**
+ * Calculate hourly breakdown of workflow runs for a day
+ * Groups runs by hour (0-23) and counts passed/failed runs per hour
+ * 
+ * @param workflowRuns - Array of workflow runs to analyze
+ * @returns Array of hourly breakdown data (24 entries, one per hour)
+ */
+export function calculateHourlyBreakdown(workflowRuns: WorkflowRun[]): HourlyBreakdown[] {
+  return Array.from({ length: 24 }, (_, hour) => {
+    const hourRuns = workflowRuns.filter((run: WorkflowRun) => {
+      const runHour = new Date(run.run_started_at).getHours();
+      return runHour === hour;
+    });
+    
+    const passed = hourRuns.filter((run: WorkflowRun) => run.conclusion === 'success').length;
+    const failed = hourRuns.filter((run: WorkflowRun) => run.conclusion === 'failure').length;
+    
+    return {
+      hour,
+      passed,
+      failed,
+      total: passed + failed
+    };
+  });
+}
+
+/**
+ * Calculate hourly statistics from hourly breakdown data
+ * 
+ * @param runsByHour - Array of hourly breakdown data
+ * @returns Statistics including average, min, max runs per hour and total runs
+ */
+export function calculateHourlyStatistics(runsByHour: HourlyBreakdown[]): HourlyStatistics {
+  const totalRuns = runsByHour.reduce((sum, hour) => sum + hour.total, 0);
+  const avgRunsPerHour = totalRuns > 0 ? Math.round((totalRuns / 24) * 10) / 10 : 0;
+  const minRunsPerHour = Math.min(...runsByHour.map(h => h.total));
+  const maxRunsPerHour = Math.max(...runsByHour.map(h => h.total));
+  
+  return {
+    avgRunsPerHour,
+    minRunsPerHour,
+    maxRunsPerHour,
+    totalRuns
+  };
+}
+
+/**
+ * Calculate which workflows didn't run on a given date
+ * 
+ * @param activeWorkflows - Array of active workflow objects with id and name
+ * @param workflowRuns - Array of workflow runs that occurred
+ * @returns Array of workflow names that didn't run
+ */
+export function calculateMissingWorkflows(
+  activeWorkflows: Array<{ id: number; name: string }>,
+  workflowRuns: WorkflowRun[]
+): string[] {
+  const workflowsWithRuns = new Set(workflowRuns.map((run: WorkflowRun) => run.workflow_id));
+  return activeWorkflows
+    .filter((workflow) => !workflowsWithRuns.has(workflow.id))
+    .map((workflow) => workflow.name);
+}
+
 // Calculate overview data from workflow runs
 export function calculateOverviewData(workflowRuns: WorkflowRun[]): OverviewData {
   const completedRuns = workflowRuns.filter((run: WorkflowRun) => run.status === 'completed').length;

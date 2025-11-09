@@ -1,23 +1,129 @@
+// External library imports
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+
+// Internal utility imports
 import { getUserRepo } from '@/lib/db-storage';
-import { getWorkflowRunsForDate, calculateOverviewData } from '@/lib/github';
+import { 
+  getWorkflowRunsForDate, 
+  calculateOverviewData, 
+  calculateHourlyBreakdown,
+  calculateHourlyStatistics,
+  calculateMissingWorkflows
+} from '@/lib/github';
 import { withAuth } from '@/lib/auth-middleware';
 import { makeGitHubRequest } from '@/lib/github-auth';
 
-// Zod schemas for validation
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+/**
+ * GitHub workflow object from API response
+ */
+interface GitHubWorkflow {
+  id: number;
+  name: string;
+  path: string;
+  state: 'active' | 'deleted';
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string;
+}
+
+/**
+ * GitHub workflows API response structure
+ */
+interface GitHubWorkflowsResponse {
+  total_count: number;
+  workflows: GitHubWorkflow[];
+}
+
+// ============================================================================
+// Validation Schemas
+// ============================================================================
+
+/**
+ * Zod schema for repository slug parameter validation
+ */
 const slugSchema = z.string().min(1, 'Repository slug is required');
+
+/**
+ * Zod schema for date parameter validation
+ */
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').optional();
 
-// GET /api/workflow/{slug}/overview - Get aggregated daily metrics
+// ============================================================================
+// API Route Handlers
+// ============================================================================
+
+/**
+ * GET /api/workflow/[slug]/overview
+ * 
+ * Get aggregated daily metrics for workflows in a repository.
+ * 
+ * @openapi
+ * /api/workflow/{slug}/overview:
+ *   get:
+ *     summary: Get workflow overview metrics
+ *     description: Get aggregated daily metrics for workflows in a repository, including hourly breakdown and statistics
+ *     tags:
+ *       - Workflows
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: slug
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Repository slug identifier
+ *       - name: date
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: string
+ *           pattern: '^\d{4}-\d{2}-\d{2}$'
+ *         description: Date in YYYY-MM-DD format (defaults to today)
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved overview metrics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 repository:
+ *                   type: object
+ *                   description: Repository information
+ *                 overview:
+ *                   type: object
+ *                   description: Aggregated metrics and statistics
+ *                 date:
+ *                   type: string
+ *                   format: date
+ *                   description: Date for which metrics were calculated
+ *                 generatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Timestamp when overview was generated
+ *       400:
+ *         description: Bad request - Invalid slug or date format
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       404:
+ *         description: Repository not found in dashboard
+ *       500:
+ *         description: Internal server error
+ */
 export const GET = withAuth(async (
   request: NextRequest,
-  { params }: { params: { slug: string } },
+  context,
   authData
 ) => {
   try {
-    // Validate the slug parameter
-    const validatedSlug = slugSchema.parse(params.slug);
+    // Validate slug parameter
+    const validatedSlug = slugSchema.parse(context.params.slug);
     
     // Check if the repository exists in our database for this user
     const repo = await getUserRepo(validatedSlug, authData.user.id);
@@ -28,13 +134,12 @@ export const GET = withAuth(async (
       );
     }
     
-    // Get date parameter (default to today)
+    // Get date parameter from query string (defaults to today if not provided)
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
     const date = dateParam ? dateSchema.parse(dateParam) : new Date().toISOString().split('T')[0];
     
-    // Get fresh workflows directly from GitHub API instead of internal API call
-    // Extract owner and repo name from the repository path
+    // Extract owner and repo name from repository path
     const [owner, repoName] = repo.repoPath.split('/');
     if (!owner || !repoName) {
       return NextResponse.json(
@@ -43,7 +148,7 @@ export const GET = withAuth(async (
       );
     }
     
-    // Fetch workflows directly from GitHub
+    // Fetch active workflows directly from GitHub API (ensures latest data)
     const githubResponse = await makeGitHubRequest(
       authData.user.id,
       `https://api.github.com/repos/${owner}/${repoName}/actions/workflows?_t=${Date.now()}`,
@@ -57,6 +162,7 @@ export const GET = withAuth(async (
       }
     );
     
+    // Return empty overview if workflows can't be fetched
     if (!githubResponse.ok) {
       return NextResponse.json({
         repository: {
@@ -80,10 +186,13 @@ export const GET = withAuth(async (
       });
     }
     
-    const workflowsData = await githubResponse.json();
-    const savedWorkflows = workflowsData.workflows.filter((w: any) => w.state === 'active');
+    // Parse workflows response and filter to active workflows only
+    const workflowsData: GitHubWorkflowsResponse = await githubResponse.json();
+    const savedWorkflows = workflowsData.workflows.filter(
+      (w: GitHubWorkflow) => w.state === 'active'
+    );
     
-    // Get the repository's default branch
+    // Fetch repository info (for future use if needed)
     const repoResponse = await makeGitHubRequest(
       authData.user.id,
       `https://api.github.com/repos/${owner}/${repoName}`,
@@ -102,54 +211,32 @@ export const GET = withAuth(async (
       );
     }
     
-    // Get workflow runs for the specified date from ALL branches
+    // Fetch workflow runs for the specified date from ALL branches (no branch filtering)
     const dateObj = new Date(date!); // date is guaranteed to be defined by this point
     const workflowRuns = await getWorkflowRunsForDate(dateObj, validatedSlug, authData.user.id);
     
-    // Calculate overview data using the existing function
+    // Calculate base overview data using utility function
     const overviewData = calculateOverviewData(workflowRuns);
     
-    // Calculate workflows that didn't run today
-    const activeWorkflowIds = new Set(savedWorkflows.map((workflow: any) => workflow.id));
-    const workflowsWithRuns = new Set(workflowRuns.map(run => run.workflow_id));
-    const missingWorkflows = savedWorkflows
-      .filter((workflow: any) => !workflowsWithRuns.has(workflow.id))
-      .map((workflow: any) => workflow.name);
+    // Calculate workflows that didn't run on the specified date using utility function
+    const missingWorkflows = calculateMissingWorkflows(savedWorkflows, workflowRuns);
     const didntRunCount = missingWorkflows.length;
     
-    // Calculate additional metrics
+    // Calculate success rate (passed runs / completed runs)
     const successRate = overviewData.completedRuns > 0 
       ? Math.round((overviewData.passedRuns / overviewData.completedRuns) * 100) 
       : 0;
     
+    // Calculate pass rate (passed runs / total workflows)
     const passRate = overviewData.totalWorkflows > 0 
       ? Math.round((overviewData.passedRuns / overviewData.totalWorkflows) * 100) 
       : 0;
     
-    // Calculate hourly breakdown
-    const runsByHour = Array.from({ length: 24 }, (_, hour) => {
-      const hourRuns = workflowRuns.filter(run => {
-        const runHour = new Date(run.run_started_at).getHours();
-        return runHour === hour;
-      });
-      
-      const passed = hourRuns.filter(run => run.conclusion === 'success').length;
-      const failed = hourRuns.filter(run => run.conclusion === 'failure').length;
-      
-      return {
-        hour,
-        passed,
-        failed,
-        total: passed + failed
-      };
-    });
+    // Calculate hourly breakdown and statistics using utility functions
+    const runsByHour = calculateHourlyBreakdown(workflowRuns);
+    const hourlyStats = calculateHourlyStatistics(runsByHour);
     
-    // Calculate average runs per hour
-    const totalRuns = workflowRuns.length;
-    const avgRunsPerHour = totalRuns > 0 ? Math.round((totalRuns / 24) * 10) / 10 : 0;
-    const minRunsPerHour = Math.min(...runsByHour.map(h => h.total));
-    const maxRunsPerHour = Math.max(...runsByHour.map(h => h.total));
-    
+    // Build enhanced overview with all calculated metrics
     const enhancedOverview = {
       ...overviewData,
       didntRunCount, // Override with correct calculation
@@ -157,13 +244,14 @@ export const GET = withAuth(async (
       totalWorkflows: savedWorkflows.length, // Override with correct total
       successRate,
       passRate,
-      avgRunsPerHour,
-      minRunsPerHour,
-      maxRunsPerHour,
+      avgRunsPerHour: hourlyStats.avgRunsPerHour,
+      minRunsPerHour: hourlyStats.minRunsPerHour,
+      maxRunsPerHour: hourlyStats.maxRunsPerHour,
       runsByHour,
-      totalRuns
+      totalRuns: hourlyStats.totalRuns
     };
     
+    // Return response with repository info and enhanced overview
     const response = {
       repository: {
         slug: validatedSlug,
@@ -177,7 +265,8 @@ export const GET = withAuth(async (
     
     return NextResponse.json(response);
     
-  } catch (error) {
+  } catch (error: unknown) {
+    // Handle Zod validation errors
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid request parameters', details: error.issues },
@@ -185,6 +274,7 @@ export const GET = withAuth(async (
       );
     }
     
+    // Handle unexpected errors
     console.error('Error fetching overview:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

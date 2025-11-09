@@ -47,8 +47,80 @@ const addRepoSchema = z.object({
  * Adds a new repository to the user's dashboard.
  * Validates repository exists on GitHub and fetches initial workflow data.
  * 
- * @param request - Next.js request object containing repository details in body
- * @returns Success response with repository and workflow data (if available)
+ * @openapi
+ * /api/repo/add:
+ *   post:
+ *     summary: Add a new repository to dashboard
+ *     description: Validates repository exists on GitHub, adds it to user's dashboard, and fetches initial workflow data
+ *     tags:
+ *       - Repositories
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - repoPath
+ *               - displayName
+ *               - htmlUrl
+ *               - defaultBranch
+ *             properties:
+ *               repoPath:
+ *                 type: string
+ *                 description: Repository path in owner/repo format
+ *                 example: "owner/repo"
+ *               displayName:
+ *                 type: string
+ *                 description: Display name for the repository
+ *                 example: "My Repository"
+ *               htmlUrl:
+ *                 type: string
+ *                 format: uri
+ *                 description: Full GitHub URL to the repository
+ *                 example: "https://github.com/owner/repo"
+ *               defaultBranch:
+ *                 type: string
+ *                 description: Default branch name
+ *                 example: "main"
+ *               avatarUrl:
+ *                 type: string
+ *                 format: uri
+ *                 description: URL to repository avatar image (optional)
+ *                 example: "https://avatars.githubusercontent.com/u/123456"
+ *     responses:
+ *       200:
+ *         description: Repository added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 repo:
+ *                   type: object
+ *                   description: Repository object that was added
+ *                 workflowData:
+ *                   type: object
+ *                   nullable: true
+ *                   description: Initial workflow data if available
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Bad request - Invalid data or maximum repository limit reached
+ *       401:
+ *         description: Unauthorized - GitHub token not found
+ *       403:
+ *         description: Forbidden - Repository access denied
+ *       404:
+ *         description: Repository not found on GitHub
+ *       409:
+ *         description: Conflict - Repository already exists in dashboard
+ *       500:
+ *         description: Internal server error
  */
 export const POST = withAuth(async (request: NextRequest, _context, authData) => {
   try {
