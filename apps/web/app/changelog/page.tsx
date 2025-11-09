@@ -56,6 +56,38 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "0.9.0-alpha",
+    date: "2025-11-09",
+    type: "minor",
+    changes: {
+      added: [
+        "Interactive API Documentation page with Swagger UI at /api-docs",
+        "OpenAPI 3.0 specification endpoint at /api/openapi",
+        "Complete OpenAPI documentation for all 15 API endpoints",
+        "Code review guidelines and standards (.cursorrules)",
+        "Shared utility functions for workflow metrics calculations",
+        "Type declarations for third-party libraries"
+      ],
+      changed: [
+        "Monorepo structure migration - all code moved to apps/web/ workspace",
+        "Complete API route refactoring with consistent structure and documentation",
+        "All API routes now follow standardized code organization with section separators",
+        "Improved type safety - removed all `any` types, added proper TypeScript types",
+        "Enhanced code documentation - added JSDoc comments to all API routes",
+        "Extracted shared calculation logic to reusable utility functions",
+        "Improved error handling with proper type annotations throughout",
+        "Code organization - consistent import grouping and section separators"
+      ],
+      fixed: [
+        "ESLint errors and warnings across all API routes",
+        "TypeScript type errors in API routes",
+        "Code duplication in workflow metrics calculations",
+        "Inconsistent code structure across API files",
+        "Missing type definitions for API responses"
+      ]
+    }
+  },
+  {
     version: "0.8.2-alpha",
     date: "2025-10-14",
     type: "patch",

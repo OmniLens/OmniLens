@@ -38,7 +38,7 @@ export function VersionIndicator({ version = packageJson.version }: VersionIndic
         variant="outline" 
         className="bg-background/80 backdrop-blur-sm border-border/50 text-muted-foreground hover:text-foreground hover:border-border font-mono text-xs px-2 py-1"
       >
-        v{version}-alpha
+        v{version}
       </Badge>
     </Link>
   );
