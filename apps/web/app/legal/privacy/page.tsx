@@ -1,18 +1,36 @@
+// Type imports
 import type { Metadata } from "next";
+
+// External library imports
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+
+// Internal component imports
+import { Button } from "@/components/ui/button";
+
+// ============================================================================
+// Metadata
+// ============================================================================
 
 export const metadata: Metadata = {
   title: "Privacy Policy - OmniLens",
   description: "Privacy Policy for OmniLens - GitHub Actions monitoring dashboard",
 };
 
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * PrivacyPolicyPage component
+ * Displays the complete Privacy Policy document
+ * Server component containing privacy practices and data handling information
+ */
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 max-w-4xl">
-        {/* Back Button */}
+        {/* Back Button - Returns to legal main page */}
         <div className="mb-6">
           <Link href="/legal">
             <Button variant="outline" size="sm" className="gap-2">
@@ -22,13 +40,17 @@ export default function PrivacyPolicyPage() {
           </Link>
         </div>
         
+        {/* Header Section - Page title */}
         <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
         
+        {/* Privacy Policy Content - Legal document sections */}
         <div className="prose max-w-none">
+          {/* Last Updated Date */}
           <p className="text-sm text-muted-foreground mb-8">
             <strong>Last updated:</strong> January 2025
           </p>
 
+          {/* Section 1: Introduction */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
             <p>
@@ -36,9 +58,11 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
+          {/* Section 2: Information We Collect */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">2. Information We Collect</h2>
             
+            {/* Subsection 2.1: Information You Provide */}
             <h3 className="text-xl font-semibold mb-3">2.1 Information You Provide</h3>
             <ul className="list-disc pl-6 mb-6">
               <li><strong>GitHub Account Information:</strong> Basic profile information from your GitHub account (username, avatar, email if public)</li>
@@ -46,6 +70,7 @@ export default function PrivacyPolicyPage() {
               <li><strong>Workflow Data:</strong> GitHub Actions workflow runs, status, and performance metrics</li>
             </ul>
 
+            {/* Subsection 2.2: Information We Collect Automatically */}
             <h3 className="text-xl font-semibold mb-3">2.2 Information We Collect Automatically</h3>
             <ul className="list-disc pl-6 mb-6">
               <li><strong>Usage Analytics:</strong> Anonymous usage statistics to improve our service</li>
@@ -53,6 +78,7 @@ export default function PrivacyPolicyPage() {
               <li><strong>Technical Information:</strong> Browser type, operating system, and device information</li>
             </ul>
 
+            {/* Subsection 2.3: Third-Party Data Collection */}
             <h3 className="text-xl font-semibold mb-3">2.3 Third-Party Data Collection</h3>
             <p>
               We use the following third-party services that may collect additional information:
@@ -65,6 +91,7 @@ export default function PrivacyPolicyPage() {
             </ul>
           </section>
 
+          {/* Section 3: How We Use Your Information */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">3. How We Use Your Information</h2>
             <p>We use the collected information to:</p>
@@ -78,9 +105,11 @@ export default function PrivacyPolicyPage() {
             </ul>
           </section>
 
+          {/* Section 4: Data Storage and Security */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">4. Data Storage and Security</h2>
             
+            {/* Subsection 4.1: Data Storage */}
             <h3 className="text-xl font-semibold mb-3">4.1 Data Storage</h3>
             <p>
               Your data is stored securely using:
@@ -91,6 +120,7 @@ export default function PrivacyPolicyPage() {
               <li><strong>Secure Hosting:</strong> Data is hosted on secure, enterprise-grade infrastructure</li>
             </ul>
 
+            {/* Subsection 4.2: Security Measures */}
             <h3 className="text-xl font-semibold mb-3">4.2 Security Measures</h3>
             <ul className="list-disc pl-6">
               <li>HTTPS encryption for all data transmission</li>
@@ -101,6 +131,7 @@ export default function PrivacyPolicyPage() {
             </ul>
           </section>
 
+          {/* Section 5: Data Sharing and Disclosure */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">5. Data Sharing and Disclosure</h2>
             <p>
@@ -116,6 +147,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
+          {/* Section 6: GitHub Integration and Permissions */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">6. GitHub Integration and Permissions</h2>
             <p>
@@ -130,9 +162,11 @@ export default function PrivacyPolicyPage() {
             </ul>
           </section>
 
+          {/* Section 7: Your Rights and Choices */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">7. Your Rights and Choices</h2>
             
+            {/* Subsection 7.1: Access and Control */}
             <h3 className="text-xl font-semibold mb-3">7.1 Access and Control</h3>
             <ul className="list-disc pl-6 mb-6">
               <li><strong>View Your Data:</strong> You can see all data we have about you through the dashboard</li>
@@ -141,6 +175,7 @@ export default function PrivacyPolicyPage() {
               <li><strong>Delete Account:</strong> You can stop using the service and revoke all access</li>
             </ul>
 
+            {/* Subsection 7.2: Data Retention */}
             <h3 className="text-xl font-semibold mb-3">7.2 Data Retention</h3>
             <p>
               We retain your data for as long as you use the service. When you remove a repository or revoke access:
@@ -152,6 +187,7 @@ export default function PrivacyPolicyPage() {
             </ul>
           </section>
 
+          {/* Section 8: Cookies and Tracking */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">8. Cookies and Tracking</h2>
             <p>
@@ -168,6 +204,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
+          {/* Section 9: International Data Transfers */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">9. International Data Transfers</h2>
             <p>
@@ -175,6 +212,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
+          {/* Section 10: Children's Privacy */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">10. Children&apos;s Privacy</h2>
             <p>
@@ -182,6 +220,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
+          {/* Section 11: Changes to This Privacy Policy */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">11. Changes to This Privacy Policy</h2>
             <p>
@@ -197,6 +236,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
+          {/* Section 12: Contact Us */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">12. Contact Us</h2>
             <p>
@@ -209,6 +249,7 @@ export default function PrivacyPolicyPage() {
             </ul>
           </section>
 
+          {/* Footer - Agreement acknowledgment */}
           <div className="mt-12 pt-8 border-t border-gray-700">
             <p className="text-sm text-gray-400">
               By using OmniLens, you acknowledge that you have read and understood this Privacy Policy and agree to the collection and use of information as described herein.

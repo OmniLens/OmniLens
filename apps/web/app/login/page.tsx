@@ -1,26 +1,53 @@
 "use client";
 
+// External library imports
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Github, ArrowLeft } from "lucide-react";
+
+// Internal component imports
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Github, ArrowLeft } from "lucide-react";
+
+// Hook imports
 import { signIn, useSession } from "@/lib/auth-client";
 
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * LoginPage component
+ * Authentication page for GitHub OAuth sign-in
+ * Includes animated background, logo, and GitHub sign-in button
+ * Automatically redirects authenticated users to dashboard
+ */
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const { data: session } = useSession();
 
-  // Redirect if already authenticated
+  // ============================================================================
+  // Effects
+  // ============================================================================
+
+  // Authentication redirect - send authenticated users to dashboard
   React.useEffect(() => {
     if (session) {
       router.push('/dashboard');
     }
   }, [session, router]);
 
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
+
+  /**
+   * Handle GitHub OAuth sign-in
+   * Initiates GitHub social authentication flow and redirects to dashboard on success
+   */
   const handleGitHubSignIn = async () => {
     try {
       setIsLoading(true);
@@ -35,16 +62,20 @@ export default function LoginPage() {
     }
   };
 
+  // ============================================================================
+  // Main Render
+  // ============================================================================
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black flex flex-col relative overflow-hidden">
-      {/* Animated background elements */}
+      {/* Animated Background Elements - Decorative gradient orbs with pulse animations */}
       <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
       <div className="absolute top-40 right-20 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl animate-pulse delay-1000"></div>
       <div className="absolute bottom-20 left-1/4 w-28 h-28 bg-cyan-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
       <div className="absolute top-1/2 right-10 w-20 h-20 bg-emerald-500/5 rounded-full blur-2xl animate-pulse delay-3000"></div>
       <div className="absolute bottom-1/3 right-1/3 w-16 h-16 bg-yellow-500/5 rounded-full blur-xl animate-pulse delay-4000"></div>
       
-      {/* Back to Home Link */}
+      {/* Header Section - Back to home navigation */}
       <div className="p-6 relative z-10">
         <Link href="/">
           <Button variant="ghost" size="sm" className="gap-2">
@@ -54,10 +85,10 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      {/* Main Content - Centered */}
+      {/* Main Content Section - Centered login form */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-md flex flex-col items-center space-y-8">
-          {/* Logo */}
+          {/* Logo - OmniLens brand image */}
           <div className="flex justify-center">
             <div className="h-40 w-40">
               <Image
@@ -72,12 +103,13 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* App Name */}
+          {/* App Name Section - Title with ALPHA badge */}
           <div className="text-center">
             <div className="flex items-center justify-center gap-3">
               <h1 className="text-4xl font-bold tracking-tight text-white">
                 OmniLens
               </h1>
+              {/* ALPHA badge with shimmer animation */}
               <Badge 
                 variant="secondary" 
                 className="bg-muted/50 text-muted-foreground border-border/50 text-xs font-medium px-2.5 py-0.5 relative overflow-hidden"
@@ -88,7 +120,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Login Button */}
+          {/* GitHub Sign-In Button - Primary authentication action */}
           <Button
             onClick={handleGitHubSignIn}
             variant="outline"
@@ -101,9 +133,10 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Footer - Bottom */}
+      {/* Footer Section - Legal links and copyright */}
       <div className="p-4 relative z-10">
         <div className="text-center w-full max-w-md mx-auto space-y-2">
+          {/* Terms and Privacy link */}
           <p className="text-sm text-muted-foreground">
             By signing in, you agree to our{" "}
             <a 
@@ -113,6 +146,7 @@ export default function LoginPage() {
               Terms of Service and Privacy Policy
             </a>
           </p>
+          {/* Copyright notice */}
           <p className="text-sm text-muted-foreground">
             © 2025 OmniLens. All rights reserved.
           </p>

@@ -1,13 +1,60 @@
 "use client";
 
+// External library imports
+import React from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Calendar, Tag, Plus, Wrench, Bug, AlertTriangle } from "lucide-react";
+
+// Internal component imports
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Tag, Plus, Wrench, Bug, AlertTriangle } from "lucide-react";
+
+// Hook imports
 import { useSession } from "@/lib/auth-client";
 
-const changelogData = [
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+/**
+ * Type for semantic version types (major, minor, patch)
+ */
+type VersionType = "major" | "minor" | "patch";
+
+/**
+ * Type for change types in changelog entries
+ */
+type ChangeType = "added" | "changed" | "fixed";
+
+/**
+ * Structure for changelog entry changes
+ */
+interface ChangelogChanges {
+  added?: string[];
+  changed?: string[];
+  fixed?: string[];
+}
+
+/**
+ * Structure for a changelog entry
+ */
+interface ChangelogEntry {
+  version: string;
+  date: string;
+  type: VersionType;
+  changes: ChangelogChanges;
+}
+
+// ============================================================================
+// Changelog Data
+// ============================================================================
+
+/**
+ * Changelog data array containing all version history entries
+ * Follows Keep a Changelog format with Semantic Versioning
+ */
+const changelogData: ChangelogEntry[] = [
   {
     version: "0.8.2-alpha",
     date: "2025-10-14",
@@ -175,7 +222,17 @@ const changelogData = [
   }
 ];
 
-function getVersionTypeColor(type: string) {
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Get CSS classes for version type badge styling
+ * Returns Tailwind classes for major (red), minor (blue), or patch (green) versions
+ * @param type - Version type (major, minor, patch)
+ * @returns CSS class string for badge styling
+ */
+function getVersionTypeColor(type: VersionType): string {
   switch (type) {
     case "major":
       return "bg-red-500/10 text-red-400 border-red-500/20";
@@ -188,7 +245,13 @@ function getVersionTypeColor(type: string) {
   }
 }
 
-function getChangeTypeIcon(type: string) {
+/**
+ * Get icon component for change type
+ * Returns appropriate Lucide icon for added (Plus), changed (Wrench), or fixed (Bug)
+ * @param type - Change type (added, changed, fixed)
+ * @returns React component with icon
+ */
+function getChangeTypeIcon(type: ChangeType): React.ReactElement {
   switch (type) {
     case "added":
       return <Plus className="h-4 w-4 text-green-500" />;
@@ -201,7 +264,13 @@ function getChangeTypeIcon(type: string) {
   }
 }
 
-function getChangeTypeColor(type: string) {
+/**
+ * Get CSS class for change type text color
+ * Returns Tailwind text color classes for added (green), changed (blue), or fixed (orange)
+ * @param type - Change type (added, changed, fixed)
+ * @returns CSS class string for text color
+ */
+function getChangeTypeColor(type: ChangeType): string {
   switch (type) {
     case "added":
       return "text-green-400";
@@ -214,11 +283,25 @@ function getChangeTypeColor(type: string) {
   }
 }
 
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * ChangelogPage component
+ * Displays version history and changelog entries in a card-based layout
+ * Supports semantic versioning with color-coded badges and change type icons
+ * Includes smart back navigation based on authentication and referrer
+ */
 export default function ChangelogPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
 
-  // Show loading state while checking authentication
+  // ============================================================================
+  // Render Logic - Early Returns
+  // ============================================================================
+
+  // Authentication loading state - show spinner while checking session
   if (isPending) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -230,7 +313,14 @@ export default function ChangelogPage() {
     );
   }
 
-  // Handle back navigation based on authentication and referrer
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
+
+  /**
+   * Handle back navigation with smart routing
+   * Routes to login if not authenticated, otherwise uses referrer or defaults to dashboard
+   */
   const handleBackNavigation = () => {
     if (!session) {
       router.push('/login');
@@ -253,10 +343,14 @@ export default function ChangelogPage() {
     router.push('/dashboard');
   };
 
+  // ============================================================================
+  // Main Render
+  // ============================================================================
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 max-w-4xl">
-        {/* Back Button */}
+        {/* Back Button - Smart navigation based on authentication */}
         <div className="mb-6">
           <Button 
             variant="ghost" 
@@ -269,7 +363,7 @@ export default function ChangelogPage() {
           </Button>
         </div>
         
-        {/* Header */}
+        {/* Header Section - Page title and description */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Changelog</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -278,15 +372,19 @@ export default function ChangelogPage() {
           </p>
         </div>
 
-        {/* Changelog Entries */}
+        {/* Changelog Entries - Version cards with change details */}
         <div className="space-y-8">
           {changelogData.map((entry) => (
             <Card key={entry.version} className="relative">
+              {/* Card Header - Version number, type badge, and date */}
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
+                    {/* Version tag icon */}
                     <Tag className="h-5 w-5 text-muted-foreground" />
+                    {/* Version number */}
                     <CardTitle className="text-2xl">v{entry.version}</CardTitle>
+                    {/* Version type badge (major/minor/patch) */}
                     <Badge 
                       variant="outline" 
                       className={getVersionTypeColor(entry.type)}
@@ -294,6 +392,7 @@ export default function ChangelogPage() {
                       {entry.type}
                     </Badge>
                   </div>
+                  {/* Release date */}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     {entry.date}
@@ -301,15 +400,18 @@ export default function ChangelogPage() {
                 </div>
               </CardHeader>
               
+              {/* Card Content - Change lists grouped by type */}
               <CardContent className="space-y-6">
                 {Object.entries(entry.changes).map(([changeType, changes]) => (
                   <div key={changeType} className="space-y-3">
+                    {/* Change type header with icon */}
                     <div className="flex items-center gap-2">
-                      {getChangeTypeIcon(changeType)}
-                      <h3 className={`font-semibold capitalize ${getChangeTypeColor(changeType)}`}>
+                      {getChangeTypeIcon(changeType as ChangeType)}
+                      <h3 className={`font-semibold capitalize ${getChangeTypeColor(changeType as ChangeType)}`}>
                         {changeType}
                       </h3>
                     </div>
+                    {/* Change list items */}
                     <ul className="space-y-2 ml-6 list-disc list-inside">
                       {changes.map((change: string, changeIndex: number) => (
                         <li key={changeIndex} className="text-sm leading-relaxed">
@@ -324,12 +426,13 @@ export default function ChangelogPage() {
           ))}
         </div>
 
-        {/* Footer */}
+        {/* Footer Section - Changelog format information and version type legend */}
         <div className="mt-16 p-6 rounded-lg border bg-muted/20">
           <h3 className="text-lg font-semibold mb-3">About This Changelog</h3>
           <p className="text-muted-foreground mb-4">
             This changelog follows the <a href="https://keepachangelog.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Keep a Changelog</a> format and uses <a href="https://semver.org/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Semantic Versioning</a>.
           </p>
+          {/* Version type legend */}
           <div className="flex flex-wrap gap-2 text-sm">
             <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20">
               Major

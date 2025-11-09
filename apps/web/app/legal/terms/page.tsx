@@ -1,18 +1,36 @@
+// Type imports
 import type { Metadata } from "next";
+
+// External library imports
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+
+// Internal component imports
+import { Button } from "@/components/ui/button";
+
+// ============================================================================
+// Metadata
+// ============================================================================
 
 export const metadata: Metadata = {
   title: "Terms of Service - OmniLens",
   description: "Terms of Service for OmniLens - GitHub Actions monitoring dashboard",
 };
 
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * TermsOfServicePage component
+ * Displays the complete Terms of Service document
+ * Server component containing legal terms and conditions for using OmniLens
+ */
 export default function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 max-w-4xl">
-        {/* Back Button */}
+        {/* Back Button - Returns to legal main page */}
         <div className="mb-6">
           <Link href="/legal">
             <Button variant="outline" size="sm" className="gap-2">
@@ -22,13 +40,17 @@ export default function TermsOfServicePage() {
           </Link>
         </div>
         
+        {/* Header Section - Page title */}
         <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
         
+        {/* Terms Content - Legal document sections */}
         <div className="prose max-w-none">
+          {/* Last Updated Date */}
           <p className="text-sm text-muted-foreground mb-8">
             <strong>Last updated:</strong> January 2025
           </p>
 
+          {/* Section 1: Acceptance of Terms */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
             <p>
@@ -36,6 +58,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
+          {/* Section 2: Description of Service */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
             <p>
@@ -49,6 +72,7 @@ export default function TermsOfServicePage() {
             </ul>
           </section>
 
+          {/* Section 3: User Accounts and GitHub Integration */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">3. User Accounts and GitHub Integration</h2>
             <p>
@@ -62,6 +86,7 @@ export default function TermsOfServicePage() {
             </ul>
           </section>
 
+          {/* Section 4: Data Collection and Usage */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">4. Data Collection and Usage</h2>
             <p>
@@ -78,6 +103,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
+          {/* Section 5: User Responsibilities */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">5. User Responsibilities</h2>
             <p>You agree to:</p>
@@ -90,6 +116,7 @@ export default function TermsOfServicePage() {
             </ul>
           </section>
 
+          {/* Section 6: Service Availability */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">6. Service Availability</h2>
             <p>
@@ -103,6 +130,7 @@ export default function TermsOfServicePage() {
             </ul>
           </section>
 
+          {/* Section 7: Third-Party Services */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">7. Third-Party Services</h2>
             <p>
@@ -119,6 +147,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
+          {/* Section 8: Data Security */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">8. Data Security</h2>
             <p>
@@ -135,6 +164,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
+          {/* Section 9: Limitation of Liability */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">9. Limitation of Liability</h2>
             <p>
@@ -142,6 +172,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
+          {/* Section 10: Termination */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">10. Termination</h2>
             <p>
@@ -152,6 +183,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
+          {/* Section 11: Changes to Terms */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">11. Changes to Terms</h2>
             <p>
@@ -159,6 +191,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
+          {/* Section 12: Governing Law */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">12. Governing Law</h2>
             <p>
@@ -166,6 +199,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
+          {/* Section 13: Contact Information */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">13. Contact Information</h2>
             <p>
@@ -173,6 +207,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
+          {/* Footer - Agreement acknowledgment */}
           <div className="mt-12 pt-8 border-t border-gray-700">
             <p className="text-sm text-gray-400">
               By using OmniLens, you acknowledge that you have read and understood these Terms of Service and agree to be bound by them.
