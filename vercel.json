@@ -1,0 +1,7 @@
+{
+  "buildCommand": "turbo run build --filter=@omni/web",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "bun install",
+  "framework": "nextjs"
+}
+

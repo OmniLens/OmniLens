@@ -5,7 +5,23 @@
       "dependsOn": ["^build"],
       "outputs": [
         "dist/**",
-        ".next/**"
+        ".next/**",
+        "!.next/cache/**"
+      ],
+      "env": [
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET",
+        "DB_PASSWORD",
+        "DB_USER",
+        "DB_HOST",
+        "DB_NAME",
+        "DB_PORT",
+        "ADMIN_API_TOKEN",
+        "DATABASE_URL",
+        "NODE_ENV",
+        "SENTRY_AUTH_TOKEN"
       ]
     },
     "lint": {
