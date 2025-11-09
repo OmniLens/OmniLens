@@ -41,7 +41,7 @@ jobs:
           - 5432:5432
 
     steps:
-    - name: 📥Checkout code
+    - name: 📥 Checkout code
       uses: actions/checkout@v5
 
     - name: 🍞 Setup Bun
@@ -62,7 +62,7 @@ jobs:
         sleep 5
         
         # Create database schema
-        psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f lib/schema.sql
+        psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f apps/web/lib/schema.sql
       env:
         PGPASSWORD: ${{ secrets.DB_PASSWORD }}
 
@@ -84,7 +84,7 @@ jobs:
         NODE_ENV: test
 
     - name: 🧪 Run auth tests
-      run: bun run test:auth
+      run: bun run test:auth:basic
       env:
         GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
         GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}

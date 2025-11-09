@@ -21,7 +21,6 @@ import {
   logSuccess,
   logError,
   logWarning,
-  logInfo,
   makeRequest,
   checkServer
 } from './test-utils.js';

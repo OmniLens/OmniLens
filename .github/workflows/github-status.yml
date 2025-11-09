@@ -63,7 +63,7 @@ jobs:
         sleep 5
         
         # Create database schema
-        psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f lib/schema.sql
+        psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f apps/web/lib/schema.sql
       env:
         PGPASSWORD: ${{ secrets.DB_PASSWORD }}
 

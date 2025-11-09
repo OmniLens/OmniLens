@@ -1,0 +1,46 @@
+import js from "@eslint/js";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+import pluginReact from "eslint-plugin-react";
+
+export default [
+  {
+    ignores: ["**/.next/**", "**/node_modules/**", "**/dist/**", "**/build/**"],
+  },
+  {
+    files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+  },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    plugins: {
+      react: pluginReact,
+    },
+    rules: {
+      ...pluginReact.configs.recommended.rules,
+      // Disable React JSX scope requirement for Next.js
+      "react/react-in-jsx-scope": "off",
+      // Disable prop-types for TypeScript projects
+      "react/prop-types": "off",
+      // Allow unused variables that start with underscore
+      "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+      // Allow any types for now (can be made stricter later)
+      "@typescript-eslint/no-explicit-any": "warn",
+      // Allow require() imports
+      "@typescript-eslint/no-require-imports": "off",
+      // Allow @ts-ignore comments
+      "@typescript-eslint/ban-ts-comment": "off",
+    },
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
+  },
+];

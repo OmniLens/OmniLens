@@ -109,7 +109,6 @@ The dashboard integrates multiple data sources:
 6. **Start the development server**
    ```bash
    bun dev
-   # or npm run dev
    ```
 
 7. **Open your browser**
