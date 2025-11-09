@@ -7,7 +7,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Package,
-  Settings,
   Loader,
   CheckCircle,
 } from "lucide-react";
@@ -15,21 +14,16 @@ import {
 // Internal component imports
 import { Button } from "@/components/ui/button";
 import { Modal, ModalFooter } from "@/components/ui/modal";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 import RepositoryCardSkeleton from "@/components/RepositoryCardSkeleton";
 import RepositoryCard from "@/components/RepositoryCard";
+import Header from "@/components/Header";
 
 // Utility imports
 import { formatRepoDisplayName } from "@/lib/utils";
 
 // Hook imports
-import { useSession, signOut } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import { useDashboardRepositoriesBatch, type Repository, type DashboardData } from "@/lib/hooks/use-dashboard-repositories-batch";
 
 // ============================================================================
@@ -442,18 +436,6 @@ export default function DashboardHomePage() {
     }
   };
 
-  /**
-   * Handle user logout
-   * Signs out and redirects to login page
-   */
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      router.push('/login');
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
 
   // ============================================================================
   // Render Logic - Early Returns
@@ -463,7 +445,8 @@ export default function DashboardHomePage() {
   if (isPending) {
     return (
       <div className="min-h-screen">
-        <div className="container mx-auto p-6">
+        <Header />
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -479,7 +462,8 @@ export default function DashboardHomePage() {
   if (error) {
     return (
       <div className="min-h-screen">
-        <div className="container mx-auto p-6">
+        <Header />
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="mb-8">
             <p className="text-muted-foreground text-red-600">
               Error: {error.message}
@@ -494,16 +478,14 @@ export default function DashboardHomePage() {
   if (isLoading && repositories.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto p-6 space-y-8">
-          <div className="flex justify-end mb-8">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                {/* Add Repo button skeleton */}
-                <div className="h-8 w-24 bg-muted animate-pulse rounded-md"></div>
-                {/* Settings button skeleton */}
-                <div className="h-8 w-8 bg-muted animate-pulse rounded-md"></div>
-              </div>
-            </div>
+        <Header />
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+          {/* Header Section - Repositories heading and Add repository button skeleton */}
+          <div className="flex items-center justify-between mb-8">
+            {/* Repositories heading skeleton - matches text-xl sm:text-2xl font-bold */}
+            <div className="h-7 sm:h-8 w-40 sm:w-48 bg-muted animate-pulse rounded-md"></div>
+            {/* Add Repo button skeleton - matches size="sm" button (h-8) with icon and text */}
+            <div className="h-8 w-28 bg-muted animate-pulse rounded-md"></div>
           </div>
 
           {/* Show skeleton cards while loading */}
@@ -519,31 +501,8 @@ export default function DashboardHomePage() {
   if (!isLoading && repositories.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto p-6 space-y-8">
-          <div className="flex justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label="Settings"
-                  className="flex items-center justify-center gap-0 px-2"
-                >
-                  <span className="flex h-7 w-7 items-center justify-center">
-                    <Settings className="h-4 w-4" />
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled className="cursor-default">
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        <Header />
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
           <NoRepositoriesFound
             newRepoUrl={newRepoUrl}
             isValidating={isValidating}
@@ -569,105 +528,82 @@ export default function DashboardHomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-8">
+      <Header />
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
         <GitHubStatusBanner className="mb-6" />
         
-        {/* Header Section - Add repository button and settings menu */}
-          <div className="flex justify-end mb-8">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                {/* Inline add repository form - shown when no repositories exist */}
-                {showAddForm && (
-                  <form onSubmit={handleAddRepo} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={newRepoUrl}
-                      onChange={(e) => {
-                        setNewRepoUrl(e.target.value);
-                        // Clear error when user starts typing
-                        if (addError) {
-                          setAddError(null);
-                        }
-                      }}
-                      placeholder="owner/repo or GitHub URL"
-                      disabled={isValidating || isAdding}
-                      className={`w-80 px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary ${
-                        addError ? 'animate-shake' : ''
-                      }`}
-                      onAnimationEnd={() => {
-                        if (addError) {
-                          setNewRepoUrl("");
-                        }
-                      }}
-                      autoFocus
-                      onFocus={() => {
-                        if (addError) {
-                          setNewRepoUrl("");
-                        }
-                      }}
-                      onBlur={() => {
-                        if (!isValidating && !isAdding) {
-                          setShowAddForm(false);
-                          setAddError(null);
-                          setNewRepoUrl("");
-                        }
-                      }}
-                    />
-                    <Button 
-                      type="submit" 
-                      size="sm" 
-                      disabled={isValidating || isAdding || repositories.length >= 12} 
-                      onMouseDown={(e) => e.preventDefault()} 
-                      className="z-0"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
-                    </Button>
-                  </form>
-                )}
-                {/* Add Repo button - opens modal or inline form */}
-                {!showAddForm && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleAddRepoClick}
-                    disabled={repositories.length >= 12}
-                    aria-label="Add repository"
-                    className="flex items-center justify-center gap-2 px-3"
+        {/* Header Section - Repositories heading and Add repository button */}
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold truncate">Repositories</h2>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              {/* Inline add repository form - shown when no repositories exist */}
+              {showAddForm && (
+                <form onSubmit={handleAddRepo} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newRepoUrl}
+                    onChange={(e) => {
+                      setNewRepoUrl(e.target.value);
+                      // Clear error when user starts typing
+                      if (addError) {
+                        setAddError(null);
+                      }
+                    }}
+                    placeholder="owner/repo or GitHub URL"
+                    disabled={isValidating || isAdding}
+                    className={`w-80 px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary ${
+                      addError ? 'animate-shake' : ''
+                    }`}
+                    onAnimationEnd={() => {
+                      if (addError) {
+                        setNewRepoUrl("");
+                      }
+                    }}
+                    autoFocus
+                    onFocus={() => {
+                      if (addError) {
+                        setNewRepoUrl("");
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!isValidating && !isAdding) {
+                        setShowAddForm(false);
+                        setAddError(null);
+                        setNewRepoUrl("");
+                      }
+                    }}
+                  />
+                  <Button 
+                    type="submit" 
+                    size="sm" 
+                    disabled={isValidating || isAdding || repositories.length >= 12} 
+                    onMouseDown={(e) => e.preventDefault()} 
+                    className="z-0"
                   >
-                    <Plus className="h-4 w-4" />
-                    Add Repo
+                    <Plus className="h-4 w-4 mr-2" />
+                    {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
                   </Button>
-                )}
-                {/* Settings dropdown menu - logout and other settings */}
-                {repositories.length > 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        aria-label="Settings"
-                        className="flex items-center justify-center gap-0 px-2"
-                      >
-                        <span className="flex h-7 w-7 items-center justify-center">
-                          <Settings className="h-4 w-4" />
-                        </span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem disabled className="cursor-default">
-                        Settings
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleLogout}>
-                        Log out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
+                </form>
+              )}
+              {/* Add Repo button - opens modal or inline form */}
+              {!showAddForm && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleAddRepoClick}
+                  disabled={repositories.length >= 12}
+                  aria-label="Add repository"
+                  className="flex items-center justify-center gap-2 px-3"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Repo
+                </Button>
+              )}
             </div>
           </div>
+        </div>
 
         {/* Repository Grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

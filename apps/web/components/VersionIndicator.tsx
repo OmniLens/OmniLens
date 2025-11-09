@@ -29,17 +29,21 @@ interface VersionIndicatorProps {
  */
 export function VersionIndicator({ version = packageJson.version }: VersionIndicatorProps) {
   return (
-    <Link 
-      href="/changelog"
-      className="fixed bottom-4 left-4 z-50 transition-all duration-200 hover:scale-105"
-      title="View changelog"
-    >
-      <Badge 
-        variant="outline" 
-        className="bg-background/80 backdrop-blur-sm border-border/50 text-muted-foreground hover:text-foreground hover:border-border font-mono text-xs px-2 py-1"
-      >
-        v{version}
-      </Badge>
-    </Link>
+    <div className="fixed bottom-4 left-0 right-0 z-50 pointer-events-none">
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+        <Link 
+          href="/changelog"
+          className="inline-block pointer-events-auto transition-all duration-200 hover:scale-105"
+          title="View changelog"
+        >
+          <Badge 
+            variant="outline" 
+            className="bg-background/80 backdrop-blur-sm border-border/50 text-muted-foreground hover:text-foreground hover:border-border font-mono text-xs px-2 py-1"
+          >
+            v{version}
+          </Badge>
+        </Link>
+      </div>
+    </div>
   );
 }

@@ -62,23 +62,32 @@ const changelogData: ChangelogEntry[] = [
     changes: {
       added: [
         "Turbo repo implementation for monorepo build orchestration and task management",
-        "Interactive API Documentation page with Swagger UI at /api-docs",
-        "OpenAPI 3.0 specification endpoint at /api/openapi",
+        "Interactive API Documentation page with Swagger UI",
+        "OpenAPI 3.0 specification endpoint",
         "Complete OpenAPI documentation for all 15 API endpoints",
         "Code review guidelines and standards (.cursorrules)",
         "Shared utility functions for workflow metrics calculations",
-        "Type declarations for third-party libraries"
+        "Type declarations for third-party libraries",
+        "Header component with navigation, user menu, and breadcrumb support",
+        "Breadcrumb navigation (Repositories -> Workflows) with visual separators",
+        "Repositories heading on dashboard page aligned with Add Repo button"
       ],
       changed: [
         "Monorepo structure migration - all code moved to apps/web/ workspace",
         "API routes refactored with consistent structure, documentation, and code organization",
         "Type safety improved - removed all `any` types and added proper TypeScript types throughout",
         "Error handling enhanced with proper type annotations",
-        "Shared calculation logic extracted to reusable utility functions to eliminate duplication"
+        "Shared calculation logic extracted to reusable utility functions to eliminate duplication",
+        "Layout max-width constraint updated to 1920px for better utilization of standard MacBook window sizes",
+        "All pages now use consistent max-width constraint with responsive padding",
+        "Version indicator now respects max-width constraint and aligns with content",
+        "Login page button styling unified with landing page design",
+        "Changelog page back button aligned with page heading"
       ],
       fixed: [
         "ESLint and TypeScript errors across all API routes",
-        "Inconsistent code structure and missing type definitions in API files"
+        "Inconsistent code structure and missing type definitions in API files",
+        "Repository dashboard loading skeleton now matches actual heading and button sizes"
       ]
     }
   },
@@ -376,11 +385,11 @@ export default function ChangelogPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 max-w-4xl">
-        {/* Back Button - Smart navigation based on authentication */}
-        <div className="mb-6">
+      <div className="w-full max-w-[1920px] mx-auto p-6 sm:px-6 lg:px-8">
+        {/* Header Section - Back button and page title */}
+        <div className="flex items-center justify-between mb-8">
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm" 
             className="gap-2"
             onClick={handleBackNavigation}
@@ -388,11 +397,12 @@ export default function ChangelogPage() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
+          <h1 className="text-4xl font-bold">Changelog</h1>
+          <div className="w-[72px]"></div> {/* Spacer to center the heading */}
         </div>
         
-        {/* Header Section - Page title and description */}
+        {/* Description Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Changelog</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Complete version history and changelog for OmniLens.<br />
             Track all features, improvements, and bug fixes.
@@ -400,7 +410,7 @@ export default function ChangelogPage() {
         </div>
 
         {/* Changelog Entries - Version cards with change details */}
-        <div className="space-y-8">
+        <div className="max-w-4xl mx-auto space-y-8">
           {changelogData.map((entry) => (
             <Card key={entry.version} className="relative">
               {/* Card Header - Version number, type badge, and date */}
@@ -454,7 +464,7 @@ export default function ChangelogPage() {
         </div>
 
         {/* Footer Section - Changelog format information and version type legend */}
-        <div className="mt-16 p-6 rounded-lg border bg-muted/20">
+        <div className="max-w-4xl mx-auto mt-16 p-6 rounded-lg border bg-muted/20">
           <h3 className="text-lg font-semibold mb-3">About This Changelog</h3>
           <p className="text-muted-foreground mb-4">
             This changelog follows the <a href="https://keepachangelog.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Keep a Changelog</a> format and uses <a href="https://semver.org/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Semantic Versioning</a>.

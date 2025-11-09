@@ -77,12 +77,14 @@ export default function LoginPage() {
       
       {/* Header Section - Back to home navigation */}
       <div className="p-6 relative z-10">
-        <Link href="/">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-        </Link>
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+          <Link href="/">
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Main Content Section - Centered login form */}
@@ -125,7 +127,7 @@ export default function LoginPage() {
             onClick={handleGitHubSignIn}
             variant="outline"
             disabled={isLoading}
-            className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white hover:bg-white/20 px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-white/25"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
             <Github className="h-5 w-5" />
             {isLoading ? "Signing in..." : "Continue with GitHub"}
@@ -135,7 +137,8 @@ export default function LoginPage() {
 
       {/* Footer Section - Legal links and copyright */}
       <div className="p-4 relative z-10">
-        <div className="text-center w-full max-w-md mx-auto space-y-2">
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center w-full max-w-md mx-auto space-y-2">
           {/* Terms and Privacy link */}
           <p className="text-sm text-muted-foreground">
             By signing in, you agree to our{" "}
@@ -150,6 +153,7 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground">
             © 2025 OmniLens. All rights reserved.
           </p>
+          </div>
         </div>
       </div>
     </div>

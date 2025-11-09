@@ -32,7 +32,7 @@ export default function ApiDocsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 px-4">
+      <div className="w-full max-w-[1920px] mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">API Documentation</h1>
           <p className="text-muted-foreground">

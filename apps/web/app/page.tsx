@@ -25,7 +25,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black">
       {/* Navigation Section - Header with logo, badge, GitHub link, and sign-in button */}
       <nav className="relative z-10 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="w-full max-w-[1920px] mx-auto flex items-center justify-between">
           {/* Logo and Brand - Left side navigation */}
           <div className="flex items-center gap-3">
             <div className="h-8 w-8">
@@ -68,7 +68,7 @@ export default function LandingPage() {
 
       {/* Hero Section - Main landing content with logo, headline, and CTA */}
       <div className="relative px-6 py-20">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full max-w-[1920px] mx-auto">
           <div className="text-center space-y-8">
             {/* Logo - Large OmniLens brand image */}
             <div className="flex justify-center">
@@ -116,7 +116,7 @@ export default function LandingPage() {
         <div className="absolute top-40 right-20 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl animate-pulse delay-1000"></div>
         <div className="absolute bottom-20 left-1/4 w-28 h-28 bg-cyan-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
         
-        <div className="max-w-7xl mx-auto relative z-10">
+        <div className="w-full max-w-[1920px] mx-auto relative z-10">
           {/* Section Header */}
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
@@ -179,7 +179,7 @@ export default function LandingPage() {
 
       {/* Open Source Section - Community information and repository stats */}
       <div className="relative px-6 py-20">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full max-w-[1920px] mx-auto">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Left Side - Content and GitHub link */}
             <div className="space-y-6">
@@ -268,7 +268,7 @@ export default function LandingPage() {
         <div className="absolute bottom-10 right-1/4 w-36 h-36 bg-gradient-to-r from-slate-400/10 to-slate-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-10 w-24 h-24 bg-gradient-to-r from-slate-600/10 to-slate-700/10 rounded-full blur-2xl animate-pulse delay-2000"></div>
         
-        <div className="max-w-7xl mx-auto text-center relative z-10">
+        <div className="w-full max-w-[1920px] mx-auto text-center relative z-10">
           <div className="group bg-gradient-to-br from-slate-900/50 to-slate-800/60 backdrop-blur-sm border border-slate-700/40 rounded-3xl p-12 relative overflow-hidden hover:border-slate-600/60 transition-all duration-500">
             {/* Animated Gradient Overlay on hover */}
             <div className="absolute inset-0 bg-gradient-to-br from-slate-500/5 via-transparent to-slate-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
@@ -305,7 +305,7 @@ export default function LandingPage() {
 
       {/* Footer Section - Copyright and legal links */}
       <footer className="relative px-6 py-12 border-t border-slate-800/40">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full max-w-[1920px] mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             {/* Logo and Brand */}
             <div className="flex items-center gap-3 mb-4 md:mb-0">

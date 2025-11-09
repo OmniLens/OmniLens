@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 export default function LegalPage() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 max-w-4xl">
+      <div className="w-full max-w-[1920px] mx-auto p-6 sm:px-6 lg:px-8">
         {/* Back Button - Returns to home page */}
         <div className="mb-6">
           <Link href="/">

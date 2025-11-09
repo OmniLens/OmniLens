@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import WorkflowCard, { IdleWorkflowCard } from "@/components/WorkflowCard";
 import DailyMetrics from "@/components/DailyMetrics";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
+import Header from "@/components/Header";
 
 // Utility imports
 import { formatRepoDisplayName } from "@/lib/utils";
@@ -264,7 +265,8 @@ export default function DashboardPage() {
   if (isPending) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto p-6">
+        <Header />
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -281,7 +283,8 @@ export default function DashboardPage() {
     const error = workflowsError || runsError || overviewError || yesterdayError;
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto p-6">
+        <Header />
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="mb-8">
             <p className="text-muted-foreground text-red-600">
               Error: {error?.message || 'Failed to load data'}
@@ -296,7 +299,8 @@ export default function DashboardPage() {
   if (isLoadingWorkflows || isLoadingYesterday) {
     return (
       <div className="min-h-screen">
-        <div className="container mx-auto p-6">
+        <Header />
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -312,7 +316,8 @@ export default function DashboardPage() {
   if (isLoadingRuns || isLoadingOverview) {
     return (
       <div className="min-h-screen">
-        <div className="container mx-auto p-6">
+        <Header />
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -332,7 +337,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-8">
+      <Header />
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
         <GitHubStatusBanner className="mb-6" />
         
