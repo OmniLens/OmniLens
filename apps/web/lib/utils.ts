@@ -32,6 +32,30 @@ export function removeEmojiFromWorkflowName(name: string): string {
   return name.replace(/^[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}\s]+/gu, '').trim();
 }
 
+/**
+ * Format repository name for display
+ * Converts repository paths like "owner/repo-name" to "Repo Name"
+ * Handles special cases (e.g., "nuqs" stays lowercase)
+ * @param repoName - Repository path in format "owner/repo-name"
+ * @returns Formatted display name
+ * @example
+ * formatRepoDisplayName("owner/my-repo") // Returns "My Repo"
+ * formatRepoDisplayName("owner/nuqs") // Returns "nuqs"
+ */
+export function formatRepoDisplayName(repoName: string): string {
+  const repoNamePart = repoName.split('/').pop() || repoName;
+  
+  // Special case for nuqs - keep it lowercase
+  if (repoNamePart.toLowerCase() === 'nuqs') {
+    return 'nuqs';
+  }
+  
+  return repoNamePart
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, l => l.toUpperCase())
+    .trim();
+}
+
 // ============================================================================
 // Time/Date Utilities
 // ============================================================================

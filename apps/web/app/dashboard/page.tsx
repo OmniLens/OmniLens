@@ -1,20 +1,18 @@
 "use client";
 
+// External library imports
 import React from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertCircle,
   Plus,
-  Trash2,
   Package,
-  Github,
   Settings,
   Loader,
   CheckCircle,
 } from "lucide-react";
+
+// Internal component imports
 import { Button } from "@/components/ui/button";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import {
@@ -23,32 +21,29 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import CompactMetricsOverview from "@/components/CompactMetricsOverview";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
-import RepositoryCardSkeleton, { SingleRepositorySkeleton } from "@/components/RepositoryCardSkeleton";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import RepositoryCardSkeleton from "@/components/RepositoryCardSkeleton";
+import RepositoryCard from "@/components/RepositoryCard";
+
+// Utility imports
+import { formatRepoDisplayName } from "@/lib/utils";
+
+// Hook imports
 import { useSession, signOut } from "@/lib/auth-client";
-import { useDashboardRepositoriesBatch } from "@/lib/hooks/use-dashboard-repositories-batch";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDashboardRepositoriesBatch, type Repository, type DashboardData } from "@/lib/hooks/use-dashboard-repositories-batch";
 
-// Helper function to format repository name for display
-function formatRepoDisplayName(repoName: string): string {
-  const repoNamePart = repoName.split('/').pop() || repoName;
-  
-  // Special case for nuqs - keep it lowercase
-  if (repoNamePart.toLowerCase() === 'nuqs') {
-    return 'nuqs';
-  }
-  
-  return repoNamePart
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, l => l.toUpperCase())
-    .trim();
-}
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
-// Helper function to find where a new repository should be inserted in the sorted list
-function findInsertIndex(repositories: any[], newRepoDisplayName: string): number {
+/**
+ * Find the correct insertion index for a new repository in an alphabetically sorted list
+ * Used to maintain alphabetical order when adding repositories
+ * @param repositories - Array of existing repositories
+ * @param newRepoDisplayName - Display name of the repository to insert
+ * @returns Index where the new repository should be inserted
+ */
+function findInsertIndex(repositories: Repository[], newRepoDisplayName: string): number {
   const formattedNewName = formatRepoDisplayName(newRepoDisplayName);
 
   for (let i = 0; i < repositories.length; i++) {
@@ -61,7 +56,26 @@ function findInsertIndex(repositories: any[], newRepoDisplayName: string): numbe
   return repositories.length; // Insert at the end
 }
 
-// Type for display items (can be repository or skeleton)
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+/**
+ * Data structure for adding a new repository
+ * Matches the API schema for repository addition
+ */
+type AddRepoData = {
+  repoPath: string;
+  displayName: string;
+  htmlUrl: string;
+  defaultBranch: string;
+  avatarUrl?: string;
+};
+
+/**
+ * Type for display items in the repository grid
+ * Can represent either a repository or a skeleton loading state
+ */
 type DisplayItem = {
   isSkeleton?: boolean;
   displayName?: string;
@@ -75,21 +89,6 @@ type DisplayItem = {
   hasError?: boolean;
   errorMessage?: string;
   hasWorkflows?: boolean;
-  metrics?: any;
-  isUserRepo?: boolean;
-  onRequestDelete?: () => void;
-};
-
-interface RepositoryCardProps {
-  repoSlug: string;
-  repoPath: string;
-  displayName: string;
-  avatarUrl?: string;
-  htmlUrl?: string;
-  visibility?: 'public' | 'private';
-  hasError: boolean;
-  errorMessage?: string;
-  hasWorkflows?: boolean;
   metrics?: {
     totalWorkflows: number;
     passedRuns: number;
@@ -100,132 +99,14 @@ interface RepositoryCardProps {
   } | null;
   isUserRepo?: boolean;
   onRequestDelete?: () => void;
-}
+};
 
-function RepositoryCard({
-  repoSlug,
-  repoPath,
-  displayName,
-  avatarUrl,
-  htmlUrl,
-  visibility,
-  hasError,
-  errorMessage,
-  hasWorkflows,
-  metrics,
-  isUserRepo = false,
-  onRequestDelete
-}: RepositoryCardProps) {
-  const owner = (repoPath || displayName || '').split('/')[0] || '';
-  
-  const cardContent = (
-    <Card className={`relative h-full transition-all duration-200 ${
-      hasError 
-        ? 'border-red-500 bg-card hover:border-red-400' 
-        : 'border-border bg-card hover:border-border/80 hover:shadow-md'
-    }`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {avatarUrl && (
-              <Image
-                src={avatarUrl}
-                alt={`${owner} avatar`}
-                className="h-6 w-6 rounded-full border border-border"
-                width={24}
-                height={24}
-                unoptimized
-                priority
-              />
-            )}
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-lg font-semibold">
-                {formatRepoDisplayName(displayName)}
-              </CardTitle>
-              {visibility && (
-                <Badge variant={visibility === 'private' ? 'secondary' : 'outline'} className="text-xs">
-                  {visibility === 'private' ? '🔒 Private' : '🌐 Public'}
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {hasError && <AlertCircle className="h-5 w-5 text-red-500" />}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                window.open(htmlUrl || `https://github.com/${repoPath}`, '_blank', 'noopener,noreferrer');
-              }}
-              title="View on GitHub"
-              aria-label="View on GitHub"
-            >
-              <Github className="h-4 w-4" />
-            </Button>
-            {isUserRepo && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRequestDelete?.();
-                }}
-                title="Remove repository"
-                aria-label="Remove repository"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {hasError ? (
-          <div className="space-y-2">
-            <p className="text-sm text-red-600">
-              {errorMessage || "Unable to access repository"}
-            </p>
-          </div>
-        ) : hasWorkflows && metrics ? (
-          <CompactMetricsOverview
-            totalWorkflows={metrics.totalWorkflows}
-            passedRuns={metrics.passedRuns}
-            failedRuns={metrics.failedRuns}
-            inProgressRuns={metrics.inProgressRuns}
-            successRate={metrics.successRate}
-            hasActivity={metrics.hasActivity}
-          />
-        ) : (
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              No workflows found
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
 
-  if (hasError) {
-    return (
-      <div className="opacity-75">
-        {cardContent}
-      </div>
-    );
-  }
-
-  return (
-    <div className="block transition-all duration-200 hover:scale-[1.02] cursor-pointer" onClick={() => window.location.href = `/dashboard/${repoSlug}`}>
-      {cardContent}
-    </div>
-  );
-}
-
+/**
+ * NoRepositoriesFound component
+ * Empty state component shown when user has no repositories
+ * Includes a form to add the first repository
+ */
 function NoRepositoriesFound({
   newRepoUrl,
   isValidating,
@@ -244,7 +125,9 @@ function NoRepositoriesFound({
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="w-full max-w-xl">
+        {/* Empty state card with icon and message */}
         <div className="border rounded-lg bg-card/60 backdrop-blur-sm p-8 text-center shadow-sm">
+          {/* Package icon */}
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
             <Package className="h-8 w-8 text-muted-foreground" />
           </div>
@@ -253,6 +136,7 @@ function NoRepositoriesFound({
             Add a GitHub repository to start tracking workflows and metrics.
           </p>
 
+          {/* Add repository form */}
           <form onSubmit={onSubmit} className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
             <input
               type="text"
@@ -278,23 +162,40 @@ function NoRepositoriesFound({
   );
 }
 
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * DashboardHomePage component
+ * Main dashboard page displaying all user repositories in a grid layout
+ * Supports adding, deleting, and managing repositories
+ * Includes authentication, loading states, and error handling
+ */
 export default function DashboardHomePage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const queryClient = useQueryClient();
   
-  // Use the new batch hook for repository data (single request, parallel loading)
+  // ============================================================================
+  // Data Fetching (TanStack Query)
+  // ============================================================================
+
+  // Fetch all repositories in a single batch request
   const {
     data: dashboardData,
     isLoading,
-    error,
-    isError
+    error
   } = useDashboardRepositoriesBatch();
 
   // Extract repositories from the batch response
   const repositories = dashboardData?.repositories || [];
 
-  // Local state for UI interactions
+  // ============================================================================
+  // Local State
+  // ============================================================================
+
+  // UI state for add repository form and modal
   const [showAddForm, setShowAddForm] = React.useState(false);
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [newRepoUrl, setNewRepoUrl] = React.useState("");
@@ -309,7 +210,11 @@ export default function DashboardHomePage() {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [deletingRepoSlug, setDeletingRepoSlug] = React.useState<string | null>(null);
 
-  // Redirect to login if not authenticated
+  // ============================================================================
+  // Effects
+  // ============================================================================
+
+  // Authentication guard - redirect to login if not authenticated
   React.useEffect(() => {
     if (!isPending && !session) {
       router.push('/login');
@@ -328,7 +233,11 @@ export default function DashboardHomePage() {
     }
   }, [dashboardData, repoToDelete]);
 
-  // Process each repository to check for errors and workflow data
+  // ============================================================================
+  // Computed Values
+  // ============================================================================
+
+  // Process repositories and sort alphabetically by display name
   const repositoryData: DisplayItem[] = repositories.map(repo => ({
     ...repo,
     hasError: false,
@@ -342,9 +251,13 @@ export default function DashboardHomePage() {
   // Use repository data directly (no skeleton needed with modal)
   const displayData: DisplayItem[] = repositoryData;
 
-  // Add repository mutation
+  // ============================================================================
+  // Mutations (TanStack Query)
+  // ============================================================================
+
+  // Add repository mutation - handles validation, addition, and optimistic updates
   const addRepoMutation = useMutation({
-    mutationFn: async (repoData: any) => {
+    mutationFn: async (repoData: AddRepoData) => {
       const response = await fetch('/api/repo/add', {
         method: 'POST',
         credentials: 'include',
@@ -368,7 +281,7 @@ export default function DashboardHomePage() {
         const currentData = queryClient.getQueryData(['dashboard-repositories-batch']);
 
         if (currentData && typeof currentData === 'object' && 'repositories' in currentData) {
-          const dashboardData = currentData as { repositories: any[]; totalCount: number; loadedAt: string };
+          const dashboardData = currentData as DashboardData;
 
           // Create enhanced repository object with workflow data
           const enhancedRepo = {
@@ -415,7 +328,7 @@ export default function DashboardHomePage() {
     },
   });
 
-  // Delete repository mutation
+  // Delete repository mutation - handles deletion and cache invalidation
   const deleteRepoMutation = useMutation({
     mutationFn: async (slug: string) => {
       const response = await fetch(`/api/repo/${slug}`, {
@@ -452,6 +365,15 @@ export default function DashboardHomePage() {
     },
   });
 
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
+
+  /**
+   * Handle adding a new repository
+   * Validates the repository URL, then adds it via mutation
+   * Manages multi-step progress (validating -> adding -> getting data)
+   */
   async function handleAddRepo(e?: React.FormEvent) {
     if (e) e.preventDefault();
     setAddError(null);
@@ -508,6 +430,10 @@ export default function DashboardHomePage() {
     }
   }
 
+  /**
+   * Handle click on "Add Repo" button
+   * Shows modal if repositories exist, otherwise shows inline form
+   */
   const handleAddRepoClick = () => {
     if (repositories.length > 0) {
       setShowAddModal(true);
@@ -516,6 +442,10 @@ export default function DashboardHomePage() {
     }
   };
 
+  /**
+   * Handle user logout
+   * Signs out and redirects to login page
+   */
   const handleLogout = async () => {
     try {
       await signOut();
@@ -525,7 +455,11 @@ export default function DashboardHomePage() {
     }
   };
 
-  // Show loading state for authentication
+  // ============================================================================
+  // Render Logic - Early Returns
+  // ============================================================================
+
+  // Authentication loading state - show spinner while checking session
   if (isPending) {
     return (
       <div className="min-h-screen">
@@ -541,7 +475,7 @@ export default function DashboardHomePage() {
     );
   }
 
-  // Show error state
+  // Error state - show error message if data fetch failed
   if (error) {
     return (
       <div className="min-h-screen">
@@ -556,7 +490,7 @@ export default function DashboardHomePage() {
     );
   }
   
-  // Show loading state with skeleton cards while fetching data
+  // Initial loading state - show skeleton cards while fetching repositories
   if (isLoading && repositories.length === 0) {
     return (
       <div className="min-h-screen bg-background">
@@ -581,7 +515,7 @@ export default function DashboardHomePage() {
     );
   }
 
-  // Only show "No repositories" if we're not loading and actually have no repos
+  // Empty state - show "No repositories" component when user has no repos
   if (!isLoading && repositories.length === 0) {
     return (
       <div className="min-h-screen bg-background">
@@ -629,14 +563,21 @@ export default function DashboardHomePage() {
     );
   }
 
+  // ============================================================================
+  // Main Render
+  // ============================================================================
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-8">
-        {/* GitHub Actions Status Banner */}
+        {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
         <GitHubStatusBanner className="mb-6" />
+        
+        {/* Header Section - Add repository button and settings menu */}
           <div className="flex justify-end mb-8">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
+                {/* Inline add repository form - shown when no repositories exist */}
                 {showAddForm && (
                   <form onSubmit={handleAddRepo} className="flex items-center gap-2">
                     <input
@@ -685,6 +626,7 @@ export default function DashboardHomePage() {
                     </Button>
                   </form>
                 )}
+                {/* Add Repo button - opens modal or inline form */}
                 {!showAddForm && (
                   <Button
                     variant="default"
@@ -698,6 +640,7 @@ export default function DashboardHomePage() {
                     Add Repo
                   </Button>
                 )}
+                {/* Settings dropdown menu - logout and other settings */}
                 {repositories.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -726,6 +669,7 @@ export default function DashboardHomePage() {
             </div>
           </div>
 
+        {/* Repository Grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayData.map((item, index) => (
               <RepositoryCard
@@ -747,7 +691,7 @@ export default function DashboardHomePage() {
           </div>
         </div>
 
-        {/* Delete Repository Modal */}
+        {/* Delete Repository Modal - Confirmation dialog for removing repositories */}
       <Modal
         isOpen={!!repoToDelete}
         title="Remove repository"
@@ -781,7 +725,7 @@ export default function DashboardHomePage() {
         </div>
       </Modal>
 
-      {/* Add Repository Modal */}
+      {/* Add Repository Modal - Form with progress indicator for adding repositories */}
       <Modal
         isOpen={showAddModal}
         title="Add repository"
@@ -833,7 +777,7 @@ export default function DashboardHomePage() {
             )}
           </div>
           
-          {/* Progress Indicator */}
+          {/* Progress Indicator - Shows validation, adding, and data fetching steps */}
           {currentStep !== 'idle' && (
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
