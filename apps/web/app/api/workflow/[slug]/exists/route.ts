@@ -72,7 +72,8 @@ export const GET = withAuth(async (
 ) => {
   try {
     // Validate slug parameter
-    const validatedSlug = slugSchema.parse(context.params.slug);
+    const params = await context.params;
+    const validatedSlug = slugSchema.parse(params.slug);
     
     // Check if workflows exist in database (doesn't trigger GitHub API fetch)
     const savedWorkflows = await getWorkflows(validatedSlug, authData.user.id);

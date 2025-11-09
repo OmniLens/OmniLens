@@ -2,7 +2,7 @@
 
 // External library imports
 import React, { useMemo, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, BarChart3, RefreshCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -33,13 +33,6 @@ import {
 // Type Definitions
 // ============================================================================
 
-/**
- * Props for the DashboardPage component
- */
-interface PageProps {
-  params: { slug: string };
-}
-
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -49,9 +42,10 @@ interface PageProps {
  * Displays workflow runs, metrics, and health status for a selected date
  * Supports date selection, authentication, and real-time data fetching
  */
-export default function DashboardPage({ params }: PageProps) {
-  // Extract repository slug from URL params
-  const { slug: repoSlug } = params;
+export default function DashboardPage() {
+  // Extract repository slug from URL params using useParams hook
+  const params = useParams();
+  const repoSlug = params.slug as string;
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const queryClient = useQueryClient();

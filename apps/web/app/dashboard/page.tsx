@@ -694,6 +694,11 @@ export default function DashboardHomePage() {
         {/* Delete Repository Modal - Confirmation dialog for removing repositories */}
       <Modal
         isOpen={!!repoToDelete}
+        onClose={() => {
+          setRepoToDelete(null);
+          setIsDeleting(false);
+          setDeletingRepoSlug(null);
+        }}
         title="Remove repository"
         footer={
           <ModalFooter>
@@ -728,6 +733,12 @@ export default function DashboardHomePage() {
       {/* Add Repository Modal - Form with progress indicator for adding repositories */}
       <Modal
         isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setNewRepoUrl("");
+          setAddError(null);
+          setCurrentStep('idle');
+        }}
         title="Add repository"
         footer={
           <ModalFooter>

@@ -100,7 +100,8 @@ export const GET = withAuth(async (
 ) => {
   try {
     // Validate slug parameter
-    const validatedSlug = slugSchema.parse(context.params.slug);
+    const params = await context.params;
+    const validatedSlug = slugSchema.parse(params.slug);
     
     // Check if the repository exists in our database for this user
     const repo = await getUserRepo(validatedSlug, authData.user.id);
@@ -537,7 +538,8 @@ export const PUT = withAuth(async (
 ) => {
   try {
     // Validate slug parameter
-    const validatedSlug = slugSchema.parse(context.params.slug);
+    const params = await context.params;
+    const validatedSlug = slugSchema.parse(params.slug);
     
     // Parse and validate request body
     const body = await request.json();
@@ -635,7 +637,8 @@ export const DELETE = withAuth(async (
 ) => {
   try {
     // Validate slug parameter
-    const validatedSlug = slugSchema.parse(context.params.slug);
+    const params = await context.params;
+    const validatedSlug = slugSchema.parse(params.slug);
     
     // Verify repository exists before attempting deletion
     const repo = await getUserRepo(validatedSlug, authData.user.id);

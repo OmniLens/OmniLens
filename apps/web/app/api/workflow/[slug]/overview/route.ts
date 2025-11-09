@@ -123,7 +123,8 @@ export const GET = withAuth(async (
 ) => {
   try {
     // Validate slug parameter
-    const validatedSlug = slugSchema.parse(context.params.slug);
+    const params = await context.params;
+    const validatedSlug = slugSchema.parse(params.slug);
     
     // Check if the repository exists in our database for this user
     const repo = await getUserRepo(validatedSlug, authData.user.id);

@@ -63,16 +63,19 @@ export function formatRepoDisplayName(repoName: string): string {
 /**
  * Calculate the duration between two timestamps and format as human-readable string
  * Returns format like "2h 30m 15s", "45m 30s", or "30s"
+ * Uses absolute value to handle cases where end < start (data inconsistencies or clock skew)
  * @param start - Start timestamp (ISO string or date string)
  * @param end - End timestamp (ISO string or date string)
  * @returns Formatted duration string
  * @example
  * duration("2024-01-01T10:00:00Z", "2024-01-01T12:30:15Z") // Returns "2h 30m 15s"
+ * duration("2024-01-01T12:00:00Z", "2024-01-01T10:00:00Z") // Returns "2h 0m 0s" (handles reversed order)
  */
 export function duration(start: string, end: string): string {
   const startTime = new Date(start);
   const endTime = new Date(end);
-  const diff = endTime.getTime() - startTime.getTime();
+  // Use absolute value to handle cases where end < start (data inconsistencies or clock skew)
+  const diff = Math.abs(endTime.getTime() - startTime.getTime());
 
   const hours = Math.floor(diff / 3600000);
   const minutes = Math.floor((diff % 3600000) / 60000);

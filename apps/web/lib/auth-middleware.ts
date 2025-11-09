@@ -29,7 +29,7 @@ interface AuthData {
 }
 
 interface RouteContext {
-  params: Record<string, string>;
+  params: Promise<Record<string, string>>;
 }
 
 type AuthResult = 
@@ -89,7 +89,10 @@ export async function validateAuth(request: NextRequest): Promise<AuthResult> {
 
 /**
  * Higher-order function to protect API routes with authentication
- * Usage: export const GET = withAuth(async (request, { params }, authData) => { ... })
+ * Usage: export const GET = withAuth(async (request, { params }, authData) => { 
+ *   const { slug } = await params;
+ *   ...
+ * })
  */
 export function withAuth<T extends unknown[]>(
   handler: (request: NextRequest, context: RouteContext, authData: AuthData) => Promise<NextResponse>,
