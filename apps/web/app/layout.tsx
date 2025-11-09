@@ -28,6 +28,15 @@ export function generateMetadata(): Metadata {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <script
+          src="https://cdn.databuddy.cc/databuddy.js"
+          data-client-id="3FFXvSXO052ueGEMJSSdE"
+          data-enable-batching="true"
+          crossOrigin="anonymous"
+          async
+        />
+      </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         <NuqsAdapter>
           <QueryProvider>
