@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getAllUsers, getAllUserIds, getUserById, getAllUsersWithStats } from '@/lib/db-storage';
+import { getAllUsers, getAllUsersWithStats } from '@/lib/db-storage';
 import { withAdminAuth } from '@/lib/admin-auth';
 
 // Force dynamic rendering for admin routes

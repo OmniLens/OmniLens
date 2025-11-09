@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DatePicker } from "@/components/DatePicker";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, BarChart3, RefreshCw } from "lucide-react";
@@ -108,11 +107,6 @@ export default function DashboardPage({ params }: PageProps) {
     }
   }, [selectedDate, repoSlug, queryClient]);
   
-  // Local state for UI interactions
-
-  // Initialize with today's date - static reference
-  const today = useMemo(() => new Date(), []);
-
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isPending && !session) {

@@ -280,7 +280,7 @@ export default function ChangelogPage() {
 
         {/* Changelog Entries */}
         <div className="space-y-8">
-          {changelogData.map((entry, index) => (
+          {changelogData.map((entry) => (
             <Card key={entry.version} className="relative">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">

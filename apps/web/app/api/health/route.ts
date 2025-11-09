@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
  * Health check endpoint - no authentication required
  * Used by health tests to verify server is running
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     return NextResponse.json({
       status: 'healthy',
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         'Expires': '0'
       }
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({
       status: 'unhealthy',
       error: 'Health check failed',

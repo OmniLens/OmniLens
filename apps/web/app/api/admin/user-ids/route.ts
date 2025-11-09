@@ -6,7 +6,7 @@ import { withAuth } from '@/lib/auth-middleware';
 export const dynamic = 'force-dynamic';
 
 // GET /api/admin/user-ids - Get all user IDs (admin only)
-export const GET = withAuth(async (request: NextRequest, _context, authData) => {
+export const GET = withAuth(async (_request: NextRequest, _context, _authData) => {
   try {
     // Get all user IDs
     const userIds = await getAllUserIds();

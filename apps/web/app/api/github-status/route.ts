@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 interface GitHubStatusComponent {
   id: string;
@@ -30,7 +30,7 @@ interface GitHubStatusResponse {
   components: GitHubStatusComponent[];
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Fetch GitHub Status API data
     const response = await fetch('https://www.githubstatus.com/api/v2/components.json', {

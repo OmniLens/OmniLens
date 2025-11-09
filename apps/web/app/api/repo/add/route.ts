@@ -95,7 +95,7 @@ export const POST = withAuth(async (request: NextRequest, _context, authData) =>
           setTimeout(() => reject(new Error('timeout')), 10000)
         );
         workflowData = await Promise.race([workflowPromise, timeoutPromise]);
-      } catch (error) {
+      } catch {
         // Workflow data fetch is still running in background, that's fine
         console.log(`Workflow data fetch initiated for ${repoPath} (timeout after 10s)`);
       }
