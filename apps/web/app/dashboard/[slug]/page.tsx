@@ -15,10 +15,9 @@ import {
   useWorkflowRuns, 
   useWorkflowOverview,
   useYesterdayWorkflowRuns,
-  type Workflow,
   type WorkflowRun
 } from "@/lib/hooks/use-repository-dashboard";
-import WorkflowCard from "@/components/WorkflowCard";
+import WorkflowCard, { IdleWorkflowCard } from "@/components/WorkflowCard";
 import DailyMetrics from "@/components/DailyMetrics";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 
@@ -36,53 +35,6 @@ function formatRepoDisplayName(repoName: string): string {
     .replace(/\b\w/g, l => l.toUpperCase())
     .trim();
 }
-
-// Workflow Definition Card Component - uses WorkflowCard with inactive data
-function WorkflowDefinitionCard({ workflow, repoSlug }: { workflow: Workflow; repoSlug: string }) {
-  // Create a mock run object for inactive workflows
-  const mockRun: WorkflowRun = {
-    id: workflow.id,
-    workflow_id: workflow.id,
-    name: workflow.name,
-    head_branch: 'main',
-    head_sha: '',
-    run_number: 0,
-    event: 'push',
-    status: 'no_runs',
-    conclusion: null,
-    url: '',
-    html_url: '',
-    created_at: '',
-    updated_at: '',
-    run_attempt: 1,
-    run_started_at: '',
-    jobs_url: '',
-    logs_url: '',
-    check_suite_url: '',
-    artifacts_url: '',
-    cancel_url: '',
-    rerun_url: '',
-    workflow_url: '',
-    head_commit: {},
-    repository: {},
-    head_repository: {}
-  };
-
-  return (
-    <WorkflowCard
-      run={mockRun}
-      repoSlug={repoSlug}
-      healthStatus="no_runs_today"
-      healthMetrics={{
-        status: 'no_runs_today',
-        totalRuns: 0,
-        successfulRuns: 0,
-        failedRuns: 0
-      }}
-    />
-  );
-}
-
 
 interface PageProps {
   params: { slug: string };
@@ -417,8 +369,6 @@ export default function DashboardPage({ params }: PageProps) {
         {/* Daily Metrics */}
         {overviewData && (
           <DailyMetrics
-            successRate={overviewData.successRate || 0}
-            passRate={overviewData.passRate || 0}
             passedRuns={overviewData.passedRuns || 0}
             failedRuns={overviewData.failedRuns || 0}
             completedRuns={overviewData.completedRuns || 0}
@@ -429,11 +379,7 @@ export default function DashboardPage({ params }: PageProps) {
             improvedCount={workflowHealthMetrics.improvedCount}
             regressedCount={workflowHealthMetrics.regressedCount}
             stillFailingCount={workflowHealthMetrics.stillFailingCount}
-            avgRunsPerHour={overviewData.avgRunsPerHour || 0}
-            minRunsPerHour={overviewData.minRunsPerHour || 0}
-            maxRunsPerHour={overviewData.maxRunsPerHour || 0}
             runsByHour={overviewData.runsByHour || []}
-            selectedDate={new Date(selectedDate)}
           />
         )}
 
@@ -459,7 +405,7 @@ export default function DashboardPage({ params }: PageProps) {
                 
                 if (!hasRuns) {
                   return (
-                    <WorkflowDefinitionCard key={workflow.id} workflow={workflow} repoSlug={repoSlug} />
+                    <IdleWorkflowCard key={workflow.id} workflow={workflow} />
                   );
                 }
 
@@ -479,14 +425,7 @@ export default function DashboardPage({ params }: PageProps) {
                   <WorkflowCard
                     key={workflow.id}
                     run={enhancedRun}
-                    repoSlug={repoSlug}
                     healthStatus={healthStatus}
-                    healthMetrics={{
-                      status: healthStatus,
-                      totalRuns: todayRuns.length,
-                      successfulRuns: todayRuns.filter(run => run.conclusion === 'success').length,
-                      failedRuns: todayRuns.filter(run => run.conclusion === 'failure').length
-                    }}
                   />
                 );
               })}

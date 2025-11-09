@@ -1,33 +1,27 @@
+// External library imports
 import { Clock, Eye, CheckCircle, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+
+// Type imports
 import type { WorkflowRun } from "@/lib/github";
+import type { Workflow } from "@/lib/hooks/use-repository-dashboard";
+
+// Internal component imports
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-function duration(start: string, end: string): string {
-  const startTime = new Date(start);
-  const endTime = new Date(end);
-  const diff = endTime.getTime() - startTime.getTime();
+// Utility imports
+import { duration, formatRunTime } from "@/lib/utils";
 
-  const hours = Math.floor(diff / 3600000);
-  const minutes = Math.floor((diff % 3600000) / 60000);
-  const seconds = Math.floor((diff % 60000) / 1000);
+// ============================================================================
+// Type Definitions
+// ============================================================================
 
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`;
-  } else if (minutes > 0) {
-    return `${minutes}m ${seconds}s`;
-  }
-  return `${seconds}s`;
-}
-
-function formatRunTime(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
+/**
+ * Props for the WorkflowCard component
+ */
 interface WorkflowCardProps {
   run: WorkflowRun;
   isHighlighted?: boolean;
@@ -36,6 +30,37 @@ interface WorkflowCardProps {
   healthStatus?: 'consistent' | 'improved' | 'regressed' | 'still_failing' | 'no_runs_today';
 }
 
+// ============================================================================
+// Component-Specific Utilities
+// ============================================================================
+
+/**
+ * Helper function to create a mock WorkflowRun from a Workflow definition
+ * Used when a workflow exists but has no runs yet
+ * This is component-specific and tightly coupled to WorkflowCard logic
+ */
+function createMockRunFromWorkflow(workflow: Workflow): WorkflowRun {
+  return {
+    id: workflow.id,
+    workflow_id: workflow.id,
+    name: workflow.name,
+    conclusion: null,
+    status: 'no_runs',
+    html_url: '',
+    run_started_at: '',
+    updated_at: '',
+  };
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * Main WorkflowCard component
+ * Displays a workflow run with status badge, health indicators, and action buttons
+ * Supports highlighting, custom actions, and various health statuses
+ */
 export default function WorkflowCard({
   run,
   isHighlighted = false,
@@ -43,6 +68,7 @@ export default function WorkflowCard({
   rightAction,
   healthStatus
 }: WorkflowCardProps) {
+  // Determine workflow run status - use conclusion if available, otherwise fall back to status
   const status = run.conclusion ?? run.status;
   const isSuccess = status === "success";
   const isInProgress = status === "in_progress" || status === 'queued';
@@ -84,13 +110,15 @@ export default function WorkflowCard({
 
   return (
     <Card className={`${cardHeightClass} ${getBorderClass()}`}>
+      {/* Card Header - Contains workflow name and status badges */}
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
+          {/* Workflow name - Preserves emojis and special characters */}
           <h3 className="font-semibold text-sm leading-tight truncate pr-2">
             {getDisplayName()}
           </h3>
           <div className="flex items-center gap-2">
-            {/* Show run count badge if workflow was run multiple times */}
+            {/* Run Count Badge - Shows popover with all runs if workflow ran multiple times */}
             {(() => {
               return run.run_count && run.run_count > 1 ? (
                 <Popover>
@@ -104,14 +132,18 @@ export default function WorkflowCard({
                     <h4 className="font-medium text-sm">All Runs</h4>
                     <div className="space-y-1">
                       {run.all_runs && run.all_runs.length > 0 ? (
+                        // List all runs for this workflow with time, ID, status badge, and view link
                         run.all_runs.map((runDetail) => (
                           <div key={runDetail.id} className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-2 text-xs">
+                            {/* Run time */}
                             <span className="text-muted-foreground w-16">
                               {formatRunTime(runDetail.run_started_at)}
                             </span>
+                            {/* Run ID */}
                             <span className="font-mono w-24">
                               #{runDetail.id}
                             </span>
+                            {/* Status badge for individual run */}
                             {(() => {
                               const isDetailRunning = (runDetail.status === 'in_progress' || runDetail.status === 'queued') && (runDetail.conclusion === null || runDetail.conclusion === undefined);
                               const isDetailSuccess = runDetail.conclusion === 'success';
@@ -124,6 +156,7 @@ export default function WorkflowCard({
                                 </Badge>
                               );
                             })()}
+                            {/* View link for individual run */}
                             <Button variant="ghost" size="sm" asChild className="h-6 px-1">
                               <Link href={runDetail.html_url} target="_blank">
                                 <Eye className="h-3 w-3" />
@@ -140,6 +173,7 @@ export default function WorkflowCard({
               </Popover>
             ) : null;
             })()}
+            {/* Status Badge - Shows Idle, Pass, Running, or Fail based on workflow state */}
             <Badge
               variant={
                 hasNoRuns ? "secondary" :
@@ -154,6 +188,7 @@ export default function WorkflowCard({
                isInProgress ? "Running" : 
                "Fail"}
             </Badge>
+            {/* Optional right-side action button (e.g., delete button) */}
             {rightAction}
           </div>
         </div>
@@ -172,6 +207,7 @@ export default function WorkflowCard({
               </>
             ) : (
               (() => {
+                // Helper function to get the appropriate icon for each health status
                 const getHealthIcon = () => {
                   switch (healthStatus) {
                     case 'consistent':
@@ -189,6 +225,7 @@ export default function WorkflowCard({
                   }
                 };
 
+                // Helper function to get the text label for each health status
                 const getHealthLabel = () => {
                   switch (healthStatus) {
                     case 'consistent':
@@ -206,6 +243,7 @@ export default function WorkflowCard({
                   }
                 };
 
+                // Helper function to get the text color class for each health status
                 const getHealthColor = () => {
                   switch (healthStatus) {
                     case 'consistent':
@@ -236,9 +274,10 @@ export default function WorkflowCard({
           </div>
         )}
         
-        {/* Duration and View Button */}
+        {/* Duration and View Button Section - Only shown for workflows with runs */}
         {healthStatus !== 'no_runs_today' && !hasNoRuns && (
           <div className="flex items-center justify-between">
+            {/* Duration display - Shows "Running" for in-progress workflows, or calculated duration */}
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
               <span>
@@ -246,6 +285,7 @@ export default function WorkflowCard({
                  (run.run_started_at && run.updated_at ? duration(run.run_started_at, run.updated_at) : "No duration")}
               </span>
             </div>
+            {/* View button - Links to GitHub Actions run page */}
             <div className="flex items-center gap-2">
               {run.html_url && (
                 <Button variant="outline" size="sm" asChild>
@@ -261,4 +301,23 @@ export default function WorkflowCard({
       </CardContent>
     </Card>
   );
-} 
+}
+
+// ============================================================================
+// Exported Helper Components
+// ============================================================================
+
+/**
+ * Component for displaying workflows that exist but have no runs yet
+ * Uses WorkflowCard with mock data to show an "Idle" state
+ */
+export function IdleWorkflowCard({ workflow }: { workflow: Workflow }) {
+  const mockRun = createMockRunFromWorkflow(workflow);
+
+  return (
+    <WorkflowCard
+      run={mockRun}
+      healthStatus="no_runs_today"
+    />
+  );
+}
