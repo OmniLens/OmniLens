@@ -10,6 +10,8 @@
     "dev": "turbo run dev --filter=@omni/web",
     "build": "turbo run build --filter=@omni/web",
     "lint": "turbo run lint --filter=@omni/web",
+    "lint:es": "turbo run lint:es --filter=@omni/web",
+    "lint:ts": "turbo run lint:ts --filter=@omni/web",
     "setup": "turbo run setup --filter=@omni/web",
     "test": "turbo run test --filter=@omni/web",
     "test:health": "turbo run test:health --filter=@omni/web",

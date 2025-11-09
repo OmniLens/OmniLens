@@ -7,7 +7,9 @@
   "scripts": {
     "build": "bunx next build",
     "dev": "bunx next dev",
-    "lint": "bunx eslint . && bunx tsc --noEmit",
+    "lint": "bunx eslint . ; bunx tsc --noEmit",
+    "lint:es": "bunx eslint .",
+    "lint:ts": "bunx tsc --noEmit",
     "setup": "node scripts/setup-db.js",
     "test": "bun run test:health && bun run test:auth:basic && bun run test:github-status",
     "test:health": "bun ../tests/test-health.js",

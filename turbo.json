@@ -11,6 +11,12 @@
     "lint": {
       "outputs": []
     },
+    "lint:es": {
+      "outputs": []
+    },
+    "lint:ts": {
+      "outputs": []
+    },
     "test": {
       "dependsOn": ["build"],
       "outputs": []
