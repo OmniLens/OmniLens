@@ -1,9 +1,18 @@
+// External library imports
 import { CheckCircle, Clock, XCircle, TrendingUp, TrendingDown, AlertTriangle, Workflow } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bar, BarChart, PieChart, Pie, Cell, XAxis } from 'recharts';
+
+// Internal component imports
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
+// ============================================================================
+// Type Definitions
+// ============================================================================
 
+/**
+ * Props for the DailyMetrics component
+ */
 interface DailyMetricsProps {
   passedRuns: number;
   failedRuns: number;
@@ -18,7 +27,16 @@ interface DailyMetricsProps {
   runsByHour?: Array<{ hour: number; passed: number; failed: number; total: number }>;
 }
 
-// Format duration from seconds to human readable format
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Format duration from seconds to human-readable format
+ * Converts total seconds to hours, minutes, and seconds display
+ * @param seconds - Total duration in seconds
+ * @returns Formatted duration string (e.g., "2h 30m", "45m 30s", "30s")
+ */
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -33,7 +51,17 @@ function formatDuration(seconds: number): string {
   }
 }
 
-// Pass/Fail Pie Chart Component
+// ============================================================================
+// Sub-Components
+// ============================================================================
+
+/**
+ * PassFailPieChart component
+ * Displays a pie chart showing passed vs failed workflow runs
+ * Shows "No Data" state when no runs occurred
+ * @param passed - Number of passed runs
+ * @param failed - Number of failed runs
+ */
 function PassFailPieChart({ passed, failed }: { passed: number; failed: number }) {
   const total = passed + failed;
   
@@ -41,6 +69,7 @@ function PassFailPieChart({ passed, failed }: { passed: number; failed: number }
   if (total === 0) {
     return (
       <div className="flex items-center gap-6">
+        {/* Empty State - Circular placeholder */}
         <div className="relative">
           <div className="h-32 w-32 bg-muted/20 rounded-full flex items-center justify-center border-2 border-dashed border-muted">
             <div className="text-center">
@@ -49,6 +78,7 @@ function PassFailPieChart({ passed, failed }: { passed: number; failed: number }
             </div>
           </div>
         </div>
+        {/* Legend - Empty state indicator */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 bg-muted rounded-full"></div>
@@ -61,7 +91,7 @@ function PassFailPieChart({ passed, failed }: { passed: number; failed: number }
 
   const passedPercentage = (passed / total) * 100;
 
-  // Prepare data for the radial bar chart
+  // Prepare data for the pie chart
   const chartData = [
     {
       name: "Passed",
@@ -75,6 +105,7 @@ function PassFailPieChart({ passed, failed }: { passed: number; failed: number }
     }
   ];
 
+  // Chart configuration for tooltips and styling
   const chartConfig = {
     Passed: {
       label: "Passed",
@@ -88,6 +119,7 @@ function PassFailPieChart({ passed, failed }: { passed: number; failed: number }
 
   return (
     <div className="flex items-center gap-6">
+      {/* Pie Chart - Donut chart with percentage in center */}
       <div className="relative">
         <ChartContainer
           config={chartConfig}
@@ -108,12 +140,14 @@ function PassFailPieChart({ passed, failed }: { passed: number; failed: number }
             </Pie>
           </PieChart>
         </ChartContainer>
+        {/* Center Percentage Display */}
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-lg font-semibold">
             {Math.round(passedPercentage)}%
           </span>
         </div>
       </div>
+      {/* Legend - Pass/Fail counts */}
       <div className="space-y-3">
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -128,6 +162,16 @@ function PassFailPieChart({ passed, failed }: { passed: number; failed: number }
   );
 }
 
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * DailyMetrics component
+ * Displays daily workflow metrics in a grid of cards
+ * Shows pass/fail rates, overview stats, workflow health, and runs by hour chart
+ * Used in repository dashboard to show comprehensive daily metrics
+ */
 export default function DailyMetrics({
   passedRuns,
   failedRuns,
@@ -144,7 +188,7 @@ export default function DailyMetrics({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {/* Pass/Fail Section */}
+      {/* Card 1: Pass/Fail Rate - Pie chart showing success rate */}
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-xl">Pass/Fail Rate</CardTitle>
@@ -156,13 +200,14 @@ export default function DailyMetrics({
         </CardContent>
       </Card>
 
-      {/* Overview Section */}
+      {/* Card 2: Overview - General workflow statistics */}
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-xl">Overview</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            {/* Active Workflows Count */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Workflow className="h-4 w-4 text-blue-500" />
@@ -170,6 +215,7 @@ export default function DailyMetrics({
               </div>
               <span className="text-sm font-medium">{activeWorkflows}</span>
             </div>
+            {/* Completed Runs Count */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <CheckCircle className="h-4 w-4 text-green-500" />
@@ -177,6 +223,7 @@ export default function DailyMetrics({
               </div>
               <span className="text-sm font-medium">{completedRuns}</span>
             </div>
+            {/* Didn't Run Count */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <XCircle className="h-4 w-4 text-red-500" />
@@ -184,6 +231,7 @@ export default function DailyMetrics({
               </div>
               <span className="text-sm font-medium">{didntRunCount}</span>
             </div>
+            {/* Total Runtime - Formatted duration */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Clock className="h-4 w-4 text-purple-500" />
@@ -195,13 +243,14 @@ export default function DailyMetrics({
         </CardContent>
       </Card>
 
-      {/* Health Section */}
+      {/* Card 3: Workflow Health - Health status breakdown */}
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-xl">Workflow Health</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            {/* Consistent Workflows - Stable, passing workflows */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <CheckCircle className="h-4 w-4 text-green-500" />
@@ -210,6 +259,7 @@ export default function DailyMetrics({
               <span className="text-sm font-medium">{consistentCount}</span>
             </div>
             
+            {/* Improved Workflows - Workflows that got better */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <TrendingUp className="h-4 w-4 text-blue-500" />
@@ -218,6 +268,7 @@ export default function DailyMetrics({
               <span className="text-sm font-medium">{improvedCount}</span>
             </div>
             
+            {/* Regressed Workflows - Workflows that got worse */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <TrendingDown className="h-4 w-4 text-orange-500" />
@@ -226,6 +277,7 @@ export default function DailyMetrics({
               <span className="text-sm font-medium">{regressedCount}</span>
             </div>
             
+            {/* Still Failing Workflows - Continuously failing workflows */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -237,12 +289,13 @@ export default function DailyMetrics({
         </CardContent>
       </Card>
 
-      {/* Runs by hour Section */}
+      {/* Card 4: Runs by Hour - Bar chart showing hourly run distribution */}
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-xl">Runs by hour</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Empty State - No runs data */}
           {!runsByHour || runsByHour.length === 0 || runsByHour.every(hour => hour.total === 0) ? (
             <div className="flex items-center justify-center h-36">
               <div className="text-center">
@@ -251,6 +304,7 @@ export default function DailyMetrics({
               </div>
             </div>
           ) : (
+            /* Bar Chart - Stacked bars showing passed/failed runs per hour */
             <ChartContainer
               config={{
                 passed: {
@@ -265,6 +319,7 @@ export default function DailyMetrics({
               className="h-36 aspect-none"
             >
               <BarChart data={runsByHour.filter(hour => hour.total > 0)} margin={{ left: 0, right: 12, top: 5, bottom: 5 }}>
+                {/* X-Axis - Hour labels */}
                 <XAxis 
                   dataKey="hour" 
                   tickFormatter={(hour) => `${hour}:00`}
@@ -272,18 +327,21 @@ export default function DailyMetrics({
                   tickLine={false}
                   tick={{ fontSize: 12 }}
                 />
+                {/* Passed Runs Bar - Bottom stack */}
                 <Bar 
                   dataKey="passed" 
                   stackId="runs"
                   fill="var(--color-passed)" 
                   radius={[0, 0, 0, 0]}
                 />
+                {/* Failed Runs Bar - Top stack */}
                 <Bar 
                   dataKey="failed" 
                   stackId="runs"
                   fill="var(--color-failed)" 
                   radius={[2, 2, 0, 0]}
                 />
+                {/* Tooltip - Shows run details on hover */}
                 <ChartTooltip 
                   content={<ChartTooltipContent labelFormatter={() => `Runs`} />}
                   cursor={false}

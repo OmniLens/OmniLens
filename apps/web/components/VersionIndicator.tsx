@@ -1,11 +1,32 @@
+// External library imports
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import packageJson from "../package.json";
 
+// Internal component imports
+import { Badge } from "@/components/ui/badge";
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+/**
+ * Props for the VersionIndicator component
+ */
 interface VersionIndicatorProps {
   version?: string;
 }
 
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * VersionIndicator component
+ * Displays the application version as a fixed badge in the bottom-left corner
+ * Links to the changelog page when clicked
+ * Uses package.json version as default if not provided
+ * @param version - Optional version string (defaults to package.json version)
+ */
 export function VersionIndicator({ version = packageJson.version }: VersionIndicatorProps) {
   return (
     <Link 

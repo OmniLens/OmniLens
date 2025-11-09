@@ -1,15 +1,34 @@
+// Internal component imports
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+/**
+ * Props for the RepositoryCardSkeleton component
+ */
 interface RepositoryCardSkeletonProps {
   count?: number;
 }
 
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * RepositoryCardSkeleton component
+ * Displays multiple skeleton loading cards for repository cards
+ * Used during initial data loading to show placeholder content
+ * @param count - Number of skeleton cards to display (default: 6)
+ */
 export function RepositoryCardSkeleton({ count = 6 }: RepositoryCardSkeletonProps) {
   return (
     <>
       {Array.from({ length: count }).map((_, index) => (
         <div key={index} className="animate-pulse">
           <Card className="relative h-full border-border bg-card">
+            {/* Header Skeleton - Avatar, title, and action icons */}
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -26,9 +45,10 @@ export function RepositoryCardSkeleton({ count = 6 }: RepositoryCardSkeletonProp
                 </div>
               </div>
             </CardHeader>
+            {/* Content Skeleton - Metrics and progress bar */}
             <CardContent>
               <div className="space-y-3">
-                {/* Metrics skeleton */}
+                {/* Metrics skeleton - Two column grid */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="h-3 w-16 bg-muted rounded"></div>
@@ -56,11 +76,20 @@ export function RepositoryCardSkeleton({ count = 6 }: RepositoryCardSkeletonProp
   );
 }
 
-// Single skeleton card for optimistic updates
+// ============================================================================
+// Sub-Components
+// ============================================================================
+
+/**
+ * SingleRepositorySkeleton component
+ * Displays a single skeleton loading card for repository card
+ * Used for optimistic updates when adding a new repository
+ */
 export function SingleRepositorySkeleton() {
   return (
     <div className="animate-pulse">
       <Card className="relative h-full border-border bg-card">
+        {/* Header Skeleton */}
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -77,6 +106,7 @@ export function SingleRepositorySkeleton() {
             </div>
           </div>
         </CardHeader>
+        {/* Content Skeleton */}
         <CardContent>
           <div className="space-y-3">
             {/* Metrics skeleton */}

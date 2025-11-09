@@ -1,13 +1,29 @@
 "use client"
 
+// External library imports
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
+// Utility imports
 import { cn } from "@/lib/utils"
 
-// Format: { THEME_NAME: CSS_SELECTOR }
+// ============================================================================
+// Constants
+// ============================================================================
+
+/**
+ * Theme selectors for light/dark mode chart styling
+ */
 const THEMES = { light: "", dark: ".dark" } as const
 
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+/**
+ * Chart configuration type
+ * Defines chart data series with labels, icons, and color theming
+ */
 export type ChartConfig = {
   [k in string]: {
     label?: React.ReactNode
@@ -18,12 +34,25 @@ export type ChartConfig = {
   )
 }
 
+/**
+ * Chart context props
+ */
 type ChartContextProps = {
   config: ChartConfig
 }
 
+// ============================================================================
+// Context
+// ============================================================================
+
 const ChartContext = React.createContext<ChartContextProps | null>(null)
 
+/**
+ * useChart hook
+ * Accesses chart configuration from context
+ * Must be used within a ChartContainer component
+ * @throws Error if used outside ChartContainer
+ */
 function useChart() {
   const context = React.useContext(ChartContext)
 
@@ -34,6 +63,15 @@ function useChart() {
   return context
 }
 
+// ============================================================================
+// Main Components
+// ============================================================================
+
+/**
+ * ChartContainer component
+ * Wrapper component for Recharts charts with theming and configuration
+ * Provides chart context and applies consistent styling
+ */
 const ChartContainer = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
@@ -67,6 +105,11 @@ const ChartContainer = React.forwardRef<
 })
 ChartContainer.displayName = "Chart"
 
+/**
+ * ChartStyle component
+ * Injects CSS variables for chart colors based on theme
+ * Supports light/dark mode theming
+ */
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme || config.color
@@ -100,8 +143,17 @@ ${colorConfig
   )
 }
 
+// ============================================================================
+// Recharts Primitive Exports
+// ============================================================================
+
 const ChartTooltip = RechartsPrimitive.Tooltip
 
+/**
+ * ChartTooltipContent component
+ * Custom tooltip content for charts
+ * Displays formatted values with indicators and labels
+ */
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
@@ -258,6 +310,11 @@ ChartTooltipContent.displayName = "ChartTooltip"
 
 const ChartLegend = RechartsPrimitive.Legend
 
+/**
+ * ChartLegendContent component
+ * Custom legend content for charts
+ * Displays series labels with icons or color indicators
+ */
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> &
@@ -316,7 +373,18 @@ const ChartLegendContent = React.forwardRef<
 )
 ChartLegendContent.displayName = "ChartLegend"
 
-// Helper to extract item config from a payload.
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Extract item configuration from chart payload
+ * Helper function to get chart config for tooltip/legend items
+ * @param config - Chart configuration object
+ * @param payload - Chart payload data
+ * @param key - Key to look up in config
+ * @returns Item configuration or undefined
+ */
 function getPayloadConfigFromPayload(
   config: ChartConfig,
   payload: unknown,

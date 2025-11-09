@@ -1,5 +1,6 @@
 "use client"
 
+// External library imports
 import * as React from "react"
 import {
   ChevronDownIcon,
@@ -8,9 +9,21 @@ import {
 } from "lucide-react"
 import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
 
-import { cn } from "@/lib/utils"
+// Internal component imports
 import { Button, buttonVariants } from "@/components/ui/button"
 
+// Utility imports
+import { cn } from "@/lib/utils"
+
+// ============================================================================
+// Main Components
+// ============================================================================
+
+/**
+ * Calendar component
+ * Styled calendar wrapper around react-day-picker
+ * Supports single date selection, date ranges, and custom styling
+ */
 function Calendar({
   className,
   classNames,
@@ -172,6 +185,11 @@ function Calendar({
   )
 }
 
+/**
+ * CalendarDayButton component
+ * Custom day button component for calendar
+ * Handles focus management and styling for selected/range dates
+ */
 function CalendarDayButton({
   className,
   day,

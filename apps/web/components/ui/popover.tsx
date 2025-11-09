@@ -1,12 +1,27 @@
+// External library imports
 import * as React from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 
+// Utility imports
 import { cn } from "@/lib/utils";
+
+// ============================================================================
+// Radix UI Primitive Exports
+// ============================================================================
 
 const Popover = PopoverPrimitive.Root;
 
 const PopoverTrigger = PopoverPrimitive.Trigger;
 
+// ============================================================================
+// Custom Components
+// ============================================================================
+
+/**
+ * PopoverContent component
+ * Styled popover content wrapper around Radix UI Popover primitive
+ * Includes animations and theming
+ */
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
