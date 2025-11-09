@@ -19,6 +19,6 @@
     "test:github-status": "turbo run test:github-status --filter=@omni/web"
   },
   "devDependencies": {
-    "turbo": "^2.2.3"
+    "turbo": "^2.6.0"
   }
 }

@@ -44,7 +44,7 @@ export function logError(message) {
 }
 
 export function logWarning(message) {
-  log(`🚨  ${message}`, 'yellow');
+  log(`⚠️  ${message}`, 'yellow');
 }
 
 export function logInfo(message) {

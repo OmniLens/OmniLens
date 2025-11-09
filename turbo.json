@@ -21,6 +21,15 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "test:health": {
+      "outputs": []
+    },
+    "test:auth:basic": {
+      "outputs": []
+    },
+    "test:github-status": {
+      "outputs": []
+    },
     "dev": {
       "cache": false
     }
