@@ -61,6 +61,7 @@ const changelogData: ChangelogEntry[] = [
     type: "minor",
     changes: {
       added: [
+        "Turbo repo implementation for monorepo build orchestration and task management",
         "Interactive API Documentation page with Swagger UI at /api-docs",
         "OpenAPI 3.0 specification endpoint at /api/openapi",
         "Complete OpenAPI documentation for all 15 API endpoints",
@@ -70,20 +71,14 @@ const changelogData: ChangelogEntry[] = [
       ],
       changed: [
         "Monorepo structure migration - all code moved to apps/web/ workspace",
-        "Complete API route refactoring with consistent structure and documentation",
-        "All API routes now follow standardized code organization with section separators",
-        "Improved type safety - removed all `any` types, added proper TypeScript types",
-        "Enhanced code documentation - added JSDoc comments to all API routes",
-        "Extracted shared calculation logic to reusable utility functions",
-        "Improved error handling with proper type annotations throughout",
-        "Code organization - consistent import grouping and section separators"
+        "API routes refactored with consistent structure, documentation, and code organization",
+        "Type safety improved - removed all `any` types and added proper TypeScript types throughout",
+        "Error handling enhanced with proper type annotations",
+        "Shared calculation logic extracted to reusable utility functions to eliminate duplication"
       ],
       fixed: [
-        "ESLint errors and warnings across all API routes",
-        "TypeScript type errors in API routes",
-        "Code duplication in workflow metrics calculations",
-        "Inconsistent code structure across API files",
-        "Missing type definitions for API responses"
+        "ESLint and TypeScript errors across all API routes",
+        "Inconsistent code structure and missing type definitions in API files"
       ]
     }
   },
