@@ -1,5 +1,23 @@
 import { initializeDatabase, checkDatabaseHealth } from './init-db.js';
 
+// ============================================================================
+// Initialization Guard
+// ============================================================================
+
+/**
+ * Promise-based initialization guard to prevent concurrent database initializations
+ * If initialization is already in progress, returns the existing promise
+ * If initialization is complete, returns a resolved promise immediately
+ * This prevents race conditions when ensureDatabaseInitialized() is called
+ * multiple times concurrently (e.g., during app startup with multiple workers)
+ */
+let initializationPromise = null;
+let isInitialized = false;
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
 // Check if required Better Auth columns exist in account table
 async function checkBetterAuthColumns(pool) {
   try {
@@ -138,76 +156,105 @@ async function addVisibilityColumn(pool) {
   }
 }
 
-// Initialize database on app startup
-export async function ensureDatabaseInitialized() {
-  console.log('🔧 Checking database initialization...');
-  
-  try {
-    // Check if database is accessible
-    const isHealthy = await checkDatabaseHealth();
-    
-    if (!isHealthy) {
-      console.warn('⚠️  Database not accessible, skipping initialization');
-      return;
-    }
+// ============================================================================
+// Main Initialization Function
+// ============================================================================
 
-    // Check if tables already exist
-    const { default: pool } = await import('./init-db.js');
-    const result = await pool.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      AND table_name IN ('repositories', 'workflows', 'user', 'session', 'account', 'verification')
-      ORDER BY table_name
-    `);
-    
-    const existingTables = result.rows.map(row => row.table_name);
-    const requiredTables = ['repositories', 'workflows', 'user', 'session', 'account', 'verification'];
-    const missingTables = requiredTables.filter(table => !existingTables.includes(table));
-    
-    if (missingTables.length > 0) {
-      console.log(`🔧 Initializing missing tables: ${missingTables.join(', ')}`);
-      await initializeDatabase();
-      console.log('✅ Database initialization complete');
-    } else {
-      console.log('✅ Database tables already exist');
-    }
-    
-    // Always check for missing columns (migrations) - this runs on every app start
-    // Check if Better Auth columns exist
-    const { hasAllColumns, missingColumns } = await checkBetterAuthColumns(pool);
-    if (!hasAllColumns) {
-      console.log('🔧 Adding missing Better Auth columns...');
-      await addBetterAuthColumns(pool, missingColumns);
-    }
-    
-    // Check if visibility column exists in repositories table
-    const hasVisibilityColumn = await checkVisibilityColumn(pool);
-    if (!hasVisibilityColumn) {
-      console.log('🔧 Adding missing visibility column...');
-      await addVisibilityColumn(pool);
-    }
-    
-    // Check if unique constraint exists on repositories table
-    const hasUniqueConstraint = await checkRepositoriesUniqueConstraint(pool);
-    if (!hasUniqueConstraint) {
-      console.log('🔧 Adding missing unique constraint...');
-      await addRepositoriesUniqueConstraint(pool);
-    }
-    
-    // Check if unique constraint exists on workflows table
-    const hasWorkflowsUniqueConstraint = await checkWorkflowsUniqueConstraint(pool);
-    if (!hasWorkflowsUniqueConstraint) {
-      console.log('🔧 Adding missing workflows unique constraint...');
-      await addWorkflowsUniqueConstraint(pool);
-    }
-    
-    console.log('✅ Database migration checks completed');
-    
-  } catch (error) {
-    console.error('❌ Database initialization failed:', error.message);
-    // Don't throw - let the app continue, but log the error
+/**
+ * Initialize database on app startup
+ * Uses a promise-based guard to prevent concurrent initializations
+ * Safe to call multiple times - will only initialize once
+ * @returns {Promise<void>} Promise that resolves when initialization is complete
+ */
+export async function ensureDatabaseInitialized() {
+  // If already initialized, return immediately
+  if (isInitialized) {
+    return;
   }
+  
+  // If initialization is in progress, return the existing promise
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+  
+  // Start initialization and store the promise
+  initializationPromise = (async () => {
+    console.log('🔧 Checking database initialization...');
+    
+    try {
+      // Check if database is accessible
+      const isHealthy = await checkDatabaseHealth();
+      
+      if (!isHealthy) {
+        console.warn('⚠️  Database not accessible, skipping initialization');
+        return;
+      }
+
+      // Check if tables already exist
+      const { default: pool } = await import('./init-db.js');
+      const result = await pool.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name IN ('repositories', 'workflows', 'user', 'session', 'account', 'verification')
+        ORDER BY table_name
+      `);
+      
+      const existingTables = result.rows.map(row => row.table_name);
+      const requiredTables = ['repositories', 'workflows', 'user', 'session', 'account', 'verification'];
+      const missingTables = requiredTables.filter(table => !existingTables.includes(table));
+      
+      if (missingTables.length > 0) {
+        console.log(`🔧 Initializing missing tables: ${missingTables.join(', ')}`);
+        await initializeDatabase();
+        console.log('✅ Database initialization complete');
+      } else {
+        console.log('✅ Database tables already exist');
+      }
+      
+      // Always check for missing columns (migrations) - this runs on every app start
+      // Check if Better Auth columns exist
+      const { hasAllColumns, missingColumns } = await checkBetterAuthColumns(pool);
+      if (!hasAllColumns) {
+        console.log('🔧 Adding missing Better Auth columns...');
+        await addBetterAuthColumns(pool, missingColumns);
+      }
+      
+      // Check if visibility column exists in repositories table
+      const hasVisibilityColumn = await checkVisibilityColumn(pool);
+      if (!hasVisibilityColumn) {
+        console.log('🔧 Adding missing visibility column...');
+        await addVisibilityColumn(pool);
+      }
+      
+      // Check if unique constraint exists on repositories table
+      const hasUniqueConstraint = await checkRepositoriesUniqueConstraint(pool);
+      if (!hasUniqueConstraint) {
+        console.log('🔧 Adding missing unique constraint...');
+        await addRepositoriesUniqueConstraint(pool);
+      }
+      
+      // Check if unique constraint exists on workflows table
+      const hasWorkflowsUniqueConstraint = await checkWorkflowsUniqueConstraint(pool);
+      if (!hasWorkflowsUniqueConstraint) {
+        console.log('🔧 Adding missing workflows unique constraint...');
+        await addWorkflowsUniqueConstraint(pool);
+      }
+      
+      console.log('✅ Database migration checks completed');
+      
+      // Mark as initialized after successful completion
+      isInitialized = true;
+      
+    } catch (error) {
+      console.error('❌ Database initialization failed:', error.message);
+      // Reset promise on error so it can be retried
+      initializationPromise = null;
+      // Don't throw - let the app continue, but log the error
+    }
+  })();
+  
+  return initializationPromise;
 }
 
 // Note: Auto-initialization removed to prevent running on every request
