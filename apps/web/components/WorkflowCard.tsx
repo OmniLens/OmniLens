@@ -44,6 +44,7 @@ function createMockRunFromWorkflow(workflow: Workflow): WorkflowRun {
     id: workflow.id,
     workflow_id: workflow.id,
     name: workflow.name,
+    path: workflow.path,
     conclusion: null,
     status: 'no_runs',
     html_url: '',
