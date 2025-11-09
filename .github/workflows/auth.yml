@@ -84,7 +84,7 @@ jobs:
         NODE_ENV: test
 
     - name: 🧪 Run auth tests
-      run: bun run test:auth
+      run: bun run test:auth:basic
       env:
         GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
         GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}

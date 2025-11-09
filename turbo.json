@@ -22,13 +22,52 @@
       "outputs": []
     },
     "test:health": {
-      "outputs": []
+      "outputs": [],
+      "env": [
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "DB_PASSWORD",
+        "DB_USER",
+        "DB_HOST",
+        "DB_NAME",
+        "DB_PORT",
+        "NODE_ENV",
+        "API_BASE"
+      ]
     },
     "test:auth:basic": {
-      "outputs": []
+      "outputs": [],
+      "env": [
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "DB_PASSWORD",
+        "DB_USER",
+        "DB_HOST",
+        "DB_NAME",
+        "DB_PORT",
+        "NODE_ENV",
+        "API_BASE"
+      ]
     },
     "test:github-status": {
-      "outputs": []
+      "outputs": [],
+      "env": [
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "DB_PASSWORD",
+        "DB_USER",
+        "DB_HOST",
+        "DB_NAME",
+        "DB_PORT",
+        "NODE_ENV",
+        "API_BASE"
+      ]
     },
     "dev": {
       "cache": false
