@@ -4,7 +4,7 @@
 import React, { useMemo, useCallback, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, BarChart3, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw, MoonStar, Zap } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Internal component imports
@@ -472,7 +472,7 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   {/* Section header with active workflow count */}
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
+                    <Zap className="h-5 w-5" />
                     <h2 className="text-xl font-semibold">Active Workflows</h2>
                     <Badge variant="secondary" className="ml-2">
                       {activeWorkflows.length}
@@ -513,7 +513,7 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   {/* Section header with idle workflow count */}
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
+                    <MoonStar className="h-5 w-5" />
                     <h2 className="text-xl font-semibold">Idle Workflows</h2>
                     <Badge variant="secondary" className="ml-2">
                       {idleWorkflows.length}
