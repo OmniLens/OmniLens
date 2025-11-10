@@ -88,11 +88,11 @@ export default function Header() {
                   priority
                 />
               </div>
-              <span className="text-xl font-bold text-foreground hidden sm:inline">OmniLens</span>
+              <span className="text-xl font-bold text-foreground">OmniLens</span>
               {/* ALPHA badge with shimmer animation */}
               <Badge 
                 variant="secondary" 
-                className="bg-muted/50 text-muted-foreground border-border/50 text-xs font-medium px-2.5 py-0.5 relative overflow-hidden hidden sm:flex"
+                className="bg-muted/50 text-muted-foreground border-border/50 text-xs font-medium px-2.5 py-0.5 relative overflow-hidden"
               >
                 <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></span>
                 <span className="relative z-10">ALPHA</span>
@@ -132,17 +132,6 @@ export default function Header() {
 
           {/* Right Section - User Menu and Actions */}
           <div className="flex items-center gap-3">
-            {/* GitHub Link */}
-            <a 
-              href="https://github.com/omnilens/OmniLens" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="View on GitHub"
-            >
-              <Github className="h-5 w-5" />
-            </a>
-
             {/* User Menu Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -177,6 +166,17 @@ export default function Header() {
                   </p>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <a 
+                    href="https://github.com/omnilens/OmniLens"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center"
+                  >
+                    <Github className="h-4 w-4 mr-2" />
+                    GitHub
+                  </a>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Log out

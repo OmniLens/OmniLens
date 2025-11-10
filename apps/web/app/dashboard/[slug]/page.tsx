@@ -347,9 +347,8 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             {/* Back button - Returns to main dashboard */}
             <Link href="/dashboard">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Back</span>
               </Button>
             </Link>
             {/* Repository name - Formatted for display */}
@@ -387,6 +386,22 @@ export default function DashboardPage() {
                 }}
               />
             </div>
+            {/* Mobile date picker - Icon only button for small screens */}
+            <div className="sm:hidden">
+              <DatePicker
+                date={new Date(selectedDate)}
+                onDateChange={(date) => {
+                  if (date) {
+                    // Use local date formatting to avoid timezone issues
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    setSelectedDate(`${year}-${month}-${day}`);
+                  }
+                }}
+                iconOnly
+              />
+            </div>
             {/* Refresh button - Reloads the page to fetch fresh data */}
             <Button
               variant="outline"
@@ -401,22 +416,6 @@ export default function DashboardPage() {
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-        
-        {/* Mobile-only date picker - Shown only on small screens */}
-        <div className="sm:hidden">
-          <DatePicker
-            date={new Date(selectedDate)}
-            onDateChange={(date) => {
-              if (date) {
-                // Use local date formatting to avoid timezone issues
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                setSelectedDate(`${year}-${month}-${day}`);
-              }
-            }}
-          />
         </div>
 
         {/* Daily Metrics Section - Shows aggregated statistics for the selected date */}

@@ -3,9 +3,8 @@
 // External library imports
 import React from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Github, ArrowLeft } from "lucide-react";
+import { Github } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
@@ -75,15 +74,21 @@ export default function LoginPage() {
       <div className="absolute top-1/2 right-10 w-20 h-20 bg-emerald-500/5 rounded-full blur-2xl animate-pulse delay-3000"></div>
       <div className="absolute bottom-1/3 right-1/3 w-16 h-16 bg-yellow-500/5 rounded-full blur-xl animate-pulse delay-4000"></div>
       
-      {/* Header Section - Back to home navigation */}
-      <div className="p-6 relative z-10">
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/">
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          </Link>
+      {/* Vercel OSS Program Badge */}
+      <div className="relative z-10 pt-8 pb-6 px-4">
+        <div className="w-full max-w-2xl mx-auto text-center">
+          <a 
+            href="https://vercel.com/oss" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-block group"
+          >
+            <img 
+              alt="Vercel OSS Program" 
+              src="https://vercel.com/oss/program-badge.svg" 
+              className="h-7 sm:h-8 transition-transform duration-200 group-hover:scale-105"
+            />
+          </a>
         </div>
       </div>
 
