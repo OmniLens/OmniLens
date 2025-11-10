@@ -56,6 +56,24 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "0.9.1-alpha",
+    date: "2025-11-10",
+    type: "patch",
+    changes: {
+      added: [
+        "Workflow categorization on dashboard page - workflows now separated into active and idle groups",
+        "DatePicker component iconOnly prop for improved usability and space efficiency",
+        "Vercel OSS Program badge on login page"
+      ],
+      changed: [
+        "Header component now always displays application name for better brand visibility",
+        "GitHub link moved from header to user menu dropdown for cleaner navigation",
+        "Dashboard page button styling updated from 'outline' to 'ghost' variant for better UI consistency",
+        "Removed redundant mobile-only DatePicker code from dashboard page while retaining functionality"
+      ]
+    }
+  },
+  {
     version: "0.9.0-alpha",
     date: "2025-11-09",
     type: "minor",
