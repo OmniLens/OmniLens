@@ -69,7 +69,8 @@ const changelogData: ChangelogEntry[] = [
         "Header component now always displays application name for better brand visibility",
         "GitHub link moved from header to user menu dropdown for cleaner navigation",
         "Dashboard page button styling updated from 'outline' to 'ghost' variant for better UI consistency",
-        "Removed redundant mobile-only DatePicker code from dashboard page while retaining functionality"
+        "Removed redundant mobile-only DatePicker code from dashboard page while retaining functionality",
+        "Dashboard workflow section icons updated - Zap for Active, MoonStar for Idle workflows"
       ]
     }
   },
