@@ -257,6 +257,29 @@ export default function DashboardPage() {
     };
   }, [workflows, classifyWorkflowHealth]);
 
+  /**
+   * Separate workflows into idle and non-idle groups
+   * Idle workflows have no runs for the selected date
+   */
+  const { idleWorkflows, activeWorkflows } = useMemo(() => {
+    const idle: typeof workflows = [];
+    const active: typeof workflows = [];
+    
+    workflows.forEach(workflow => {
+      const runs = groupedWorkflowRuns.get(workflow.id) || [];
+      if (runs.length === 0) {
+        idle.push(workflow);
+      } else {
+        active.push(workflow);
+      }
+    });
+    
+    return {
+      idleWorkflows: idle,
+      activeWorkflows: active
+    };
+  }, [workflows, groupedWorkflowRuns]);
+
   // ============================================================================
   // Render Logic - Early Returns
   // ============================================================================
@@ -436,56 +459,76 @@ export default function DashboardPage() {
         )}
 
         {/* Workflows Grid Section - Displays individual workflow cards */}
-        <div className="space-y-4">
-          {/* Section header with workflow count */}
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            <h2 className="text-xl font-semibold">Workflows</h2>
-            <Badge variant="secondary" className="ml-2">
-              {workflows.length} active
-            </Badge>
-          </div>
-
+        <div className="space-y-8">
           {workflows.length === 0 ? (
             // Empty state - No workflows found
             <div className="text-center py-12">
               <p className="text-muted-foreground">No workflows found for this repository.</p>
             </div>
           ) : (
-            // Workflow cards grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop)
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {workflows.map((workflow) => {
-                // Get all runs for this workflow from the grouped map
-                const runs = groupedWorkflowRuns.get(workflow.id) || [];
-                const hasRuns = runs.length > 0;
-                
-                // Show idle card if workflow has no runs for the selected date
-                if (!hasRuns) {
-                  return (
-                    <IdleWorkflowCard key={workflow.id} workflow={workflow} />
-                  );
-                }
+            <>
+              {/* Active Workflows Section - Workflows with runs for the selected date */}
+              {activeWorkflows.length > 0 && (
+                <div className="space-y-4">
+                  {/* Section header with active workflow count */}
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    <h2 className="text-xl font-semibold">Active Workflows</h2>
+                    <Badge variant="secondary" className="ml-2">
+                      {activeWorkflows.length}
+                    </Badge>
+                  </div>
 
-                // Use the first run as the primary display, but include all runs data
-                const firstRun = runs[0];
-                const healthStatus = classifyWorkflowHealth(workflow.id);
-                
-                // Enhance the first run with metadata for the WorkflowCard component
-                const enhancedRun = {
-                  ...firstRun,
-                  run_count: runs.length,
-                  all_runs: runs
-                };
-                
-                return (
-                  <WorkflowCard
-                    key={workflow.id}
-                    run={enhancedRun}
-                    healthStatus={healthStatus}
-                  />
-                );
-              })}
-            </div>
+                  {/* Active workflow cards grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {activeWorkflows.map((workflow) => {
+                      // Get all runs for this workflow from the grouped map
+                      const runs = groupedWorkflowRuns.get(workflow.id) || [];
+                      
+                      // Use the first run as the primary display, but include all runs data
+                      const firstRun = runs[0];
+                      const healthStatus = classifyWorkflowHealth(workflow.id);
+                      
+                      // Enhance the first run with metadata for the WorkflowCard component
+                      const enhancedRun = {
+                        ...firstRun,
+                        run_count: runs.length,
+                        all_runs: runs
+                      };
+                      
+                      return (
+                        <WorkflowCard
+                          key={workflow.id}
+                          run={enhancedRun}
+                          healthStatus={healthStatus}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Idle Workflows Section - Workflows with no runs for the selected date */}
+              {idleWorkflows.length > 0 && (
+                <div className="space-y-4">
+                  {/* Section header with idle workflow count */}
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    <h2 className="text-xl font-semibold">Idle Workflows</h2>
+                    <Badge variant="secondary" className="ml-2">
+                      {idleWorkflows.length}
+                    </Badge>
+                  </div>
+
+                  {/* Idle workflow cards grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {idleWorkflows.map((workflow) => (
+                      <IdleWorkflowCard key={workflow.id} workflow={workflow} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
