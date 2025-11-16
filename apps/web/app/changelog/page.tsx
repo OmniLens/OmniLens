@@ -56,6 +56,22 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "0.9.2-alpha",
+    date: "2025-01-15",
+    type: "minor",
+    changes: {
+      added: [
+        "Interactive preview components for landing page",
+        "Vercel OSS Program badge on landing page"
+      ],
+      changed: [
+        "Landing page features section redesigned with improved responsive padding",
+        "RepositoryCard component layout improvements with flexbox for consistent card heights",
+        "Next.js config updated with turbopack root configuration for monorepo compatibility"
+      ]
+    }
+  },
+  {
     version: "0.9.1-alpha",
     date: "2025-11-10",
     type: "patch",

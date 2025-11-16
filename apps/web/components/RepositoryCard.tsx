@@ -68,7 +68,7 @@ export default function RepositoryCard({
   
   // Card content JSX - reused for both error and normal states
   const cardContent = (
-    <Card className={`relative h-full transition-all duration-200 ${
+    <Card className={`relative h-full flex flex-col transition-all duration-200 ${
       hasError 
         ? 'border-red-500 bg-card hover:border-red-400' 
         : 'border-border bg-card hover:border-border/80 hover:shadow-md'
@@ -141,7 +141,7 @@ export default function RepositoryCard({
         </div>
       </CardHeader>
       {/* Card Content - Shows error message, metrics, or empty state */}
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col">
         {hasError ? (
           // Error state - Display error message
           <div className="space-y-2">
@@ -160,8 +160,8 @@ export default function RepositoryCard({
             hasActivity={metrics.hasActivity}
           />
         ) : (
-          // Empty state - No workflows found
-          <div className="space-y-2">
+          // Empty state - No workflows found (matching height of metrics view)
+          <div className="space-y-3 flex flex-col justify-center flex-1">
             <p className="text-sm text-muted-foreground">
               No workflows found
             </p>
@@ -174,7 +174,7 @@ export default function RepositoryCard({
   // Error state - show card with reduced opacity
   if (hasError) {
     return (
-      <div className="opacity-75">
+      <div className="opacity-75 h-full">
         {cardContent}
       </div>
     );
@@ -182,7 +182,7 @@ export default function RepositoryCard({
 
   // Normal state - clickable card that navigates to repository dashboard
   return (
-    <div className="block transition-all duration-200 hover:scale-[1.02] cursor-pointer" onClick={() => window.location.href = `/dashboard/${repoSlug}`}>
+    <div className="block h-full transition-all duration-200 hover:scale-[1.02] cursor-pointer" onClick={() => window.location.href = `/dashboard/${repoSlug}`}>
       {cardContent}
     </div>
   );

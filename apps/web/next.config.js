@@ -14,6 +14,9 @@ const nextConfig = {
   turbopack: {
     root: resolve(__dirname, '../../'),
   },
+  images: {
+    qualities: [100, 75],
+  },
 };
 
 // Sentry configuration
