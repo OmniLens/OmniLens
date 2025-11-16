@@ -75,14 +75,14 @@ export default function RepositoryCard({
     }`}>
       {/* Card Header - Contains repository name, avatar, visibility badge, and action buttons */}
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             {/* Avatar - Owner's GitHub avatar */}
             {avatarUrl && (
               <Image
                 src={avatarUrl}
                 alt={`${owner} avatar`}
-                className="h-6 w-6 rounded-full border border-border"
+                className="h-6 w-6 rounded-full border border-border flex-shrink-0"
                 width={24}
                 height={24}
                 unoptimized
@@ -90,19 +90,19 @@ export default function RepositoryCard({
               />
             )}
             {/* Repository name and visibility badge */}
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-lg font-semibold">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <CardTitle className="text-base sm:text-lg font-semibold truncate">
                 {formatRepoDisplayName(displayName)}
               </CardTitle>
               {visibility && (
-                <Badge variant={visibility === 'private' ? 'secondary' : 'outline'} className="text-xs">
+                <Badge variant={visibility === 'private' ? 'secondary' : 'outline'} className="text-xs flex-shrink-0">
                   {visibility === 'private' ? '🔒 Private' : '🌐 Public'}
                 </Badge>
               )}
             </div>
           </div>
           {/* Action buttons - Error indicator, GitHub link, and delete button */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Error indicator */}
             {hasError && <AlertCircle className="h-5 w-5 text-red-500" />}
             {/* GitHub link button */}

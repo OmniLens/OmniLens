@@ -214,7 +214,7 @@ export default function LandingPage() {
                 <div className="flex flex-col gap-6 items-center w-full">
                   {/* Public repository - OmniLens: 100% pass, 5 workflows */}
                   <div 
-                    className="h-full w-1/2"
+                    className="h-full w-full md:w-1/2"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -245,7 +245,7 @@ export default function LandingPage() {
                   </div>
                   {/* Private repository - OmniLens Plus: 7 workflows, 2 failed */}
                   <div 
-                    className="h-full w-1/2"
+                    className="h-full w-full md:w-1/2"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

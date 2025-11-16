@@ -56,18 +56,18 @@ export default function CompactMetricsOverview({
       </div>
 
       {/* Metrics Row - Run counts and activity indicator */}
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between gap-2 text-xs">
         {/* Run Counts - Total workflows, passed, failed, in progress */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
           {/* Total Workflows */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <Folder className="h-3 w-3 text-blue-500" />
             <span className="text-muted-foreground">{totalWorkflows}</span>
           </div>
           
           {/* Passed Runs - Only shown if > 0 */}
           {passedRuns > 0 && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <CheckCircle className="h-3 w-3 text-green-500" />
               <span className="text-green-500">{passedRuns}</span>
             </div>
@@ -75,7 +75,7 @@ export default function CompactMetricsOverview({
           
           {/* Failed Runs - Only shown if > 0 */}
           {failedRuns > 0 && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <XCircle className="h-3 w-3 text-red-500" />
               <span className="text-red-500">{failedRuns}</span>
             </div>
@@ -83,7 +83,7 @@ export default function CompactMetricsOverview({
           
           {/* In Progress Runs - Only shown if > 0 */}
           {inProgressRuns > 0 && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <Loader className="h-3 w-3 text-blue-500 animate-spin" />
               <span className="text-blue-500">{inProgressRuns}</span>
             </div>
@@ -91,7 +91,7 @@ export default function CompactMetricsOverview({
         </div>
 
         {/* Activity Indicator - Shows if repository has recent activity */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <div className={`w-2 h-2 rounded-full ${
             hasActivity ? 'bg-green-500' : 'bg-muted'
           }`} />
