@@ -2,7 +2,7 @@
   "name": "@omni/web",
   "private": true,
   "license": "MIT",
-  "version": "0.9.2-alpha",
+  "version": "0.9.3-alpha",
   "type": "module",
   "scripts": {
     "build": "bunx next build",
@@ -16,7 +16,15 @@
     "test:auth": "bun ../../tests/test-auth.js",
     "test:auth:basic": "bun ../../tests/test-auth-basic.js",
     "test:auth:valid": "bun ../../tests/test-auth-valid.js",
-    "test:github-status": "bun ../../tests/test-github-status.js"
+    "test:github-status": "bun ../../tests/test-github-status.js",
+    "test:unit": "vitest run --coverage __tests__/unit",
+    "test:api": "vitest run --coverage __tests__/api",
+    "test:e2e": "playwright test",
+    "test:coverage": "vitest run --coverage",
+    "test:coverage:unit": "vitest run --coverage __tests__/unit",
+    "test:coverage:api": "vitest run --coverage __tests__/api",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "packageManager": "bun@1.1.38",
   "dependencies": {
@@ -50,16 +58,24 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
     "@types/node": "24.1.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/ui": "^2.1.8",
     "autoprefixer": "^10.4.19",
     "eslint-config-next": "^16.0.0",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^16.4.0",
+    "jsdom": "^25.0.1",
     "postcss": "^8.4.38",
     "postcss-import": "^16.1.1",
     "tailwindcss": "^3.4.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
   }
 }

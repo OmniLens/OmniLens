@@ -50,3 +50,7 @@ temp/
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Test Coverage
+coverage/
+*.lcov

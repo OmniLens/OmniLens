@@ -18,7 +18,7 @@
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "incremental": true,
-    "types": [],
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -37,7 +37,10 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "types/**/*.d.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    "__tests__/**/*.ts",
+    "__tests__/**/*.tsx",
+    "e2e/**/*.ts"
   ],
   "exclude": [
     "node_modules"

@@ -56,8 +56,21 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "0.9.3-alpha",
+    date: "2025-11-17",
+    type: "minor",
+    changes: {
+      added: [
+        "Comprehensive test infrastructure with unit, API, and E2E test suites",
+        "GitHub Actions workflows for automated CI/CD testing",
+        "Coverage reporting and baseline documentation",
+        "Vitest and Playwright test frameworks integration"
+      ]
+    }
+  },
+  {
     version: "0.9.2-alpha",
-    date: "2025-01-15",
+    date: "2025-11-15",
     type: "minor",
     changes: {
       added: [

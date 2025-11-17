@@ -1,0 +1,102 @@
+name: 🔌 API Tests
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+  schedule:
+    - cron: '0 3 * * *'  # Run daily at 05:00 AM UTC+2
+  workflow_dispatch:
+
+jobs:
+  test-api:
+    name: 🔌 Run API tests
+    runs-on: tenki-standard-autoscale
+
+    env:
+      GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+      GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      BETTER_AUTH_URL: http://localhost:3000
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_HOST: localhost
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_PORT: 5432
+      NODE_ENV: test
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+
+      - name: 🍞 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: 🧰 Install dependencies
+        run: bun install
+
+      - name: 🗄️ Setup database schema
+        run: |
+          # Install PostgreSQL client
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          
+          # Wait for PostgreSQL to be ready
+          sleep 5
+          
+          # Create database schema
+          psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f apps/web/lib/schema.sql
+        env:
+          PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+
+      - name: 🔌 Run API tests with coverage
+        run: bun run test:api
+        working-directory: apps/web
+        env:
+          GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          BETTER_AUTH_URL: http://localhost:3000
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_HOST: localhost
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_PORT: 5432
+          NODE_ENV: test
+
+      - name: 📊 Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-coverage
+          path: apps/web/coverage/
+          retention-days: 7
+
+      - name: 📈 Coverage summary
+        if: always()
+        run: |
+          echo "## ✅ API Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage reports available in artifacts: \`api-coverage\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View HTML report: Download \`api-coverage\` artifact and open \`index.html\`" >> $GITHUB_STEP_SUMMARY
+
