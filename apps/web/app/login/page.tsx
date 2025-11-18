@@ -99,7 +99,7 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <div className="h-40 w-40">
               <Image
-                src="/omnilens colored.png"
+                src="/omnilens.jpeg"
                 alt="OmniLens"
                 width={1000}
                 height={1000}

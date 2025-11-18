@@ -32,7 +32,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <div className="h-8 w-8">
               <Image
-                src="/omnilens white.png"
+                src="/omnilens.jpeg"
                 alt="OmniLens"
                 width={32}
                 height={32}
@@ -76,7 +76,7 @@ export default function LandingPage() {
             <div className="flex justify-center">
               <div className="h-40 w-40">
                 <Image
-                  src="/omnilens colored.png"
+                  src="/omnilens.jpeg"
                   alt="OmniLens"
                   width={1000}
                   height={1000}
@@ -228,7 +228,7 @@ export default function LandingPage() {
                       repoSlug="omnilens/omnilens"
                       repoPath="omnilens/omnilens"
                       displayName="omnilens/omnilens"
-                      avatarUrl="/omnilens shape.svg"
+                      avatarUrl="/omnilens.jpeg"
                       htmlUrl="https://github.com/omnilens/omnilens"
                       visibility="public"
                       hasError={false}
@@ -259,7 +259,7 @@ export default function LandingPage() {
                       repoSlug="omnilens/omnilens-plus"
                       repoPath="omnilens/omnilens-plus"
                       displayName="omnilens/omnilens-plus"
-                      avatarUrl="/omnilens shape.svg"
+                      avatarUrl="/omnilens.jpeg"
                       htmlUrl="https://github.com/omnilens/omnilens-plus"
                       visibility="private"
                       hasError={false}
@@ -432,7 +432,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-3 mb-4 md:mb-0">
               <div className="h-8 w-8">
                 <Image
-                  src="/omnilens white.png"
+                  src="/omnilens.jpeg"
                   alt="OmniLens"
                   width={32}
                   height={32}

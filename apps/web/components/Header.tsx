@@ -80,7 +80,7 @@ export default function Header() {
             <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="h-8 w-8 flex-shrink-0">
                 <Image
-                  src="/omnilens white.png"
+                  src="/omnilens.jpeg"
                   alt="OmniLens"
                   width={32}
                   height={32}
