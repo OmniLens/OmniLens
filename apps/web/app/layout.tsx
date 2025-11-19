@@ -15,9 +15,12 @@ export function generateMetadata(): Metadata {
     title: "OmniLens",
     description: "Monitoring GitHub workflow runs",
     icons: {
-      icon: "/omnilens.jpeg",
-      shortcut: "/omnilens.jpeg",
-      apple: "/omnilens.jpeg",
+      icon: [
+        { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+        { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      ],
+      shortcut: "/favicon-32x32.png",
+      apple: "/apple-touch-icon.png",
     },
     other: {
       ...Sentry.getTraceData()
