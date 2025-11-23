@@ -6,14 +6,15 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
-  Package,
   Loader,
   CheckCircle,
+  Package,
 } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
 import { Modal, ModalFooter } from "@/components/ui/modal";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 import RepositoryCardSkeleton from "@/components/RepositoryCardSkeleton";
 import RepositoryCard from "@/components/RepositoryCard";
@@ -48,6 +49,37 @@ function findInsertIndex(repositories: Repository[], newRepoDisplayName: string)
   }
 
   return repositories.length; // Insert at the end
+}
+
+// ============================================================================
+// Sub-Components
+// ============================================================================
+
+/**
+ * NoRepositoriesCard component
+ * Empty state card shown when user has no repositories
+ * Uses the same Card styling as RepositoryCard for consistency
+ */
+function NoRepositoriesCard() {
+  return (
+    <Card className="relative h-full flex flex-col border-border bg-card">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <Package className="h-6 w-6 text-muted-foreground" />
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col items-center justify-center text-center">
+        <h3 className="text-lg font-semibold mb-2">No repositories yet</h3>
+        <p className="text-sm text-muted-foreground">
+          Add a GitHub repository to get started
+        </p>
+      </CardContent>
+    </Card>
+  );
 }
 
 // ============================================================================
@@ -96,66 +128,6 @@ type DisplayItem = {
 };
 
 
-/**
- * NoRepositoriesFound component
- * Empty state component shown when user has no repositories
- * Includes a form to add the first repository
- */
-function NoRepositoriesFound({
-  newRepoUrl,
-  isValidating,
-  isAdding,
-  addError,
-  onUrlChange,
-  onSubmit,
-}: {
-  newRepoUrl: string;
-  isValidating: boolean;
-  isAdding: boolean;
-  addError: string | null;
-  onUrlChange: (value: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
-}) {
-  return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-full max-w-xl">
-        {/* Empty state card with icon and message */}
-        <div className="border rounded-lg bg-card/60 backdrop-blur-sm p-8 text-center shadow-sm">
-          {/* Package icon */}
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-            <Package className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h2 className="text-2xl font-semibold tracking-tight">No repositories yet</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Add a GitHub repository to start tracking workflows and metrics.
-          </p>
-
-          {/* Add repository form */}
-          <form onSubmit={onSubmit} className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
-            <input
-              type="text"
-              value={newRepoUrl}
-              onChange={(e) => onUrlChange(e.target.value)}
-              placeholder="owner/repo or GitHub URL"
-              disabled={isValidating || isAdding}
-              className="w-full sm:w-80 px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-            <div className="flex gap-2 justify-center">
-              <Button type="submit" size="sm" disabled={isValidating || isAdding} className="gap-2">
-                <Plus className="h-4 w-4" />
-                {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
-              </Button>
-            </div>
-          </form>
-          {addError && (
-            <p className="mt-2 text-sm text-red-500">{addError}</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -189,13 +161,10 @@ export default function DashboardHomePage() {
   // Local State
   // ============================================================================
 
-  // UI state for add repository form and modal
-  const [showAddForm, setShowAddForm] = React.useState(false);
+  // UI state for add repository modal
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [newRepoUrl, setNewRepoUrl] = React.useState("");
   const [addError, setAddError] = React.useState<string | null>(null);
-  const [isValidating, setIsValidating] = React.useState(false);
-  const [isAdding, setIsAdding] = React.useState(false);
   const [currentStep, setCurrentStep] = React.useState<'idle' | 'validating' | 'adding' | 'getting-data'>('idle');
   const [repoToDelete, setRepoToDelete] = React.useState<{
     slug: string;
@@ -310,7 +279,6 @@ export default function DashboardHomePage() {
       // Small delay to show the "getting data" step before closing
       setTimeout(() => {
         setNewRepoUrl('');
-        setShowAddForm(false);
         setShowAddModal(false);
         setAddError(null);
         setCurrentStep('idle');
@@ -379,7 +347,6 @@ export default function DashboardHomePage() {
     }
 
     // Start validation
-    setIsValidating(true);
     setCurrentStep('validating');
     try {
       // Step 1: Validate the repository
@@ -398,8 +365,6 @@ export default function DashboardHomePage() {
       }
 
       // Validation successful, now adding
-      setIsValidating(false);
-      setIsAdding(true);
       setCurrentStep('adding');
 
       // Step 2: Add the repository using mutation
@@ -418,22 +383,15 @@ export default function DashboardHomePage() {
         setAddError('Network error processing repository');
       }
       setCurrentStep('idle');
-    } finally {
-      setIsValidating(false);
-      setIsAdding(false);
     }
   }
 
   /**
    * Handle click on "Add Repo" button
-   * Shows modal if repositories exist, otherwise shows inline form
+   * Opens the add repository modal
    */
   const handleAddRepoClick = () => {
-    if (repositories.length > 0) {
-      setShowAddModal(true);
-    } else {
-      setShowAddForm(true);
-    }
+    setShowAddModal(true);
   };
 
 
@@ -444,7 +402,7 @@ export default function DashboardHomePage() {
   // Authentication loading state - show spinner while checking session
   if (isPending) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-background">
         <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">
@@ -461,7 +419,7 @@ export default function DashboardHomePage() {
   // Error state - show error message if data fetch failed
   if (error) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-background">
         <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="mb-8">
@@ -497,31 +455,6 @@ export default function DashboardHomePage() {
     );
   }
 
-  // Empty state - show "No repositories" component when user has no repos
-  if (!isLoading && repositories.length === 0) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-          <NoRepositoriesFound
-            newRepoUrl={newRepoUrl}
-            isValidating={isValidating}
-            isAdding={isAdding}
-            addError={addError}
-            onUrlChange={(v) => {
-              setNewRepoUrl(v);
-              // Clear error when user starts typing
-              if (addError) {
-                setAddError(null);
-              }
-            }}
-            onSubmit={handleAddRepo}
-          />
-        </div>
-      </div>
-    );
-  }
-
   // ============================================================================
   // Main Render
   // ============================================================================
@@ -536,76 +469,27 @@ export default function DashboardHomePage() {
         {/* Header Section - Repositories heading and Add repository button */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-xl sm:text-2xl font-bold truncate">Repositories</h2>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              {/* Inline add repository form - shown when no repositories exist */}
-              {showAddForm && (
-                <form onSubmit={handleAddRepo} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newRepoUrl}
-                    onChange={(e) => {
-                      setNewRepoUrl(e.target.value);
-                      // Clear error when user starts typing
-                      if (addError) {
-                        setAddError(null);
-                      }
-                    }}
-                    placeholder="owner/repo or GitHub URL"
-                    disabled={isValidating || isAdding}
-                    className={`w-80 px-3 py-2 rounded-md bg-background border border-input text-sm outline-none focus:ring-2 focus:ring-primary ${
-                      addError ? 'animate-shake' : ''
-                    }`}
-                    onAnimationEnd={() => {
-                      if (addError) {
-                        setNewRepoUrl("");
-                      }
-                    }}
-                    autoFocus
-                    onFocus={() => {
-                      if (addError) {
-                        setNewRepoUrl("");
-                      }
-                    }}
-                    onBlur={() => {
-                      if (!isValidating && !isAdding) {
-                        setShowAddForm(false);
-                        setAddError(null);
-                        setNewRepoUrl("");
-                      }
-                    }}
-                  />
-                  <Button 
-                    type="submit" 
-                    size="sm" 
-                    disabled={isValidating || isAdding || repositories.length >= 12} 
-                    onMouseDown={(e) => e.preventDefault()} 
-                    className="z-0"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    {isValidating ? 'Validating…' : isAdding ? 'Adding…' : 'Add Repo'}
-                  </Button>
-                </form>
-              )}
-              {/* Add Repo button - opens modal or inline form */}
-              {!showAddForm && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleAddRepoClick}
-                  disabled={repositories.length >= 12}
-                  aria-label="Add repository"
-                  className="flex items-center justify-center gap-2 px-3"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Repo
-                </Button>
-              )}
-            </div>
-          </div>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleAddRepoClick}
+            disabled={repositories.length >= 12}
+            aria-label="Add repository"
+            className="flex items-center justify-center gap-2 px-3"
+          >
+            <Plus className="h-4 w-4" />
+            Add Repo
+          </Button>
         </div>
 
         {/* Repository Grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop) */}
+        {displayData.length === 0 ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="w-full max-w-md">
+              <NoRepositoriesCard />
+            </div>
+          </div>
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayData.map((item, index) => (
               <RepositoryCard
@@ -625,6 +509,7 @@ export default function DashboardHomePage() {
               />
             ))}
           </div>
+        )}
         </div>
 
         {/* Delete Repository Modal - Confirmation dialog for removing repositories */}

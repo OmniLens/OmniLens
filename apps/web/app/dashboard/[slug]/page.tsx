@@ -321,7 +321,7 @@ export default function DashboardPage() {
   // Initial data loading state - show spinner while fetching workflows and yesterday's data
   if (isLoadingWorkflows || isLoadingYesterday) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-background">
         <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">
@@ -338,7 +338,7 @@ export default function DashboardPage() {
   // Secondary loading state - show spinner while fetching runs and overview data
   if (isLoadingRuns || isLoadingOverview) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-background">
         <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">

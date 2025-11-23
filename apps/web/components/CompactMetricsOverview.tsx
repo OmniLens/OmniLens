@@ -1,5 +1,5 @@
 // External library imports
-import { CheckCircle, XCircle, Loader, Folder } from "lucide-react";
+import { CheckCircle, XCircle, Loader, Workflow } from "lucide-react";
 
 // ============================================================================
 // Type Definitions
@@ -24,7 +24,7 @@ interface CompactMetricsProps {
 /**
  * CompactMetricsOverview component
  * Displays a compact overview of repository workflow metrics
- * Shows success rate progress bar, run counts, and activity status
+ * Shows success rate progress bar and run counts
  * Used in repository cards for quick metric visualization
  */
 export default function CompactMetricsOverview({
@@ -55,14 +55,14 @@ export default function CompactMetricsOverview({
         </div>
       </div>
 
-      {/* Metrics Row - Run counts and activity indicator */}
-      <div className="flex items-center justify-between gap-2 text-xs">
+      {/* Metrics Row - Run counts */}
+      <div className="flex items-center gap-2 text-xs">
         {/* Run Counts - Total workflows, passed, failed, in progress */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
           {/* Total Workflows */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            <Folder className="h-3 w-3 text-blue-500" />
-            <span className="text-muted-foreground">{totalWorkflows}</span>
+            <Workflow className="h-3 w-3 text-blue-500" />
+            <span className="text-muted-foreground"> {totalWorkflows}</span>
           </div>
           
           {/* Passed Runs - Only shown if > 0 */}
@@ -88,16 +88,6 @@ export default function CompactMetricsOverview({
               <span className="text-blue-500">{inProgressRuns}</span>
             </div>
           )}
-        </div>
-
-        {/* Activity Indicator - Shows if repository has recent activity */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <div className={`w-2 h-2 rounded-full ${
-            hasActivity ? 'bg-green-500' : 'bg-muted'
-          }`} />
-          <span className="text-muted-foreground">
-            {hasActivity ? 'Active' : 'Idle'}
-          </span>
         </div>
       </div>
     </div>

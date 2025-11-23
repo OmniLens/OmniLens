@@ -180,9 +180,9 @@ export default function RepositoryCard({
     );
   }
 
-  // Normal state - clickable card that navigates to repository dashboard
+  // Normal state - card display
   return (
-    <div className="block h-full transition-all duration-200 hover:scale-[1.02] cursor-pointer" onClick={() => window.location.href = `/dashboard/${repoSlug}`}>
+    <div className="block h-full transition-all duration-200 hover:scale-[1.02]">
       {cardContent}
     </div>
   );

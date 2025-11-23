@@ -174,7 +174,7 @@ export default function WorkflowMetricsPreview(_props?: WorkflowMetricsPreviewPr
                   <Workflow className="h-4 w-4 text-blue-500" />
                   <span className="text-sm">Workflows</span>
                 </div>
-                <span className="text-sm font-medium">{overviewData.activeWorkflows}</span>
+                <span className="text-sm font-medium">Workflows {overviewData.activeWorkflows}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">

@@ -3,6 +3,7 @@
 // External library imports
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Github } from "lucide-react";
 
@@ -66,38 +67,14 @@ export default function LoginPage() {
   // ============================================================================
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-black flex flex-col relative overflow-hidden">
-      {/* Animated Background Elements - Decorative gradient orbs with pulse animations */}
-      <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute top-40 right-20 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl animate-pulse delay-1000"></div>
-      <div className="absolute bottom-20 left-1/4 w-28 h-28 bg-cyan-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
-      <div className="absolute top-1/2 right-10 w-20 h-20 bg-emerald-500/5 rounded-full blur-2xl animate-pulse delay-3000"></div>
-      <div className="absolute bottom-1/3 right-1/3 w-16 h-16 bg-yellow-500/5 rounded-full blur-xl animate-pulse delay-4000"></div>
-      
-      {/* Vercel OSS Program Badge */}
-      <div className="relative z-10 pt-8 pb-6 px-4">
-        <div className="w-full max-w-2xl mx-auto text-center">
-          <a 
-            href="https://vercel.com/oss" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-block group"
-          >
-            <img 
-              alt="Vercel OSS Program" 
-              src="https://vercel.com/oss/program-badge.svg" 
-              className="h-7 sm:h-8 transition-transform duration-200 group-hover:scale-105"
-            />
-          </a>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background flex flex-col relative">
 
       {/* Main Content Section - Centered login form */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-md flex flex-col items-center space-y-8">
           {/* Logo - OmniLens brand image */}
           <div className="flex justify-center">
-            <div className="h-40 w-40">
+            <Link href="/" className="h-40 w-40 cursor-pointer transition-transform duration-200 hover:scale-105">
               <Image
                 src="/omnilens.jpeg"
                 alt="OmniLens"
@@ -107,7 +84,7 @@ export default function LoginPage() {
                 className="w-full h-full object-cover rounded-3xl shadow-lg"
                 priority
               />
-            </div>
+            </Link>
           </div>
 
           {/* App Name Section - Title with ALPHA badge */}
@@ -137,6 +114,24 @@ export default function LoginPage() {
             <Github className="h-5 w-5" />
             {isLoading ? "Signing in..." : "Continue with GitHub"}
           </Button>
+        </div>
+
+        {/* Vercel OSS Program Badge */}
+        <div className="relative z-10 pt-8 pb-6 px-4">
+          <div className="w-full max-w-2xl mx-auto text-center">
+            <a 
+              href="https://vercel.com/oss" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-block group"
+            >
+              <img 
+                alt="Vercel OSS Program" 
+                src="https://vercel.com/oss/program-badge.svg" 
+                className="h-7 sm:h-8 transition-transform duration-200 group-hover:scale-105"
+              />
+            </a>
+          </div>
         </div>
       </div>
 

@@ -56,6 +56,19 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "0.9.4-alpha",
+    date: "2025-01-27",
+    type: "patch",
+    changes: {
+      changed: [
+        "Simplified UI design with consistent theme colors across landing and login pages",
+        "Removed animated background elements for cleaner, more focused interface",
+        "Extracted NoRepositoriesCard component for better code organization",
+        "Moved documentation files to centralized docs/ directory"
+      ]
+    }
+  },
+  {
     version: "0.9.3-alpha",
     date: "2025-11-17",
     type: "minor",
