@@ -3,6 +3,7 @@
 // External library imports
 import React from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -492,21 +493,26 @@ export default function DashboardHomePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayData.map((item, index) => (
-              <RepositoryCard
+              <Link
                 key={item.slug || `repo-${index}`}
-                repoSlug={item.slug!}
-                repoPath={item.repoPath!}
-                displayName={item.displayName}
-                avatarUrl={item.avatarUrl}
-                htmlUrl={item.htmlUrl}
-                visibility={item.visibility}
-                hasError={item.hasError || false}
-                errorMessage={item.errorMessage}
-                hasWorkflows={item.hasWorkflows}
-                metrics={item.metrics}
-                isUserRepo={true}
-                onRequestDelete={() => setRepoToDelete({ slug: item.slug!, displayName: item.displayName })}
-              />
+                href={`/dashboard/${item.slug}`}
+                className="block h-full cursor-pointer"
+              >
+                <RepositoryCard
+                  repoSlug={item.slug!}
+                  repoPath={item.repoPath!}
+                  displayName={item.displayName}
+                  avatarUrl={item.avatarUrl}
+                  htmlUrl={item.htmlUrl}
+                  visibility={item.visibility}
+                  hasError={item.hasError || false}
+                  errorMessage={item.errorMessage}
+                  hasWorkflows={item.hasWorkflows}
+                  metrics={item.metrics}
+                  isUserRepo={true}
+                  onRequestDelete={() => setRepoToDelete({ slug: item.slug!, displayName: item.displayName })}
+                />
+              </Link>
             ))}
           </div>
         )}
