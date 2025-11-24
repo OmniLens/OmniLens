@@ -1,33 +1,4 @@
--- Create repositories table
-CREATE TABLE IF NOT EXISTS repositories (
-  id SERIAL PRIMARY KEY,
-  slug VARCHAR(255) NOT NULL,
-  repo_path VARCHAR(255) NOT NULL,
-  display_name VARCHAR(255) NOT NULL,
-  html_url TEXT NOT NULL,
-  default_branch VARCHAR(100) NOT NULL,
-  avatar_url TEXT,
-  visibility VARCHAR(10) DEFAULT 'public',
-  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (user_id, slug)
-);
-
--- Add visibility column if it doesn't exist (for existing installations)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'repositories' AND column_name = 'visibility') THEN
-    ALTER TABLE repositories ADD COLUMN visibility VARCHAR(10) DEFAULT 'public';
-  END IF;
-END $$;
-
--- Create indexes for repositories table
-CREATE INDEX IF NOT EXISTS idx_repositories_slug ON repositories(slug);
-CREATE INDEX IF NOT EXISTS idx_repositories_user_id ON repositories(user_id);
-CREATE INDEX IF NOT EXISTS idx_repositories_user_slug ON repositories(user_id, slug);
-
--- Create updated_at trigger
+-- Create updated_at trigger function (must be created before triggers)
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -36,38 +7,8 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_repositories_updated_at 
-    BEFORE UPDATE ON repositories 
-    FOR EACH ROW 
-    EXECUTE FUNCTION update_updated_at_column();
-
--- Create workflows table to store workflow IDs per repository
-CREATE TABLE IF NOT EXISTS workflows (
-  id SERIAL PRIMARY KEY,
-  repo_slug VARCHAR(255) NOT NULL,
-  workflow_id INTEGER NOT NULL,
-  workflow_name VARCHAR(255) NOT NULL,
-  workflow_path VARCHAR(500) NOT NULL,
-  workflow_state VARCHAR(50) NOT NULL,
-  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (user_id, repo_slug, workflow_id)
-);
-
--- Create indexes for workflows table
-CREATE INDEX IF NOT EXISTS idx_workflows_repo_slug ON workflows(repo_slug);
-CREATE INDEX IF NOT EXISTS idx_workflows_workflow_id ON workflows(workflow_id);
-CREATE INDEX IF NOT EXISTS idx_workflows_user_id ON workflows(user_id);
-CREATE INDEX IF NOT EXISTS idx_workflows_user_repo ON workflows(user_id, repo_slug);
-
--- Create trigger for workflows updated_at
-CREATE TRIGGER update_workflows_updated_at 
-    BEFORE UPDATE ON workflows 
-    FOR EACH ROW 
-    EXECUTE FUNCTION update_updated_at_column();
-
--- Better Auth tables
+-- Better Auth tables (base tables - no dependencies)
+-- Create user table first as it's referenced by other tables
 CREATE TABLE IF NOT EXISTS "user" (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -80,6 +21,16 @@ CREATE TABLE IF NOT EXISTS "user" (
   "avatarUrl" TEXT
 );
 
+CREATE TABLE IF NOT EXISTS verification (
+  id TEXT PRIMARY KEY,
+  identifier TEXT NOT NULL,
+  value TEXT NOT NULL,
+  "expiresAt" TIMESTAMP WITH TIME ZONE NOT NULL,
+  "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Better Auth tables (dependent tables - reference user)
 CREATE TABLE IF NOT EXISTS session (
   id TEXT PRIMARY KEY,
   "expiresAt" TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -106,16 +57,66 @@ CREATE TABLE IF NOT EXISTS account (
   "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS verification (
-  id TEXT PRIMARY KEY,
-  identifier TEXT NOT NULL,
-  value TEXT NOT NULL,
-  "expiresAt" TIMESTAMP WITH TIME ZONE NOT NULL,
-  "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- Application tables (dependent tables - reference user)
+CREATE TABLE IF NOT EXISTS repositories (
+  id SERIAL PRIMARY KEY,
+  slug VARCHAR(255) NOT NULL,
+  repo_path VARCHAR(255) NOT NULL,
+  display_name VARCHAR(255) NOT NULL,
+  html_url TEXT NOT NULL,
+  default_branch VARCHAR(100) NOT NULL,
+  avatar_url TEXT,
+  visibility VARCHAR(10) DEFAULT 'public',
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (user_id, slug)
 );
 
--- Create indexes for better performance
+-- Add visibility column if it doesn't exist (for existing installations)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'repositories' AND column_name = 'visibility') THEN
+    ALTER TABLE repositories ADD COLUMN visibility VARCHAR(10) DEFAULT 'public';
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS workflows (
+  id SERIAL PRIMARY KEY,
+  repo_slug VARCHAR(255) NOT NULL,
+  workflow_id INTEGER NOT NULL,
+  workflow_name VARCHAR(255) NOT NULL,
+  workflow_path VARCHAR(500) NOT NULL,
+  workflow_state VARCHAR(50) NOT NULL,
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (user_id, repo_slug, workflow_id)
+);
+
+-- Create indexes for repositories table
+CREATE INDEX IF NOT EXISTS idx_repositories_slug ON repositories(slug);
+CREATE INDEX IF NOT EXISTS idx_repositories_user_id ON repositories(user_id);
+CREATE INDEX IF NOT EXISTS idx_repositories_user_slug ON repositories(user_id, slug);
+
+-- Create indexes for workflows table
+CREATE INDEX IF NOT EXISTS idx_workflows_repo_slug ON workflows(repo_slug);
+CREATE INDEX IF NOT EXISTS idx_workflows_workflow_id ON workflows(workflow_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_user_id ON workflows(user_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_user_repo ON workflows(user_id, repo_slug);
+
+-- Create indexes for Better Auth tables
 CREATE INDEX IF NOT EXISTS idx_session_user_id ON session("userId");
 CREATE INDEX IF NOT EXISTS idx_account_user_id ON account("userId");
 CREATE INDEX IF NOT EXISTS idx_verification_identifier ON verification(identifier);
+
+-- Create triggers (after tables and function exist)
+CREATE TRIGGER update_repositories_updated_at 
+    BEFORE UPDATE ON repositories 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_workflows_updated_at 
+    BEFORE UPDATE ON workflows 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
