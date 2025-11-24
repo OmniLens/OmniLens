@@ -56,6 +56,23 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "0.9.5-alpha",
+    date: "2025-11-24",
+    type: "minor",
+    changes: {
+      added: [
+        "Comprehensive API test suite covering all 10 API route endpoints",
+        "Test utilities for authenticated request creation (test-auth.ts, test-request.ts)",
+        "API test coverage for repository, workflow, health, and GitHub status endpoints"
+      ],
+      changed: [
+        "Separated test coverage commands from regular test execution in package.json",
+        "Simplified API documentation page styling",
+        "Updated test setup and Vitest configuration for improved test isolation"
+      ]
+    }
+  },
+  {
     version: "0.9.4-alpha",
     date: "2025-11-23",
     type: "patch",

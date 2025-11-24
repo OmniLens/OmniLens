@@ -2,7 +2,7 @@
   "name": "@omni/web",
   "private": true,
   "license": "MIT",
-  "version": "0.9.4-alpha",
+  "version": "0.9.5-alpha",
   "type": "module",
   "scripts": {
     "build": "bunx next build",
@@ -17,8 +17,8 @@
     "test:auth:basic": "bun ../../tests/test-auth-basic.js",
     "test:auth:valid": "bun ../../tests/test-auth-valid.js",
     "test:github-status": "bun ../../tests/test-github-status.js",
-    "test:unit": "vitest run --coverage __tests__/unit",
-    "test:api": "vitest run --coverage __tests__/api",
+    "test:unit": "vitest run __tests__/unit",
+    "test:api": "vitest run __tests__/api",
     "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
     "test:coverage:unit": "vitest run --coverage __tests__/unit",
@@ -76,6 +76,7 @@
     "postcss-import": "^16.1.1",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.9.3",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "dotenv": "^16.4.5"
   }
 }

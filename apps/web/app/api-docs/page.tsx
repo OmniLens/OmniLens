@@ -31,35 +31,24 @@ export default function ApiDocsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="w-full max-w-[1920px] mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">API Documentation</h1>
-          <p className="text-muted-foreground">
-            Interactive API documentation for OmniLens. Explore endpoints, try requests, and view responses.
-          </p>
-        </div>
-        
-        {mounted && (
-          <div className="swagger-container">
-            <SwaggerUI 
-              url="/api/openapi"
-              deepLinking={true}
-              displayRequestDuration={true}
-              tryItOutEnabled={true}
-              requestInterceptor={(request: {
-                url: string;
-                method: string;
-                headers: Record<string, string>;
-                body?: string;
-              }) => {
-                // Add any custom request interceptors here if needed
-                return request;
-              }}
-            />
-          </div>
-        )}
-      </div>
+    <div className="min-h-screen bg-white">
+      {mounted && (
+        <SwaggerUI 
+          url="/api/openapi"
+          deepLinking={true}
+          displayRequestDuration={true}
+          tryItOutEnabled={true}
+          requestInterceptor={(request: {
+            url: string;
+            method: string;
+            headers: Record<string, string>;
+            body?: string;
+          }) => {
+            // Add any custom request interceptors here if needed
+            return request;
+          }}
+        />
+      )}
     </div>
   );
 }

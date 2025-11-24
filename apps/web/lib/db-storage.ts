@@ -124,6 +124,8 @@ export async function clearUserRepos(userId: string): Promise<void> {
     await pool.query('DELETE FROM repositories WHERE user_id = $1', [userId]);
   } catch (error) {
     console.error('Error clearing user repositories:', error);
+    // Re-throw error so tests can catch and handle it if needed
+    throw error;
   }
 }
 

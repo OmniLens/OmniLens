@@ -1,36 +1,38 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from '@/app/api/health/route';
-import { NextRequest } from 'next/server';
 
 describe('GET /api/health', () => {
-  beforeEach(() => {
+  let response: Awaited<ReturnType<typeof GET>>;
+  let data: {
+    status: string;
+    timestamp: string;
+    uptime: number;
+    version: string;
+  };
+
+  beforeEach(async () => {
     vi.clearAllMocks();
+    response = await GET();
+    data = await response.json();
   });
 
-  it('should return healthy status', async () => {
-    const response = await GET();
-    const data = await response.json();
-
+  it('should return healthy status with correct structure', () => {
     expect(response.status).toBe(200);
     expect(data.status).toBe('healthy');
-    expect(data).toHaveProperty('timestamp');
-    expect(data).toHaveProperty('uptime');
-    expect(data).toHaveProperty('version');
+    expect(typeof data.timestamp).toBe('string');
+    expect(typeof data.uptime).toBe('number');
+    expect(typeof data.version).toBe('string');
   });
 
-  it('should return valid timestamp', async () => {
-    const response = await GET();
-    const data = await response.json();
-
+  it('should return valid timestamp', () => {
     expect(new Date(data.timestamp).getTime()).toBeGreaterThan(0);
   });
 
-  it('should return valid uptime', async () => {
-    const response = await GET();
-    const data = await response.json();
-
-    expect(typeof data.uptime).toBe('number');
+  it('should return valid uptime', () => {
     expect(data.uptime).toBeGreaterThanOrEqual(0);
   });
-});
 
+  it('should return non-empty version', () => {
+    expect(data.version.length).toBeGreaterThan(0);
+  });
+});
