@@ -14,6 +14,8 @@ config({ path: path.join(__dirname, '.env') }); // e2e/.env (E2E-specific - load
  */
 export default defineConfig({
   testDir: './tests',
+  /* Explicitly set output directories relative to config file location */
+  outputDir: path.join(__dirname, 'test-results'),
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -22,7 +24,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [
+    ['html', { outputFolder: path.join(__dirname, 'playwright-report') }],
+  ],
   /* Global setup - checks for auth state (authentication is in auth-setup.spec.ts) */
   globalSetup: './global-setup.ts',
   use: {
