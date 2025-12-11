@@ -77,22 +77,13 @@ jobs:
 
       - name: 🔍 Verify artifacts exist
         run: |
-          echo "Checking for Playwright artifacts..."
-          echo "Current directory: $(pwd)"
-          echo ""
-          echo "Looking for playwright-report:"
-          find . -type d -name "playwright-report" 2>/dev/null | head -5
-          find . -name "index.html" -path "*/playwright-report/*" 2>/dev/null | head -5
-          echo ""
-          echo "Looking for test-results:"
-          find . -type d -name "test-results" 2>/dev/null | head -5
-          find . -name "*.json" -path "*/test-results/*" 2>/dev/null | head -5
-          echo ""
-          echo "Contents of e2e/ directory:"
-          ls -la e2e/ | grep -E "(playwright|test-results)" || echo "  (not found in e2e/)"
-          echo ""
-          echo "Contents of root directory:"
-          ls -la | grep -E "(playwright|test-results)" || echo "  (not found in root)"
+          if [ -f "e2e/test-results/.last-run.json" ]; then
+            echo "✅ Test results file exists: e2e/test-results/.last-run.json"
+            ls -lh e2e/test-results/.last-run.json
+          else
+            echo "❌ Test results file not found: e2e/test-results/.last-run.json"
+            exit 1
+          fi
 
       - name: 📤 Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -101,7 +92,7 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: 📤 Upload test results
         uses: actions/upload-artifact@v4
@@ -110,7 +101,7 @@ jobs:
           name: playwright-test-results
           path: e2e/test-results/.last-run.json
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: 📊 Test summary
         if: always()
@@ -119,5 +110,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Test Artifacts" >> $GITHUB_STEP_SUMMARY
           echo "- **Playwright Report**: Download \`playwright-report\` artifact and open \`index.html\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Test Results**: Download \`playwright-test-results\` artifact for screenshots, videos, and traces" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Results**: Download \`playwright-test-results\` artifact for test run summary (\`.last-run.json\`)" >> $GITHUB_STEP_SUMMARY
 
