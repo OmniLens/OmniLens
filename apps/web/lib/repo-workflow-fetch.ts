@@ -28,7 +28,6 @@ export interface WorkflowData {
     failedRuns: number;
     inProgressRuns: number;
     successRate: number;
-    hasActivity: boolean;
   };
 }
 
@@ -114,8 +113,7 @@ export async function fetchWorkflowDataForNewRepo(
       passedRuns,
       failedRuns,
       inProgressRuns,
-      successRate: completedRuns > 0 ? Math.round((passedRuns / completedRuns) * 100) : 0,
-      hasActivity: completedRuns > 0 || inProgressRuns > 0
+      successRate: completedRuns > 0 ? Math.round((passedRuns / completedRuns) * 100) : 0
     };
 
     return {

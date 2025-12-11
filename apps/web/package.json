@@ -2,7 +2,7 @@
   "name": "@omni/web",
   "private": true,
   "license": "MIT",
-  "version": "0.9.5-alpha",
+  "version": "0.9.6-alpha",
   "type": "module",
   "scripts": {
     "build": "bunx next build",
@@ -19,7 +19,6 @@
     "test:github-status": "bun ../../tests/test-github-status.js",
     "test:unit": "vitest run __tests__/unit",
     "test:api": "vitest run __tests__/api",
-    "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
     "test:coverage:unit": "vitest run --coverage __tests__/unit",
     "test:coverage:api": "vitest run --coverage __tests__/api",

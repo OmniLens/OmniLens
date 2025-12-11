@@ -89,7 +89,6 @@ describe("POST /api/repo/add", () => {
         failedRuns: 0,
         inProgressRuns: 0,
         successRate: 0,
-        hasActivity: false,
       },
     });
   });
@@ -551,7 +550,6 @@ describe("POST /api/repo/add", () => {
         failedRuns: 1,
         inProgressRuns: 0,
         successRate: 83.33,
-        hasActivity: true,
       },
     };
 

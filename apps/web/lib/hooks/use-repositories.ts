@@ -13,7 +13,6 @@ export interface Repository {
     failedRuns: number;
     inProgressRuns: number;
     successRate: number;
-    hasActivity: boolean;
   } | null;
 }
 
@@ -25,7 +24,6 @@ export interface RepositoryWithMetrics extends Repository {
     failedRuns: number;
     inProgressRuns: number;
     successRate: number;
-    hasActivity: boolean;
   };
 }
 

@@ -5,8 +5,8 @@ on:
     branches: main
   pull_request:
     branches: main
-  schedule:
-    - cron: '0 3 * * *'  # Run daily at 05:00 AM UTC+2
+  # schedule:
+  #   - cron: '0 3 * * *'  # Run daily at 05:00 AM UTC+2
   workflow_dispatch:
 
 jobs:
@@ -15,31 +15,10 @@ jobs:
     runs-on: tenki-standard-autoscale
 
     env:
-      GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
-      GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
-      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-      BETTER_AUTH_URL: http://localhost:3000
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_HOST: localhost
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DB_PORT: 5432
-      NODE_ENV: test
+      PLAYWRIGHT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL }}
+      PLAYWRIGHT_GITHUB_USERNAME: ${{ secrets.PLAYWRIGHT_GITHUB_USERNAME }}
+      PLAYWRIGHT_GITHUB_PASSWORD: ${{ secrets.PLAYWRIGHT_GITHUB_PASSWORD }}
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: ${{ secrets.DB_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.DB_NAME }}
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
       - name: 📥 Checkout code
@@ -55,41 +34,86 @@ jobs:
 
       - name: 🎭 Install Playwright browsers
         run: bunx playwright install --with-deps chromium
-        working-directory: apps/web
+        working-directory: e2e
 
-      - name: 🗄️ Setup database schema
+      - name: 💾 Cache auth state
+        uses: actions/cache@v4
+        id: auth-cache
+        with:
+          path: playwright/.auth/
+          key: auth-state-${{ runner.os }}-${{ secrets.PLAYWRIGHT_BASE_URL }}
+          restore-keys: |
+            auth-state-${{ runner.os }}-
+
+      - name: 🪣 Restore auth state from secret
+        id: restore-auth
         run: |
-          # Install PostgreSQL client
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-          
-          # Wait for PostgreSQL to be ready
-          sleep 5
-          
-          # Create database schema
-          psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f apps/web/lib/schema.sql
-        env:
-          PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+          mkdir -p playwright/.auth/
+          if [ -n "${{ secrets.PLAYWRIGHT_AUTH_STATE }}" ]; then
+            # Validate PLAYWRIGHT_BASE_URL is defined before using it
+            if [ -z "${{ secrets.PLAYWRIGHT_BASE_URL }}" ]; then
+              echo "❌ Error: PLAYWRIGHT_BASE_URL secret is required when PLAYWRIGHT_AUTH_STATE is set"
+              exit 1
+            fi
+            # Extract hostname from URL using Node.js (matching auth.ts: new URL(baseURL).hostname)
+            HOSTNAME=$(node -e "console.log(new URL('${{ secrets.PLAYWRIGHT_BASE_URL }}').hostname.replace(/\./g, '-'))")
+            AUTH_FILE="playwright/.auth/user-${HOSTNAME}.json"
+            echo "${{ secrets.PLAYWRIGHT_AUTH_STATE }}" | base64 -d > "$AUTH_FILE"
+            echo "✅ Auth state restored from secret to $AUTH_FILE"
+            echo "restored=true" >> $GITHUB_OUTPUT
+          else
+            echo "🔐 No auth state secret found - will authenticate"
+            echo "restored=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: 🎭 Run E2E tests
-        run: bun run test:e2e
-        working-directory: apps/web
+      - name: 🔍 Auth status
+        run: |
+          if [ "${{ steps.restore-auth.outputs.restored }}" == "true" ]; then
+            echo "✅ Using pre-authenticated state from secret"
+          elif [ "${{ steps.auth-cache.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ Using cached auth state"
+          else
+            echo "🔐 No auth state found - will authenticate (may require manual verification)"
+          fi
 
-      - name: 📊 Upload Playwright report
+      - name: 🧪 Run E2E tests
+        working-directory: e2e
+        run: bunx playwright test tests/smoke/login-dashboard.spec.ts
+
+      - name: 🔍 Verify artifacts exist
+        run: |
+          if [ -f "e2e/test-results/.last-run.json" ]; then
+            echo "✅ Test results file exists: e2e/test-results/.last-run.json"
+            ls -lh e2e/test-results/.last-run.json
+          else
+            echo "❌ Test results file not found: e2e/test-results/.last-run.json"
+            exit 1
+          fi
+
+      - name: 📤 Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
-          path: apps/web/playwright-report/
+          path: e2e/playwright-report
           retention-days: 7
+          if-no-files-found: warn
 
-      - name: 📈 Test summary
+      - name: 📤 Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-test-results
+          path: e2e/test-results/.last-run.json
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: 📊 Test summary
         if: always()
         run: |
           echo "## ✅ E2E Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Test Report" >> $GITHUB_STEP_SUMMARY
-          echo "Playwright report available in artifacts: \`playwright-report\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "View HTML report: Download \`playwright-report\` artifact and open \`index.html\`" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- **Playwright Report**: Download \`playwright-report\` artifact and open \`index.html\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Results**: Download \`playwright-test-results\` artifact for test run summary (\`.last-run.json\`)" >> $GITHUB_STEP_SUMMARY
 

@@ -122,7 +122,6 @@ type DisplayItem = {
     failedRuns: number;
     inProgressRuns: number;
     successRate: number;
-    hasActivity: boolean;
   } | null;
   isUserRepo?: boolean;
   onRequestDelete?: () => void;

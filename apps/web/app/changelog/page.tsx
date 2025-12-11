@@ -56,6 +56,20 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "0.9.6-alpha",
+    date: "2025-12-11",
+    type: "minor",
+    changes: {
+      added: [
+        "End-to-end testing infrastructure with Playwright",
+        "Automated E2E test execution in CI/CD pipeline"
+      ],
+      changed: [
+        "Refactored repository metrics data structure"
+      ]
+    }
+  },
+  {
     version: "0.9.5-alpha",
     date: "2025-11-24",
     type: "minor",

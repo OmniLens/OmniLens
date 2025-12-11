@@ -112,8 +112,7 @@ export const GET = withAuth(async (request: NextRequest, _context, authData) => 
           passedRuns: 0,
           failedRuns: 0,
           inProgressRuns: 0,
-          successRate: 0,
-          hasActivity: false
+          successRate: 0
         };
 
         // Fetch today's metrics from GitHub if workflows exist
@@ -163,8 +162,7 @@ export const GET = withAuth(async (request: NextRequest, _context, authData) => 
                   passedRuns,
                   failedRuns,
                   inProgressRuns,
-                  successRate: completedRuns > 0 ? Math.round((passedRuns / completedRuns) * 100) : 0,
-                  hasActivity: completedRuns > 0 || inProgressRuns > 0
+                  successRate: completedRuns > 0 ? Math.round((passedRuns / completedRuns) * 100) : 0
                 };
               }
             }
@@ -204,8 +202,7 @@ export const GET = withAuth(async (request: NextRequest, _context, authData) => 
             passedRuns: 0,
             failedRuns: 0,
             inProgressRuns: 0,
-            successRate: 0,
-            hasActivity: false
+            successRate: 0
           },
           hasError: true,
           errorMessage: 'Failed to load repository data'

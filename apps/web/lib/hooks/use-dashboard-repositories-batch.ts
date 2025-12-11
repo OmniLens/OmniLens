@@ -13,7 +13,6 @@ export interface Repository {
     failedRuns: number;
     inProgressRuns: number;
     successRate: number;
-    hasActivity: boolean;
   } | null;
   hasError?: boolean;
   errorMessage?: string | null;

@@ -65,7 +65,6 @@ export function useDashboardRepositories() {
                 successRate: overviewData.completedRuns > 0 
                   ? Math.round((overviewData.passedRuns / overviewData.completedRuns) * 100) 
                   : 0,
-                hasActivity: (overviewData.completedRuns > 0 || overviewData.inProgressRuns > 0)
               }
             };
           }
@@ -96,8 +95,7 @@ export function useDashboardRepositories() {
       passedRuns: 0,
       failedRuns: 0,
       inProgressRuns: 0,
-      successRate: 0,
-      hasActivity: false
+      successRate: 0
     };
 
     if (hasWorkflows && metricsData?.metrics) {

@@ -14,7 +14,6 @@ interface CompactMetricsProps {
   failedRuns: number;
   inProgressRuns: number;
   successRate: number;
-  hasActivity: boolean;
 }
 
 // ============================================================================
@@ -32,8 +31,7 @@ export default function CompactMetricsOverview({
   passedRuns,
   failedRuns,
   inProgressRuns,
-  successRate,
-  hasActivity
+  successRate
 }: CompactMetricsProps) {
   return (
     <div className="space-y-3">

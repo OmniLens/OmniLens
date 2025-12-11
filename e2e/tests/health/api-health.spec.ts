@@ -9,4 +9,3 @@ test.describe('Health Check', () => {
     expect(data.status).toBe('healthy');
   });
 });
-
