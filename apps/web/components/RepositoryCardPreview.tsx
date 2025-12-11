@@ -117,8 +117,7 @@ export default function RepositoryCardPreview({
             passedRuns: 0,
             failedRuns: 0,
             inProgressRuns: 0,
-            successRate: 0,
-            hasActivity: false
+            successRate: 0
           }
         };
       case 'passed':
@@ -130,8 +129,7 @@ export default function RepositoryCardPreview({
             passedRuns: 5,
             failedRuns: 0,
             inProgressRuns: 5,
-            successRate: 100,
-            hasActivity: true
+            successRate: 100
           }
         };
       case 'warning':
@@ -143,8 +141,7 @@ export default function RepositoryCardPreview({
             passedRuns: 10,
             failedRuns: 0,
             inProgressRuns: 0,
-            successRate: 100,
-            hasActivity: true
+            successRate: 100
           }
         };
     }

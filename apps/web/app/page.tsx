@@ -233,8 +233,7 @@ export default function LandingPage() {
                         passedRuns: 5,
                         failedRuns: 0,
                         inProgressRuns: 0,
-                        successRate: 100,
-                        hasActivity: true
+                        successRate: 100
                       }}
                     />
                   </div>
@@ -264,8 +263,7 @@ export default function LandingPage() {
                         passedRuns: 5,
                         failedRuns: 2,
                         inProgressRuns: 0,
-                        successRate: Math.round((5 / 7) * 100),
-                        hasActivity: true
+                        successRate: Math.round((5 / 7) * 100)
                       }}
                     />
                   </div>

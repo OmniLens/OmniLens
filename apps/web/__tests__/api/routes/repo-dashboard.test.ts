@@ -154,7 +154,6 @@ describe('GET /api/repo/dashboard', () => {
     expect(repo1.metrics).toHaveProperty('failedRuns');
     expect(repo1.metrics).toHaveProperty('inProgressRuns');
     expect(repo1.metrics).toHaveProperty('successRate');
-    expect(repo1.metrics).toHaveProperty('hasActivity');
   });
 
   it('should return empty array when user has no repositories', async () => {

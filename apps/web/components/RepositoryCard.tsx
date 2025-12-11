@@ -34,7 +34,6 @@ export interface RepositoryCardProps {
     failedRuns: number;
     inProgressRuns: number;
     successRate: number;
-    hasActivity: boolean;
   } | null;
   isUserRepo?: boolean;
   onRequestDelete?: () => void;
@@ -157,7 +156,6 @@ export default function RepositoryCard({
             failedRuns={metrics.failedRuns}
             inProgressRuns={metrics.inProgressRuns}
             successRate={metrics.successRate}
-            hasActivity={metrics.hasActivity}
           />
         ) : (
           // Empty state - No workflows found (matching height of metrics view)
