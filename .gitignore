@@ -54,3 +54,8 @@ temp/
 # Test Coverage
 coverage/
 *.lcov
+
+# Playwright
+playwright/.auth/
+playwright-report/
+test-results/

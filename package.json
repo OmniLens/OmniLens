@@ -16,9 +16,16 @@
     "test": "turbo run test --filter=@omni/web",
     "test:health": "turbo run test:health --filter=@omni/web",
     "test:auth:basic": "turbo run test:auth:basic --filter=@omni/web",
-    "test:github-status": "turbo run test:github-status --filter=@omni/web"
+    "test:github-status": "turbo run test:github-status --filter=@omni/web",
+    "test:e2e": "cd e2e && playwright test",
+    "test:e2e:login": "cd e2e && playwright test tests/smoke/login-dashboard.spec.ts",
+    "test:e2e:ui": "cd e2e && playwright test --ui",
+    "test:e2e:debug": "cd e2e && playwright test --debug",
+    "test:e2e:headed": "cd e2e && playwright test --headed"
   },
   "devDependencies": {
-    "turbo": "^2.6.0"
+    "turbo": "^2.6.0",
+    "@playwright/test": "^1.57.0",
+    "dotenv": "^16.6.1"
   }
 }
