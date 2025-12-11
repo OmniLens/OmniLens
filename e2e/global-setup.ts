@@ -1,17 +1,23 @@
 import { FullConfig } from '@playwright/test';
-import path from 'path';
 import fs from 'fs/promises';
+import { config } from 'dotenv';
+import path from 'path';
 import { fileURLToPath } from 'url';
+import { getAuthStatePath } from './helpers/auth';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load .env file to get PLAYWRIGHT_BASE_URL
+config({ path: path.join(__dirname, '.env') });
 
 /**
  * Global setup - checks if auth state exists, but doesn't authenticate
  * Authentication is now done in auth-setup.spec.ts so it's visible in Playwright UI
  */
 async function globalSetup(_config: FullConfig) {
-  const authStatePath = path.join(__dirname, '../playwright/.auth/user.json');
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || _config.projects[0]?.use?.baseURL || 'http://localhost:3000';
+  const authStatePath = getAuthStatePath(baseURL);
   
   // Check if auth state exists
   try {

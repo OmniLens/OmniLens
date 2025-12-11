@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 // Load .env file for test context
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-config({ path: path.join(__dirname, '../../.env') });
+config({ path: path.join(__dirname, '../.env') });
 
 if (!process.env.PLAYWRIGHT_BASE_URL) {
   throw new Error('PLAYWRIGHT_BASE_URL environment variable is required. Set it in e2e/.env file.');

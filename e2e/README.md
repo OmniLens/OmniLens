@@ -74,7 +74,7 @@ The smoke test suite (`e2e/smoke/login-dashboard.spec.ts`) validates:
 
 2. This will:
    - Authenticate via GitHub OAuth (using test account credentials)
-   - Save authenticated state to `playwright/.auth/user.json`
+   - Save authenticated state to `playwright/.auth/user-{hostname}.json` (e.g., `user-localhost.json` or `user-www-omnilens-xyz.json`)
    - Show the entire authentication flow in the Playwright UI for debugging
 
 3. **Subsequent test runs** will reuse the saved auth state (refreshed if older than 24 hours)
