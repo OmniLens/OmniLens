@@ -158,7 +158,7 @@ export async function authenticate(page: Page, baseURL: string): Promise<void> {
     
     // Wait for either OAuth authorize page or check for device verification
     await page.waitForURL(/github\.com\/login\/oauth\/authorize|github\.com\/login|github\.com\/sessions/, { timeout: 10000 }).catch(() => {});
-    const currentURL = page.url();
+    let currentURL = page.url();
     console.log(`[AUTH] Step 8: Current URL after waiting: ${currentURL}`);
     
     // Check for device verification page first (takes priority)
@@ -176,6 +176,8 @@ export async function authenticate(page: Page, baseURL: string): Promise<void> {
           { timeout: 300000 } // 5 minutes
         );
         console.log(`[AUTH] Step 8: Device verification completed! New URL: ${page.url()}`);
+        // Update currentURL after device verification completes, as the page has redirected
+        currentURL = page.url();
       } catch (timeoutError) {
         throw new Error(
           'Device verification timeout. Please complete the verification within 5 minutes.\n' +
