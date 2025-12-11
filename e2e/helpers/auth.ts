@@ -39,22 +39,34 @@ export async function authenticate(page: Page, baseURL: string): Promise<void> {
   
   try {
     // Step 1: Navigate to login page
+    console.log(`[AUTH] Step 1: Navigating to login page: ${baseURL}/login`);
     await page.goto(`${baseURL}/login`, { waitUntil: 'networkidle', timeout: 30000 });
+    console.log(`[AUTH] Step 1: Current URL after navigation: ${page.url()}`);
     
     // Step 2: Click "Continue with GitHub" button
+    console.log(`[AUTH] Step 2: Looking for GitHub OAuth button`);
     const githubButton = page.getByRole('button', { name: 'Continue with GitHub' });
     await expect(githubButton).toBeVisible({ timeout: 10000 });
+    console.log(`[AUTH] Step 2: GitHub button found, clicking...`);
     await githubButton.click();
+    console.log(`[AUTH] Step 2: Current URL after clicking GitHub button: ${page.url()}`);
     
     // Step 3: Wait for GitHub login page
+    console.log(`[AUTH] Step 3: Waiting for GitHub login page...`);
     await page.waitForURL(/github\.com\/login/, { timeout: 15000 });
+    console.log(`[AUTH] Step 3: GitHub login page reached. Current URL: ${page.url()}`);
+    console.log(`[AUTH] Step 3: Page title: ${await page.title().catch(() => 'unknown')}`);
     
     // Step 4: Fill GitHub credentials
+    console.log(`[AUTH] Step 4: Looking for login form inputs...`);
     const usernameInput = page.locator('input[name="login"]');
     const passwordInput = page.locator('input[name="password"]');
     
+    console.log(`[AUTH] Step 4: Waiting for username input to be visible...`);
     await expect(usernameInput).toBeVisible({ timeout: 10000 });
+    console.log(`[AUTH] Step 4: Username input found, waiting for password input...`);
     await expect(passwordInput).toBeVisible({ timeout: 10000 });
+    console.log(`[AUTH] Step 4: Both inputs found, filling credentials...`);
     
     await usernameInput.fill(credentials.username);
     
@@ -66,15 +78,20 @@ export async function authenticate(page: Page, baseURL: string): Promise<void> {
     }, credentials.password);
     
     // Step 5: Click "Sign in" button
+    console.log(`[AUTH] Step 5: Looking for Sign in button...`);
     const signInButton = page.getByRole('button', { name: 'Sign in' }).first();
     await expect(signInButton).toBeEnabled({ timeout: 5000 });
+    console.log(`[AUTH] Step 5: Sign in button enabled, clicking...`);
     await signInButton.click();
+    console.log(`[AUTH] Step 5: Current URL after clicking Sign in: ${page.url()}`);
     
     // Step 6: Check for 2FA prompt - FAIL if detected
+    console.log(`[AUTH] Step 6: Checking for 2FA prompt...`);
     const twoFactorPrompt = page.locator('input[name="otp"], input[type="tel"][name="app_otp"]');
     const twoFactorVisible = await twoFactorPrompt.isVisible().catch(() => false);
     
     if (twoFactorVisible) {
+      console.log(`[AUTH] Step 6: 2FA detected!`);
       throw new Error(
         '2FA is required on test account. Please disable 2FA on the GitHub test account ' +
         'or configure the account to use an app-specific password.'
@@ -82,10 +99,12 @@ export async function authenticate(page: Page, baseURL: string): Promise<void> {
     }
     
     // Step 7: Check for CAPTCHA - FAIL if detected
+    console.log(`[AUTH] Step 7: Checking for CAPTCHA...`);
     const captchaElement = page.locator('iframe[src*="captcha"], .captcha, [data-callback*="captcha"]');
     const captchaVisible = await captchaElement.isVisible().catch(() => false);
     
     if (captchaVisible) {
+      console.log(`[AUTH] Step 7: CAPTCHA detected!`);
       throw new Error(
         'CAPTCHA detected. Please configure the test account to avoid CAPTCHA challenges ' +
         'by whitelisting test IPs or adjusting account security settings.'
@@ -93,26 +112,43 @@ export async function authenticate(page: Page, baseURL: string): Promise<void> {
     }
     
     // Step 8: Handle OAuth consent screen if present
+    console.log(`[AUTH] Step 8: Checking for OAuth consent screen...`);
+    console.log(`[AUTH] Step 8: Current URL before waiting: ${page.url()}`);
     await page.waitForURL(/github\.com\/login\/oauth\/authorize|github\.com\/login/, { timeout: 10000 }).catch(() => {});
+    console.log(`[AUTH] Step 8: Current URL after waiting: ${page.url()}`);
     
     if (page.url().includes('github.com/login/oauth/authorize')) {
+      console.log(`[AUTH] Step 8: On OAuth authorize page, looking for Authorize button...`);
       const authorizeButton = page.getByRole('button', { name: 'Authorize' });
       if (await authorizeButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+        console.log(`[AUTH] Step 8: Authorize button found, clicking...`);
         await authorizeButton.click();
+        console.log(`[AUTH] Step 8: Current URL after clicking Authorize: ${page.url()}`);
       }
     }
     
     // Step 9: Wait for redirect to dashboard
+    console.log(`[AUTH] Step 9: Waiting for redirect to dashboard...`);
     const dashboardURL = new RegExp(`${baseURL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/dashboard`);
     await page.waitForURL(dashboardURL, { timeout: 30000, waitUntil: 'networkidle' });
+    console.log(`[AUTH] Step 9: Dashboard reached. Current URL: ${page.url()}`);
     
     // Step 11: Validate successful authentication
+    console.log(`[AUTH] Step 11: Validating dashboard content...`);
     const repositoriesHeading = page.getByRole('heading', { name: 'Repositories' }).first();
     await expect(repositoriesHeading).toBeVisible({ timeout: 15000 });
+    console.log(`[AUTH] Authentication successful!`);
   } catch (error) {
     // Capture screenshot for debugging
     const screenshotPath = path.join(__dirname, '../../playwright/.auth/auth-error.png');
     await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
+    
+    // Log error context
+    const currentURL = page.url();
+    const pageTitle = await page.title().catch(() => 'unknown');
+    console.log(`[AUTH] ERROR: Authentication failed at URL: ${currentURL}`);
+    console.log(`[AUTH] ERROR: Page title: ${pageTitle}`);
+    console.log(`[AUTH] ERROR: Error message: ${error instanceof Error ? error.message : String(error)}`);
     
     // Sanitize error message to prevent credential leakage
     if (error instanceof Error) {
