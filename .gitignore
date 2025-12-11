@@ -56,6 +56,6 @@ coverage/
 *.lcov
 
 # Playwright
-playwright/.auth/
-playwright-report/
-test-results/
+**/playwright/.auth/
+**/playwright-report/
+**/test-results/

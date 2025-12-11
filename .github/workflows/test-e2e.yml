@@ -50,6 +50,11 @@ jobs:
         run: |
           mkdir -p playwright/.auth/
           if [ -n "${{ secrets.PLAYWRIGHT_AUTH_STATE }}" ]; then
+            # Validate PLAYWRIGHT_BASE_URL is defined before using it
+            if [ -z "${{ secrets.PLAYWRIGHT_BASE_URL }}" ]; then
+              echo "❌ Error: PLAYWRIGHT_BASE_URL secret is required when PLAYWRIGHT_AUTH_STATE is set"
+              exit 1
+            fi
             # Extract hostname from URL using Node.js (matching auth.ts: new URL(baseURL).hostname)
             HOSTNAME=$(node -e "console.log(new URL('${{ secrets.PLAYWRIGHT_BASE_URL }}').hostname.replace(/\./g, '-'))")
             AUTH_FILE="playwright/.auth/user-${HOSTNAME}.json"
