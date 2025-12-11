@@ -99,9 +99,7 @@ jobs:
         if: always()
         with:
           name: playwright-report
-          path: |
-            e2e/playwright-report/**
-            playwright-report/**
+          path: e2e/playwright-report
           retention-days: 7
           if-no-files-found: error
 
@@ -110,9 +108,7 @@ jobs:
         if: always()
         with:
           name: playwright-test-results
-          path: |
-            e2e/test-results/**
-            test-results/**
+          path: e2e/test-results
           retention-days: 7
           if-no-files-found: error
 
