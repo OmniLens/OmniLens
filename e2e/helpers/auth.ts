@@ -39,10 +39,10 @@ function getGitHubCredentials() {
  * 
  * @remarks
  * Device verification is common in CI environments. If detected, the function will
- * fail with actionable error messages. Solutions include:
- * - Using a pre-verified test account
- * - Manually verifying the device once from CI IP
- * - Configuring the test account to trust the CI environment
+ * wait up to 5 minutes for manual completion. For CI:
+ * - Run the test locally once with headed browser to complete verification
+ * - The auth state will be saved and cached for subsequent CI runs
+ * - CI runs will use the cached auth state and skip verification
  */
 export async function authenticate(page: Page, baseURL: string): Promise<void> {
   const credentials = getGitHubCredentials();
@@ -100,25 +100,30 @@ export async function authenticate(page: Page, baseURL: string): Promise<void> {
     const urlAfterSignIn = page.url();
     console.log(`[AUTH] Step 5.5: Current URL after waiting: ${urlAfterSignIn}`);
     
-    // Step 5.6: Check for device verification page - FAIL if detected
+    // Step 5.6: Check for device verification page - wait for manual completion if detected
     console.log(`[AUTH] Step 5.6: Checking for device verification page...`);
     if (urlAfterSignIn.includes('github.com/sessions/verified-device')) {
       console.log(`[AUTH] Step 5.6: Device verification page detected!`);
-      const pageContent = await page.textContent('body').catch(() => '');
-      const hasVerificationCodeInput = await page.locator('input[name="otp"], input[type="text"][placeholder*="code"], input[type="text"][placeholder*="verification"]').isVisible().catch(() => false);
-      const hasEmailVerification = pageContent?.toLowerCase().includes('email') || false;
+      console.log(`[AUTH] Step 5.6: Waiting for manual device verification...`);
+      console.log(`[AUTH] Step 5.6: Please complete the verification in the browser.`);
+      console.log(`[AUTH] Step 5.6: Current URL: ${urlAfterSignIn}`);
       
-      throw new Error(
-        'GitHub device verification required. This typically happens when logging in from a new device/IP (common in CI).\n' +
-        'Solutions:\n' +
-        '1. Use a dedicated test account that has been pre-verified from CI IPs\n' +
-        '2. Manually verify the device once from CI IP, then reuse the session\n' +
-        '3. Configure the test account to trust the CI environment\n' +
-        '4. Use a GitHub Personal Access Token for API access (not applicable for OAuth flow)\n\n' +
-        `Current page: ${urlAfterSignIn}\n` +
-        `Has verification code input: ${hasVerificationCodeInput}\n` +
-        `Has email verification option: ${hasEmailVerification}`
-      );
+      // Wait for URL to change away from verification page (indicating verification completed)
+      // Timeout: 5 minutes to allow manual verification
+      try {
+        await page.waitForURL(
+          (url) => !url.href.includes('github.com/sessions/verified-device'),
+          { timeout: 300000 } // 5 minutes
+        );
+        console.log(`[AUTH] Step 5.6: Device verification completed! New URL: ${page.url()}`);
+      } catch (timeoutError) {
+        throw new Error(
+          'Device verification timeout. Please complete the verification within 5 minutes.\n' +
+          `Current page: ${page.url()}\n` +
+          'If running in CI, you may need to run this test manually once to complete verification, ' +
+          'then the cached auth state will be reused in subsequent runs.'
+        );
+      }
     }
     
     // Step 6: Check for 2FA prompt - FAIL if detected
@@ -159,21 +164,26 @@ export async function authenticate(page: Page, baseURL: string): Promise<void> {
     // Check for device verification page first (takes priority)
     if (currentURL.includes('github.com/sessions/verified-device')) {
       console.log(`[AUTH] Step 8: Device verification page detected after sign in!`);
-      const pageContent = await page.textContent('body').catch(() => '');
-      const hasVerificationCodeInput = await page.locator('input[name="otp"], input[type="text"][placeholder*="code"], input[type="text"][placeholder*="verification"]').isVisible().catch(() => false);
-      const hasEmailVerification = pageContent?.toLowerCase().includes('email') || false;
+      console.log(`[AUTH] Step 8: Waiting for manual device verification...`);
+      console.log(`[AUTH] Step 8: Please complete the verification in the browser.`);
+      console.log(`[AUTH] Step 8: Current URL: ${currentURL}`);
       
-      throw new Error(
-        'GitHub device verification required. This typically happens when logging in from a new device/IP (common in CI).\n' +
-        'Solutions:\n' +
-        '1. Use a dedicated test account that has been pre-verified from CI IPs\n' +
-        '2. Manually verify the device once from CI IP, then reuse the session\n' +
-        '3. Configure the test account to trust the CI environment\n' +
-        '4. Use a GitHub Personal Access Token for API access (not applicable for OAuth flow)\n\n' +
-        `Current page: ${currentURL}\n` +
-        `Has verification code input: ${hasVerificationCodeInput}\n` +
-        `Has email verification option: ${hasEmailVerification}`
-      );
+      // Wait for URL to change away from verification page (indicating verification completed)
+      // Timeout: 5 minutes to allow manual verification
+      try {
+        await page.waitForURL(
+          (url) => !url.href.includes('github.com/sessions/verified-device'),
+          { timeout: 300000 } // 5 minutes
+        );
+        console.log(`[AUTH] Step 8: Device verification completed! New URL: ${page.url()}`);
+      } catch (timeoutError) {
+        throw new Error(
+          'Device verification timeout. Please complete the verification within 5 minutes.\n' +
+          `Current page: ${page.url()}\n` +
+          'If running in CI, you may need to run this test manually once to complete verification, ' +
+          'then the cached auth state will be reused in subsequent runs.'
+        );
+      }
     }
     
     // Step 8.5: Handle OAuth consent screen if present

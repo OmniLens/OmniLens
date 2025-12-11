@@ -36,6 +36,22 @@ jobs:
         run: bunx playwright install --with-deps chromium
         working-directory: e2e
 
+      - name: 🪣 Restore auth state from secret
+        id: restore-auth
+        run: |
+          mkdir -p playwright/.auth/
+          if [ -n "${{ secrets.PLAYWRIGHT_AUTH_STATE }}" ]; then
+            # Extract hostname from URL using Node.js (matching auth.ts: new URL(baseURL).hostname)
+            HOSTNAME=$(node -e "console.log(new URL('${{ secrets.PLAYWRIGHT_BASE_URL }}').hostname.replace(/\./g, '-'))")
+            AUTH_FILE="playwright/.auth/user-${HOSTNAME}.json"
+            echo "${{ secrets.PLAYWRIGHT_AUTH_STATE }}" | base64 -d > "$AUTH_FILE"
+            echo "✅ Auth state restored from secret to $AUTH_FILE"
+            echo "restored=true" >> $GITHUB_OUTPUT
+          else
+            echo "🔐 No auth state secret found - will authenticate"
+            echo "restored=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: 💾 Cache auth state
         uses: actions/cache@v4
         id: auth-cache
@@ -45,12 +61,14 @@ jobs:
           restore-keys: |
             auth-state-${{ runner.os }}-
 
-      - name: 🔍 Auth cache status
+      - name: 🔍 Auth status
         run: |
-          if [ "${{ steps.auth-cache.outputs.cache-hit }}" == "true" ]; then
-            echo "✅ Auth state cache hit - using existing authentication"
+          if [ "${{ steps.restore-auth.outputs.restored }}" == "true" ]; then
+            echo "✅ Using pre-authenticated state from secret"
+          elif [ "${{ steps.auth-cache.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ Using cached auth state"
           else
-            echo "🔐 Auth state cache miss - will authenticate and save state"
+            echo "🔐 No auth state found - will authenticate (may require manual verification)"
           fi
 
       - name: 🧪 Run E2E tests
