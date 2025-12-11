@@ -27,12 +27,22 @@ function getGitHubCredentials() {
  * - Navigating to login page
  * - Clicking GitHub OAuth button
  * - Filling GitHub credentials
+ * - Detecting and handling device verification (fails with helpful error)
+ * - Detecting 2FA (fails with helpful error)
+ * - Detecting CAPTCHA (fails with helpful error)
  * - Handling OAuth consent screen
  * - Validating successful authentication
  * 
  * @param page - Playwright page instance
  * @param baseURL - Base URL of the application
  * @throws Error if any step of the authentication flow fails
+ * 
+ * @remarks
+ * Device verification is common in CI environments. If detected, the function will
+ * fail with actionable error messages. Solutions include:
+ * - Using a pre-verified test account
+ * - Manually verifying the device once from CI IP
+ * - Configuring the test account to trust the CI environment
  */
 export async function authenticate(page: Page, baseURL: string): Promise<void> {
   const credentials = getGitHubCredentials();
@@ -85,6 +95,32 @@ export async function authenticate(page: Page, baseURL: string): Promise<void> {
     await signInButton.click();
     console.log(`[AUTH] Step 5: Current URL after clicking Sign in: ${page.url()}`);
     
+    // Step 5.5: Wait a moment for potential redirects
+    await page.waitForTimeout(2000);
+    const urlAfterSignIn = page.url();
+    console.log(`[AUTH] Step 5.5: Current URL after waiting: ${urlAfterSignIn}`);
+    
+    // Step 5.6: Check for device verification page - FAIL if detected
+    console.log(`[AUTH] Step 5.6: Checking for device verification page...`);
+    if (urlAfterSignIn.includes('github.com/sessions/verified-device')) {
+      console.log(`[AUTH] Step 5.6: Device verification page detected!`);
+      const pageContent = await page.textContent('body').catch(() => '');
+      const hasVerificationCodeInput = await page.locator('input[name="otp"], input[type="text"][placeholder*="code"], input[type="text"][placeholder*="verification"]').isVisible().catch(() => false);
+      const hasEmailVerification = pageContent?.toLowerCase().includes('email') || false;
+      
+      throw new Error(
+        'GitHub device verification required. This typically happens when logging in from a new device/IP (common in CI).\n' +
+        'Solutions:\n' +
+        '1. Use a dedicated test account that has been pre-verified from CI IPs\n' +
+        '2. Manually verify the device once from CI IP, then reuse the session\n' +
+        '3. Configure the test account to trust the CI environment\n' +
+        '4. Use a GitHub Personal Access Token for API access (not applicable for OAuth flow)\n\n' +
+        `Current page: ${urlAfterSignIn}\n` +
+        `Has verification code input: ${hasVerificationCodeInput}\n` +
+        `Has email verification option: ${hasEmailVerification}`
+      );
+    }
+    
     // Step 6: Check for 2FA prompt - FAIL if detected
     console.log(`[AUTH] Step 6: Checking for 2FA prompt...`);
     const twoFactorPrompt = page.locator('input[name="otp"], input[type="tel"][name="app_otp"]');
@@ -111,19 +147,43 @@ export async function authenticate(page: Page, baseURL: string): Promise<void> {
       );
     }
     
-    // Step 8: Handle OAuth consent screen if present
-    console.log(`[AUTH] Step 8: Checking for OAuth consent screen...`);
+    // Step 8: Check for device verification page again (after potential redirects)
+    console.log(`[AUTH] Step 8: Checking for device verification or OAuth consent screen...`);
     console.log(`[AUTH] Step 8: Current URL before waiting: ${page.url()}`);
-    await page.waitForURL(/github\.com\/login\/oauth\/authorize|github\.com\/login/, { timeout: 10000 }).catch(() => {});
-    console.log(`[AUTH] Step 8: Current URL after waiting: ${page.url()}`);
     
-    if (page.url().includes('github.com/login/oauth/authorize')) {
-      console.log(`[AUTH] Step 8: On OAuth authorize page, looking for Authorize button...`);
+    // Wait for either OAuth authorize page or check for device verification
+    await page.waitForURL(/github\.com\/login\/oauth\/authorize|github\.com\/login|github\.com\/sessions/, { timeout: 10000 }).catch(() => {});
+    const currentURL = page.url();
+    console.log(`[AUTH] Step 8: Current URL after waiting: ${currentURL}`);
+    
+    // Check for device verification page first (takes priority)
+    if (currentURL.includes('github.com/sessions/verified-device')) {
+      console.log(`[AUTH] Step 8: Device verification page detected after sign in!`);
+      const pageContent = await page.textContent('body').catch(() => '');
+      const hasVerificationCodeInput = await page.locator('input[name="otp"], input[type="text"][placeholder*="code"], input[type="text"][placeholder*="verification"]').isVisible().catch(() => false);
+      const hasEmailVerification = pageContent?.toLowerCase().includes('email') || false;
+      
+      throw new Error(
+        'GitHub device verification required. This typically happens when logging in from a new device/IP (common in CI).\n' +
+        'Solutions:\n' +
+        '1. Use a dedicated test account that has been pre-verified from CI IPs\n' +
+        '2. Manually verify the device once from CI IP, then reuse the session\n' +
+        '3. Configure the test account to trust the CI environment\n' +
+        '4. Use a GitHub Personal Access Token for API access (not applicable for OAuth flow)\n\n' +
+        `Current page: ${currentURL}\n` +
+        `Has verification code input: ${hasVerificationCodeInput}\n` +
+        `Has email verification option: ${hasEmailVerification}`
+      );
+    }
+    
+    // Step 8.5: Handle OAuth consent screen if present
+    if (currentURL.includes('github.com/login/oauth/authorize')) {
+      console.log(`[AUTH] Step 8.5: On OAuth authorize page, looking for Authorize button...`);
       const authorizeButton = page.getByRole('button', { name: 'Authorize' });
       if (await authorizeButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-        console.log(`[AUTH] Step 8: Authorize button found, clicking...`);
+        console.log(`[AUTH] Step 8.5: Authorize button found, clicking...`);
         await authorizeButton.click();
-        console.log(`[AUTH] Step 8: Current URL after clicking Authorize: ${page.url()}`);
+        console.log(`[AUTH] Step 8.5: Current URL after clicking Authorize: ${page.url()}`);
       }
     }
     

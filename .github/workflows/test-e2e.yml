@@ -36,6 +36,23 @@ jobs:
         run: bunx playwright install --with-deps chromium
         working-directory: e2e
 
+      - name: 💾 Cache auth state
+        uses: actions/cache@v4
+        id: auth-cache
+        with:
+          path: playwright/.auth/
+          key: auth-state-${{ runner.os }}-${{ secrets.PLAYWRIGHT_BASE_URL }}
+          restore-keys: |
+            auth-state-${{ runner.os }}-
+
+      - name: 🔍 Auth cache status
+        run: |
+          if [ "${{ steps.auth-cache.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ Auth state cache hit - using existing authentication"
+          else
+            echo "🔐 Auth state cache miss - will authenticate and save state"
+          fi
+
       - name: 🧪 Run E2E tests
         run: bun run test:e2e:login
 
