@@ -40,14 +40,6 @@ export default function LandingPage() {
               />
             </div>
             <span className="text-xl font-bold text-white">OmniLens</span>
-            {/* ALPHA badge with shimmer animation */}
-            <Badge 
-              variant="secondary" 
-              className="bg-gradient-to-r from-slate-800/40 to-slate-700/40 text-slate-200 border-slate-600/40 text-xs font-medium px-2.5 py-0.5 relative overflow-hidden"
-            >
-              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></span>
-              <span className="relative z-10">ALPHA</span>
-            </Badge>
           </div>
           {/* Actions - Right side navigation (GitHub link and Sign In button) */}
           <div className="flex items-center gap-3">
@@ -115,7 +107,7 @@ export default function LandingPage() {
       <div className="relative z-10 pt-32 pb-24 px-6 md:px-12 lg:px-16 xl:px-24">
         <div className="w-full max-w-2xl mx-auto text-center">
           <a 
-            href="https://vercel.com/oss" 
+            href="https://vercel.com/blog/vercel-open-source-program-fall-2025-cohort#omnilens" 
             target="_blank" 
             rel="noopener noreferrer"
             className="inline-block group"

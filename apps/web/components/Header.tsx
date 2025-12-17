@@ -8,7 +8,6 @@ import { LogOut, LayoutDashboard, Github, BarChart3, ChevronRight } from "lucide
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,14 +88,6 @@ export default function Header() {
                 />
               </div>
               <span className="text-xl font-bold text-foreground">OmniLens</span>
-              {/* ALPHA badge with shimmer animation */}
-              <Badge 
-                variant="secondary" 
-                className="bg-muted/50 text-muted-foreground border-border/50 text-xs font-medium px-2.5 py-0.5 relative overflow-hidden"
-              >
-                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></span>
-                <span className="relative z-10">ALPHA</span>
-              </Badge>
             </Link>
 
             {/* Navigation Links / Breadcrumbs */}

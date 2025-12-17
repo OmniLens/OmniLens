@@ -9,7 +9,6 @@ import { Github } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 // Hook imports
 import { signIn, useSession } from "@/lib/auth-client";
@@ -87,21 +86,11 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {/* App Name Section - Title with ALPHA badge */}
+          {/* App Name Section - Title */}
           <div className="text-center">
-            <div className="flex items-center justify-center gap-3">
-              <h1 className="text-4xl font-bold tracking-tight text-white">
-                OmniLens
-              </h1>
-              {/* ALPHA badge with shimmer animation */}
-              <Badge 
-                variant="secondary" 
-                className="bg-muted/50 text-muted-foreground border-border/50 text-xs font-medium px-2.5 py-0.5 relative overflow-hidden"
-              >
-                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></span>
-                <span className="relative z-10">ALPHA</span>
-              </Badge>
-            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-white">
+              OmniLens
+            </h1>
           </div>
 
           {/* GitHub Sign-In Button - Primary authentication action */}
@@ -120,7 +109,7 @@ export default function LoginPage() {
         <div className="relative z-10 pt-8 pb-6 px-4">
           <div className="w-full max-w-2xl mx-auto text-center">
             <a 
-              href="https://vercel.com/oss" 
+              href="https://vercel.com/blog/vercel-open-source-program-fall-2025-cohort#omnilens" 
               target="_blank" 
               rel="noopener noreferrer"
               className="inline-block group"
