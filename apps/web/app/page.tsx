@@ -7,7 +7,6 @@ import { ArrowRight, Github, GitBranch, BarChart3, Activity, Eye } from "lucide-
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import AddRepositoryModalPreview from "@/components/AddRepositoryModalPreview";
 import RepositoryCard from "@/components/RepositoryCard";
 import WorkflowMetricsPreview from "@/components/WorkflowMetricsPreview";

@@ -49,7 +49,7 @@ export interface RepositoryCardProps {
  * Supports error states, workflow metrics, and delete functionality
  */
 export default function RepositoryCard({
-  repoSlug,
+  repoSlug: _,
   repoPath,
   displayName,
   avatarUrl,
