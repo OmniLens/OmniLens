@@ -75,7 +75,7 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <Link href="/" className="h-40 w-40 cursor-pointer transition-transform duration-200 hover:scale-105">
               <Image
-                src="/omnilens.jpeg"
+                src="/omnilens colored.png"
                 alt="OmniLens"
                 width={1000}
                 height={1000}
