@@ -1,6 +1,6 @@
 # 👁️ OmniLens
 
-<a href="https://vercel.com/oss">
+<a href="https://vercel.com/blog/vercel-open-source-program-fall-2025-cohort#omnilens">
   <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
 </a>
 <br />

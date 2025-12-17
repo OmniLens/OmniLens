@@ -3,7 +3,7 @@
 // External library imports
 import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Calendar, Tag, Plus, Wrench, Bug, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Calendar, Tag, Plus, Wrench, Bug, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,9 @@ import { useSession } from "@/lib/auth-client";
 // ============================================================================
 
 /**
- * Type for semantic version types (major, minor, patch)
+ * Type for semantic version types (major, minor, patch, beta)
  */
-type VersionType = "major" | "minor" | "patch";
+type VersionType = "major" | "minor" | "patch" | "beta";
 
 /**
  * Type for change types in changelog entries
@@ -55,6 +55,20 @@ interface ChangelogEntry {
  * Follows Keep a Changelog format with Semantic Versioning
  */
 const changelogData: ChangelogEntry[] = [
+  {
+    version: "1.0.0",
+    date: "2025-12-17",
+    type: "major",
+    changes: {
+      added: [
+        "Official 1.0.0 release!",
+      ],
+      changed: [
+        "Version updated to 1.0.0",
+        "Removed all alpha badges"
+      ]
+    }
+  },
   {
     version: "0.9.6-alpha",
     date: "2025-12-11",
@@ -356,8 +370,8 @@ const changelogData: ChangelogEntry[] = [
 
 /**
  * Get CSS classes for version type badge styling
- * Returns Tailwind classes for major (red), minor (blue), or patch (green) versions
- * @param type - Version type (major, minor, patch)
+ * Returns Tailwind classes for major (red), minor (blue), patch (green), or beta (purple) versions
+ * @param type - Version type (major, minor, patch, beta)
  * @returns CSS class string for badge styling
  */
 function getVersionTypeColor(type: VersionType): string {
@@ -368,6 +382,8 @@ function getVersionTypeColor(type: VersionType): string {
       return "bg-blue-500/10 text-blue-400 border-blue-500/20";
     case "patch":
       return "bg-green-500/10 text-green-400 border-green-500/20";
+    case "beta":
+      return "bg-purple-500/10 text-purple-400 border-purple-500/20";
     default:
       return "bg-gray-500/10 text-gray-400 border-gray-500/20";
   }
@@ -424,6 +440,15 @@ function getChangeTypeColor(type: ChangeType): string {
 export default function ChangelogPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
+  const [isAlphaExpanded, setIsAlphaExpanded] = React.useState(false);
+
+  // ============================================================================
+  // Local State
+  // ============================================================================
+
+  // Separate changelog entries into current (1.0.0) and alpha versions
+  const currentEntries = changelogData.filter((entry) => !entry.version.includes("-alpha"));
+  const alphaEntries = changelogData.filter((entry) => entry.version.includes("-alpha"));
 
   // ============================================================================
   // Render Logic - Early Returns
@@ -503,7 +528,8 @@ export default function ChangelogPage() {
 
         {/* Changelog Entries - Version cards with change details */}
         <div className="max-w-4xl mx-auto space-y-8">
-          {changelogData.map((entry) => (
+          {/* Current Release Entries (1.0.0 and above) */}
+          {currentEntries.map((entry) => (
             <Card key={entry.version} className="relative">
               {/* Card Header - Version number, type badge, and date */}
               <CardHeader className="pb-4">
@@ -553,6 +579,94 @@ export default function ChangelogPage() {
               </CardContent>
             </Card>
           ))}
+
+          {/* Alpha Changelog Section - Collapsible */}
+          {alphaEntries.length > 0 && (
+            <div className="space-y-8">
+              {/* Collapsible Alpha Heading */}
+              <button
+                onClick={() => setIsAlphaExpanded(!isAlphaExpanded)}
+                className="w-full flex items-center justify-between p-4 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <Tag className="h-5 w-5 text-muted-foreground" />
+                  <h2 className="text-2xl font-bold">Alpha</h2>
+                  <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/20">
+                    {alphaEntries.length} {alphaEntries.length === 1 ? 'version' : 'versions'}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground transition-colors">
+                  {isAlphaExpanded ? (
+                    <>
+                      <span className="text-sm">Hide</span>
+                      <ChevronUp className="h-5 w-5" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm">Show</span>
+                      <ChevronDown className="h-5 w-5" />
+                    </>
+                  )}
+                </div>
+              </button>
+
+              {/* Alpha Entries - Shown when expanded */}
+              {isAlphaExpanded && (
+                <div className="space-y-8">
+                  {alphaEntries.map((entry) => (
+                    <Card key={entry.version} className="relative">
+                      {/* Card Header - Version number, type badge, and date */}
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {/* Version tag icon */}
+                            <Tag className="h-5 w-5 text-muted-foreground" />
+                            {/* Version number */}
+                            <CardTitle className="text-2xl">v{entry.version}</CardTitle>
+                            {/* Version type badge (major/minor/patch) */}
+                            <Badge 
+                              variant="outline" 
+                              className={getVersionTypeColor(entry.type)}
+                            >
+                              {entry.type}
+                            </Badge>
+                          </div>
+                          {/* Release date */}
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            {entry.date}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      {/* Card Content - Change lists grouped by type */}
+                      <CardContent className="space-y-6">
+                        {Object.entries(entry.changes).map(([changeType, changes]) => (
+                          <div key={changeType} className="space-y-3">
+                            {/* Change type header with icon */}
+                            <div className="flex items-center gap-2">
+                              {getChangeTypeIcon(changeType as ChangeType)}
+                              <h3 className={`font-semibold capitalize ${getChangeTypeColor(changeType as ChangeType)}`}>
+                                {changeType}
+                              </h3>
+                            </div>
+                            {/* Change list items */}
+                            <ul className="space-y-2 ml-6 list-disc list-inside">
+                              {changes.map((change: string, changeIndex: number) => (
+                                <li key={changeIndex} className="text-sm leading-relaxed">
+                                  {change}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer Section - Changelog format information and version type legend */}
@@ -579,6 +693,12 @@ export default function ChangelogPage() {
               Patch
             </Badge>
             <span className="text-muted-foreground">Bug fixes and small improvements</span>
+          </div>
+          <div className="flex flex-wrap gap-2 text-sm mt-2">
+            <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/20">
+              Beta
+            </Badge>
+            <span className="text-muted-foreground">Beta release milestone</span>
           </div>
         </div>
       </div>
