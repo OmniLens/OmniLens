@@ -6,13 +6,13 @@
  * This test suite validates system health and infrastructure only:
  * - Server health and responsiveness
  * - Environment variables configuration
- * - External dependencies connectivity
  * - Database connectivity
  * - Performance baselines
  * - Error handling
  * 
  * NOTE: This does NOT test core API functionality, authentication,
  * or business logic - those belong in integration/unit tests.
+ * External dependencies (like GitHub API) are tested in functional test suites.
  * 
  * Run with: bun tests/health.test.js
  * Or via package.json: bun run test:health
@@ -78,31 +78,6 @@ async function testEnvironmentVariables() {
     return allPassed;
   } catch (error) {
     console.log(`❌ Environment variables test failed: ${error.message}`);
-    return false;
-  }
-}
-
-async function testExternalDependencies() {
-  try {
-    console.log('Testing external dependencies...');
-    
-    // Test GitHub API connectivity (no auth required)
-    const response = await fetch('https://api.github.com/repos/Visi0ncore/StealthList', {
-      headers: {
-        'Accept': 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28'
-      }
-    });
-    
-    if (response.ok) {
-      console.log('✅ GitHub API is accessible');
-      return true;
-    } else {
-      console.log(`❌ GitHub API returned status: ${response.status}`);
-      return false;
-    }
-  } catch (error) {
-    console.log(`❌ External dependency test failed: ${error.message}`);
     return false;
   }
 }
@@ -224,7 +199,6 @@ async function runHealthTests() {
   const tests = [
     { name: 'Server Health', fn: testServerHealth },
     { name: 'Environment Variables', fn: testEnvironmentVariables },
-    { name: 'External Dependencies', fn: testExternalDependencies },
     { name: 'Database Connection', fn: testDatabaseConnection },
     { name: 'Performance Baseline', fn: testPerformanceBaseline },
     { name: 'Error Boundaries', fn: testErrorBoundaries },
