@@ -57,16 +57,15 @@ interface ChangelogEntry {
 const changelogData: ChangelogEntry[] = [
   {
     version: "1.0.0",
-    date: "2025-01-27",
+    date: "2025-12-17",
     type: "major",
     changes: {
       added: [
-        "Official 1.0.0 release - OmniLens is now production ready!",
-        "Stable API and feature set for production use"
+        "Official 1.0.0 release!",
       ],
       changed: [
         "Version updated to 1.0.0",
-        "Removed all beta badges - OmniLens is now fully released"
+        "Removed all alpha badges"
       ]
     }
   },
