@@ -40,18 +40,25 @@ export default function LandingPage() {
             </div>
             <span className="text-xl font-bold text-white">OmniLens</span>
           </div>
-          {/* Actions - Right side navigation (GitHub link and Sign In button) */}
-          <div className="flex items-center gap-3">
+          {/* Actions - Right side navigation (Blog link, GitHub link, and Sign In button) */}
+          <div className="flex items-center gap-2">
+            <Link 
+              href="/blog"
+              className="text-white hover:text-gray-300 transition-colors px-4 py-2 rounded-md hover:bg-white/10 text-sm font-medium"
+            >
+              Blog
+            </Link>
             <a 
               href="https://github.com/omnilens/OmniLens" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-white hover:text-gray-300 transition-colors"
+              className="text-white hover:text-gray-300 transition-colors p-2 rounded-md hover:bg-white/10 flex items-center justify-center"
+              aria-label="View on GitHub"
             >
-              <Github className="h-6 w-6" />
+              <Github className="h-5 w-5" />
             </a>
             <Link href="/login">
-              <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+              <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
                 Sign In
               </Button>
             </Link>

@@ -21,7 +21,9 @@
         "ADMIN_API_TOKEN",
         "DATABASE_URL",
         "NODE_ENV",
-        "SENTRY_AUTH_TOKEN"
+        "SENTRY_AUTH_TOKEN",
+        "MARBLE_API_URL",
+        "MARBLE_WORKSPACE_KEY"
       ]
     },
     "lint": {

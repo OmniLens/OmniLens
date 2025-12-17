@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { LogOut, LayoutDashboard, Github, BarChart3, ChevronRight } from "lucide-react";
+import { LogOut, LayoutDashboard, Github, BarChart3, ChevronRight, BookOpen } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
@@ -157,6 +157,12 @@ export default function Header() {
                   </p>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/blog" className="flex items-center">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Blog
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <a 
                     href="https://github.com/omnilens/OmniLens"

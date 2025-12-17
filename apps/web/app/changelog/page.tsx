@@ -56,6 +56,24 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "1.1.0",
+    date: "2025-12-17",
+    type: "minor",
+    changes: {
+      added: [
+        "Marble CMS blog integration with blog list and post pages",
+        "BlogPostCard component for displaying blog posts with cover images, author names, and published dates",
+        "Prose component for styled blog content rendering",
+        "BackButton component with smart navigation",
+        "Blog link in header navigation and user dropdown menu",
+        "Tailwind Typography plugin for blog content styling"
+      ],
+      changed: [
+        "Blog pages updated to match application design standards with Header component and consistent styling"
+      ]
+    }
+  },
+  {
     version: "1.0.0",
     date: "2025-12-17",
     type: "major",
