@@ -38,6 +38,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
+        <script data-site="dHJhY2tfcDVkbzY2ZWE=" src="https://oculisanalytics.com/js/script.js"></script>
         <NuqsAdapter>
           <QueryProvider>
             <AuthProvider>
