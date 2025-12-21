@@ -8,6 +8,7 @@ import { LogOut, LayoutDashboard, Github, BarChart3, ChevronRight, BookOpen } fr
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +76,10 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Left Section - Logo and Navigation */}
           <div className="flex items-center gap-6">
+            {/* Sidebar Trigger - Mobile only */}
+            {(pathname === '/dashboard' || pathname?.startsWith('/dashboard/')) && (
+              <SidebarTrigger className="md:hidden" />
+            )}
             {/* Logo and Brand */}
             <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="h-8 w-8 flex-shrink-0">

@@ -11,9 +11,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DatePicker } from "@/components/DatePicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import WorkflowCard, { IdleWorkflowCard } from "@/components/WorkflowCard";
 import DailyMetrics from "@/components/DailyMetrics";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
+import DashboardSidebar from "@/components/DashboardSidebar";
 import Header from "@/components/Header";
 
 // Utility imports
@@ -287,17 +289,20 @@ export default function DashboardPage() {
   // Authentication loading state - show spinner while checking session
   if (isPending) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading...</p>
+      <SidebarProvider>
+        <DashboardSidebar>
+          <SidebarInset>
+            <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading...</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </SidebarInset>
+        </DashboardSidebar>
+      </SidebarProvider>
     );
   }
 
@@ -305,52 +310,61 @@ export default function DashboardPage() {
   if (workflowsError || runsError || overviewError || yesterdayError) {
     const error = workflowsError || runsError || overviewError || yesterdayError;
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="mb-8">
-            <p className="text-muted-foreground text-red-600">
-              Error: {error?.message || 'Failed to load data'}
-            </p>
-          </div>
-        </div>
-      </div>
+      <SidebarProvider>
+        <DashboardSidebar>
+          <SidebarInset>
+            <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="mb-8">
+                <p className="text-muted-foreground text-red-600">
+                  Error: {error?.message || 'Failed to load data'}
+                </p>
+              </div>
+            </div>
+          </SidebarInset>
+        </DashboardSidebar>
+      </SidebarProvider>
     );
   }
 
   // Initial data loading state - show spinner while fetching workflows and yesterday's data
   if (isLoadingWorkflows || isLoadingYesterday) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading workflows...</p>
+      <SidebarProvider>
+        <DashboardSidebar>
+          <SidebarInset>
+            <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading workflows...</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </SidebarInset>
+        </DashboardSidebar>
+      </SidebarProvider>
     );
   }
 
   // Secondary loading state - show spinner while fetching runs and overview data
   if (isLoadingRuns || isLoadingOverview) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">
-                {isLoadingRuns ? 'Loading workflow runs...' : 'Loading overview...'}
-              </p>
+      <SidebarProvider>
+        <DashboardSidebar>
+          <SidebarInset>
+            <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">
+                    {isLoadingRuns ? 'Loading workflow runs...' : 'Loading overview...'}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </SidebarInset>
+        </DashboardSidebar>
+      </SidebarProvider>
     );
   }
 
@@ -359,28 +373,32 @@ export default function DashboardPage() {
   // ============================================================================
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-        {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
-        <GitHubStatusBanner className="mb-6" />
-        
-        {/* Header Section - Repository name, back button, and date controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Back button - Returns to main dashboard */}
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            {/* Repository name - Formatted for display */}
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold truncate">
-                {formatRepoDisplayName(repoSlug.replace(/-/g, '/'))}
-              </h1>
-            </div>
+    <SidebarProvider>
+      <DashboardSidebar>
+        <SidebarInset>
+          <div className="sticky top-0 z-50 w-full border-b border-border bg-background">
+            <Header />
           </div>
+          <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+            {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
+            <GitHubStatusBanner className="mb-6" />
+            
+            {/* Header Section - Repository name, back button, and date controls */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {/* Back button - Returns to main dashboard */}
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm">
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                </Link>
+                {/* Repository name - Formatted for display */}
+                <div className="min-w-0">
+                  <h1 className="text-xl sm:text-2xl font-bold truncate">
+                    {formatRepoDisplayName(repoSlug.replace(/-/g, '/'))}
+                  </h1>
+                </div>
+              </div>
           {/* Date controls - Today button, date picker, and refresh */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Today button - Quick jump to today's date */}
@@ -531,7 +549,9 @@ export default function DashboardPage() {
             </>
           )}
         </div>
-      </div>
-    </div>
+          </div>
+        </SidebarInset>
+      </DashboardSidebar>
+    </SidebarProvider>
   );
 }

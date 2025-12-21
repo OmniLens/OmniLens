@@ -16,9 +16,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 import RepositoryCardSkeleton from "@/components/RepositoryCardSkeleton";
 import RepositoryCard from "@/components/RepositoryCard";
+import DashboardSidebar from "@/components/DashboardSidebar";
 import Header from "@/components/Header";
 
 // Utility imports
@@ -402,56 +404,65 @@ export default function DashboardHomePage() {
   // Authentication loading state - show spinner while checking session
   if (isPending) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading...</p>
+      <SidebarProvider>
+        <DashboardSidebar>
+          <SidebarInset>
+            <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading...</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </SidebarInset>
+        </DashboardSidebar>
+      </SidebarProvider>
     );
   }
 
   // Error state - show error message if data fetch failed
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="mb-8">
-            <p className="text-muted-foreground text-red-600">
-              Error: {error.message}
-            </p>
-          </div>
-        </div>
-      </div>
+      <SidebarProvider>
+        <DashboardSidebar>
+          <SidebarInset>
+            <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="mb-8">
+                <p className="text-muted-foreground text-red-600">
+                  Error: {error.message}
+                </p>
+              </div>
+            </div>
+          </SidebarInset>
+        </DashboardSidebar>
+      </SidebarProvider>
     );
   }
   
   // Initial loading state - show skeleton cards while fetching repositories
   if (isLoading && repositories.length === 0) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-          {/* Header Section - Repositories heading and Add repository button skeleton */}
-          <div className="flex items-center justify-between mb-8">
-            {/* Repositories heading skeleton - matches text-xl sm:text-2xl font-bold */}
-            <div className="h-7 sm:h-8 w-40 sm:w-48 bg-muted animate-pulse rounded-md"></div>
-            {/* Add Repo button skeleton - matches size="sm" button (h-8) with icon and text */}
-            <div className="h-8 w-28 bg-muted animate-pulse rounded-md"></div>
-          </div>
+      <SidebarProvider>
+        <DashboardSidebar>
+          <SidebarInset>
+            <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+              {/* Header Section - Repositories heading and Add repository button skeleton */}
+              <div className="flex items-center justify-between mb-8">
+                {/* Repositories heading skeleton - matches text-xl sm:text-2xl font-bold */}
+                <div className="h-7 sm:h-8 w-40 sm:w-48 bg-muted animate-pulse rounded-md"></div>
+                {/* Add Repo button skeleton - matches size="sm" button (h-8) with icon and text */}
+                <div className="h-8 w-28 bg-muted animate-pulse rounded-md"></div>
+              </div>
 
-          {/* Show skeleton cards while loading */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <RepositoryCardSkeleton count={6} />
-          </div>
-        </div>
-      </div>
+              {/* Show skeleton cards while loading */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <RepositoryCardSkeleton count={6} />
+              </div>
+            </div>
+          </SidebarInset>
+        </DashboardSidebar>
+      </SidebarProvider>
     );
   }
 
@@ -460,27 +471,31 @@ export default function DashboardHomePage() {
   // ============================================================================
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-        {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
-        <GitHubStatusBanner className="mb-6" />
-        
-        {/* Header Section - Repositories heading and Add repository button */}
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold truncate">Repositories</h2>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleAddRepoClick}
-            disabled={repositories.length >= 12}
-            aria-label="Add repository"
-            className="flex items-center justify-center gap-2 px-3"
-          >
-            <Plus className="h-4 w-4" />
-            Add Repo
-          </Button>
-        </div>
+    <SidebarProvider>
+      <DashboardSidebar>
+        <SidebarInset>
+          <div className="sticky top-0 z-50 w-full border-b border-border bg-background">
+            <Header />
+          </div>
+          <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+            {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
+            <GitHubStatusBanner className="mb-6" />
+            
+            {/* Header Section - Repositories heading and Add repository button */}
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold truncate">Repositories</h2>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleAddRepoClick}
+                disabled={repositories.length >= 12}
+                aria-label="Add repository"
+                className="flex items-center justify-center gap-2 px-3"
+              >
+                <Plus className="h-4 w-4" />
+                Add Repo
+              </Button>
+            </div>
 
         {/* Repository Grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop) */}
         {displayData.length === 0 ? (
@@ -515,7 +530,6 @@ export default function DashboardHomePage() {
             ))}
           </div>
         )}
-        </div>
 
         {/* Delete Repository Modal - Confirmation dialog for removing repositories */}
       <Modal
@@ -655,6 +669,9 @@ export default function DashboardHomePage() {
           )}
         </div>
       </Modal>
-    </div>
+          </div>
+        </SidebarInset>
+      </DashboardSidebar>
+    </SidebarProvider>
   );
 }
