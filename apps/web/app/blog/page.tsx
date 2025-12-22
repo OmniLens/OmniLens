@@ -2,7 +2,6 @@
 // (none)
 
 // Internal component imports
-import Header from "@/components/Header";
 import BackButton from "@/components/BackButton";
 import BlogPostCard from "@/components/BlogPostCard";
 
@@ -58,7 +57,6 @@ export default async function BlogPage() {
   if (!data || !enrichedPosts || enrichedPosts.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Header Section - Back button and page title */}
           <div className="flex items-center justify-between mb-8">
@@ -66,6 +64,14 @@ export default async function BlogPage() {
             <h1 className="text-4xl font-bold">Blog</h1>
             <div className="w-[72px]"></div> {/* Spacer to center the heading */}
           </div>
+          
+          {/* Description Section */}
+          <div className="text-center mb-12">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Stay up to date with the latest updates, features, and insights from the OmniLens team.
+            </p>
+          </div>
+          
           <p className="text-muted-foreground">No posts found.</p>
         </div>
       </div>
@@ -78,13 +84,19 @@ export default async function BlogPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header Section - Back button and page title */}
         <div className="flex items-center justify-between mb-8">
           <BackButton />
           <h1 className="text-4xl font-bold">Blog</h1>
           <div className="w-[72px]"></div> {/* Spacer to center the heading */}
+        </div>
+        
+        {/* Description Section */}
+        <div className="text-center mb-12">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Stay up to date with the latest updates, features, and insights from the OmniLens team.
+          </p>
         </div>
 
         {/* Posts Grid */}

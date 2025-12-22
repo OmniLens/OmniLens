@@ -19,7 +19,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 import RepositoryCardSkeleton from "@/components/RepositoryCardSkeleton";
 import RepositoryCard from "@/components/RepositoryCard";
-import Header from "@/components/Header";
 
 // Utility imports
 import { formatRepoDisplayName } from "@/lib/utils";
@@ -276,6 +275,10 @@ export default function DashboardHomePage() {
         queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
       }
 
+      // Invalidate repositories query so RepoSwitcher component updates
+      // This ensures the sidebar repo switcher reflects the new repository count
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+
       // Small delay to show the "getting data" step before closing
       setTimeout(() => {
         setNewRepoUrl('');
@@ -310,6 +313,7 @@ export default function DashboardHomePage() {
     onSuccess: (data, slug) => {
       // Invalidate the batch dashboard query and any related queries
       queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
       queryClient.invalidateQueries({ queryKey: ['repository-workflows', slug] });
       queryClient.invalidateQueries({ queryKey: ['workflow-runs', slug] });
       queryClient.invalidateQueries({ queryKey: ['workflow-overview', slug] });
@@ -403,7 +407,6 @@ export default function DashboardHomePage() {
   if (isPending) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
@@ -420,7 +423,6 @@ export default function DashboardHomePage() {
   if (error) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="mb-8">
             <p className="text-muted-foreground text-red-600">
@@ -436,7 +438,6 @@ export default function DashboardHomePage() {
   if (isLoading && repositories.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
           {/* Header Section - Repositories heading and Add repository button skeleton */}
           <div className="flex items-center justify-between mb-8">
@@ -461,7 +462,6 @@ export default function DashboardHomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
         <GitHubStatusBanner className="mb-6" />

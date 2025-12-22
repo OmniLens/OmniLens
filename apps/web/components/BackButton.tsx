@@ -11,15 +11,30 @@ import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth-client";
 
 // ============================================================================
+// Type Definitions
+// ============================================================================
+
+interface BackButtonProps {
+  /**
+   * Optional fallback path when browser history is unavailable
+   * Defaults to "/dashboard" for authenticated users, "/" for unauthenticated
+   */
+  fallbackPath?: string;
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
 /**
  * BackButton component
- * Smart back button that remembers where the user came from
- * Uses browser history if available, otherwise falls back to dashboard or root
+ * Simple back button that uses browser history
+ * Falls back to appropriate default based on authentication status if no history exists
+ * 
+ * Industry best practice: Use browser history (router.back()) as primary method
+ * rather than relying on unreliable document.referrer
  */
-export default function BackButton() {
+export default function BackButton({ fallbackPath }: BackButtonProps) {
   const router = useRouter();
   const { data: session } = useSession();
 
@@ -28,31 +43,19 @@ export default function BackButton() {
   // ============================================================================
 
   /**
-   * Handle back navigation with smart routing
-   * Routes to login if not authenticated, otherwise uses referrer or defaults to dashboard
-   * Matches the changelog page navigation pattern
+   * Handle back navigation using browser history
+   * Falls back to default route if no history is available
    */
   const handleBackNavigation = () => {
-    // If not authenticated, go to login
-    if (!session) {
-      router.push("/login");
-      return;
+    // Use browser history - this works correctly with Next.js client-side navigation
+    // and respects where the user actually came from
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      // Fallback: only used if user directly navigated to URL (no history)
+      // Default to dashboard for authenticated users, landing page for unauthenticated
+      router.push(fallbackPath || (session ? "/dashboard" : "/"));
     }
-
-    // Check if there's a referrer from the same origin
-    if (typeof window !== "undefined" && document.referrer) {
-      const referrerUrl = new URL(document.referrer);
-      const currentUrl = new URL(window.location.href);
-
-      // If referrer is from the same origin, go back to it
-      if (referrerUrl.origin === currentUrl.origin) {
-        router.back();
-        return;
-      }
-    }
-
-    // Default fallback: go to dashboard
-    router.push("/dashboard");
   };
 
   // ============================================================================

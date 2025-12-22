@@ -5,7 +5,7 @@ import { QueryProvider } from "@/lib/query-client";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-import ConditionalVersionIndicator from "@/components/ConditionalVersionIndicator";
+import { SidebarLayout } from "@/components/SidebarLayout";
 import * as Sentry from '@sentry/nextjs';
 import type { Metadata } from "next";
 
@@ -42,15 +42,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <NuqsAdapter>
           <QueryProvider>
             <AuthProvider>
-              {children}
+              <SidebarLayout>
+                {children}
+              </SidebarLayout>
             </AuthProvider>
           </QueryProvider>
         </NuqsAdapter>
         <Analytics />
         <SpeedInsights />
-        
-        {/* Version indicator - bottom left (hidden on landing page) */}
-        <ConditionalVersionIndicator />
       </body>
     </html>
   );

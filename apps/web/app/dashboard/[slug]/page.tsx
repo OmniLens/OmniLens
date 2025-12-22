@@ -3,8 +3,7 @@
 // External library imports
 import React, { useMemo, useCallback, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, RefreshCw, MoonStar, Zap } from "lucide-react";
+import { RefreshCw, MoonStar, Zap } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Internal component imports
@@ -14,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import WorkflowCard, { IdleWorkflowCard } from "@/components/WorkflowCard";
 import DailyMetrics from "@/components/DailyMetrics";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
-import Header from "@/components/Header";
 
 // Utility imports
 import { formatRepoDisplayName } from "@/lib/utils";
@@ -288,7 +286,6 @@ export default function DashboardPage() {
   if (isPending) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
@@ -306,7 +303,6 @@ export default function DashboardPage() {
     const error = workflowsError || runsError || overviewError || yesterdayError;
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="mb-8">
             <p className="text-muted-foreground text-red-600">
@@ -322,7 +318,6 @@ export default function DashboardPage() {
   if (isLoadingWorkflows || isLoadingYesterday) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
@@ -339,7 +334,6 @@ export default function DashboardPage() {
   if (isLoadingRuns || isLoadingOverview) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
@@ -360,27 +354,12 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
         <GitHubStatusBanner className="mb-6" />
         
-        {/* Header Section - Repository name, back button, and date controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Back button - Returns to main dashboard */}
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            {/* Repository name - Formatted for display */}
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold truncate">
-                {formatRepoDisplayName(repoSlug.replace(/-/g, '/'))}
-              </h1>
-            </div>
-          </div>
+        {/* Header Section - Date controls */}
+        <div className="flex items-center justify-end">
           {/* Date controls - Today button, date picker, and refresh */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Today button - Quick jump to today's date */}
