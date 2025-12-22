@@ -14,9 +14,6 @@ import WorkflowCard, { IdleWorkflowCard } from "@/components/WorkflowCard";
 import DailyMetrics from "@/components/DailyMetrics";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 
-// Utility imports
-import { formatRepoDisplayName } from "@/lib/utils";
-
 // Hook imports
 import { useSession } from "@/lib/auth-client";
 import { 

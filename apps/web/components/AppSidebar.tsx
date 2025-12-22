@@ -81,9 +81,9 @@ export function AppSidebar() {
 
   // Active state logic
   const isSummaryActive = isRepoPage && (!repoPageType || repoPageType === 'summary');
-  const isWorkflowsActive = isRepoPage && repoPageType === 'workflows';
-  const isRunnersActive = isRepoPage && repoPageType === 'runners';
-  const isUsageActive = isRepoPage && repoPageType === 'usage';
+//   const isWorkflowsActive = isRepoPage && repoPageType === 'workflows';
+//   const isRunnersActive = isRepoPage && repoPageType === 'runners';
+//   const isUsageActive = isRepoPage && repoPageType === 'usage';
 
   // ============================================================================
   // Main Render

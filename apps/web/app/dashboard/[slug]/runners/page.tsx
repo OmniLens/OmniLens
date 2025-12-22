@@ -2,7 +2,7 @@
 
 // External library imports
 import { useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Zap } from "lucide-react";
 
 // Internal component imports
@@ -23,8 +23,6 @@ import { useSession } from "@/lib/auth-client";
  */
 export default function RepoRunnersPage() {
   const router = useRouter();
-  const params = useParams();
-  const repoSlug = params.slug as string;
   const { data: session, isPending } = useSession();
 
   // ============================================================================
