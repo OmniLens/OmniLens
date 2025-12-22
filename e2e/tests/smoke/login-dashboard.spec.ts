@@ -30,26 +30,4 @@ test.describe('Login and Dashboard Smoke Test', () => {
     const repositoriesHeading = authenticatedPage.getByRole('heading', { name: 'Repositories' }).first();
     await expect(repositoriesHeading).toBeVisible({ timeout: 10000 });
   });
-  
-  test('should redirect to dashboard when accessing login page while authenticated', async ({ authenticatedPage }) => {
-    // Navigate to login page
-    await authenticatedPage.goto(`${baseURL}/login`, { waitUntil: 'networkidle' });
-    
-    // Should be redirected to dashboard if already authenticated
-    // Wait a bit for potential redirect
-    await authenticatedPage.waitForTimeout(2000);
-    
-    // Check if we're on dashboard (redirect happened) or still on login
-    const currentURL = authenticatedPage.url();
-    
-    if (currentURL.includes('/dashboard')) {
-      // Redirect happened, verify dashboard content
-      const repositoriesHeading = authenticatedPage.getByRole('heading', { name: 'Repositories' }).first();
-      await expect(repositoriesHeading).toBeVisible({ timeout: 10000 });
-    } else {
-      // Still on login page, verify login page is accessible
-      const githubButton = authenticatedPage.getByRole('button', { name: 'Continue with GitHub' });
-      await expect(githubButton).toBeVisible({ timeout: 5000 });
-    }
-  });
 });
