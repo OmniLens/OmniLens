@@ -56,6 +56,23 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "1.2.0",
+    date: "2025-12-22",
+    type: "minor",
+    changes: {
+      added: [
+        "Sidebar navigation system with AppSidebar component for authenticated users",
+        "RepoSwitcher component for switching between repositories with dropdown menu",
+        "use-mobile hook for responsive mobile detection"
+      ],
+      changed: [
+        "BackButton component refactored for sidebar integration",
+        "Header component updated for sidebar compatibility",
+        "Components.json moved to apps/web directory"
+      ]
+    }
+  },
+  {
     version: "1.1.0",
     date: "2025-12-17",
     type: "minor",
