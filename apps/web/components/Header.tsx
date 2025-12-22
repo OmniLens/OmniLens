@@ -3,8 +3,8 @@
 // External library imports
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
-import { LogOut, LayoutDashboard, Github, BarChart3, ChevronRight, BookOpen } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { LogOut, Github, BookOpen } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,6 @@ import { useSession, signOut } from "@/lib/auth-client";
  */
 export default function Header() {
   const router = useRouter();
-  const pathname = usePathname();
   const { data: session, isPending } = useSession();
 
   // ============================================================================
@@ -90,35 +89,6 @@ export default function Header() {
               <span className="text-xl font-bold text-foreground">OmniLens</span>
             </Link>
 
-            {/* Navigation Links / Breadcrumbs */}
-            <nav className="hidden md:flex items-center gap-1">
-              <Link href="/dashboard">
-                <Button
-                  variant={pathname === '/dashboard' ? 'secondary' : pathname?.startsWith('/dashboard/') ? 'outline' : 'ghost'}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Repositories
-                </Button>
-              </Link>
-              {/* Breadcrumb separator and Workflows button - only shown on workflow dashboard pages */}
-              {pathname?.startsWith('/dashboard/') && pathname !== '/dashboard' && (
-                <>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />
-                  <Link href={pathname}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="gap-2"
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      Workflows
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </nav>
           </div>
 
           {/* Right Section - User Menu and Actions */}

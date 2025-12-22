@@ -1,11 +1,8 @@
 // External library imports
 import Image from "next/image";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 
 // Internal component imports
-import Header from "@/components/Header";
-import { Button } from "@/components/ui/button";
+import BackButton from "@/components/BackButton";
 import { Prose } from "@/components/prose";
 
 // Utility imports
@@ -59,21 +56,10 @@ export default async function PostPage({ params }: PostPageProps) {
   if (!data || !enrichedPost) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Header Section - Back button and page title */}
           <div className="flex items-center justify-between mb-8">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
-              asChild
-            >
-              <Link href="/blog">
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Link>
-            </Button>
+            <BackButton fallbackPath="/blog" />
             <h1 className="text-4xl font-bold">Post Not Found</h1>
             <div className="w-[72px]"></div> {/* Spacer to center the heading */}
           </div>
@@ -93,21 +79,10 @@ export default async function PostPage({ params }: PostPageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header Section - Back button and page title */}
         <div className="flex items-center justify-between mb-8">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2"
-            asChild
-          >
-            <Link href="/blog">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Link>
-          </Button>
+          <BackButton fallbackPath="/blog" />
           <h1 className="text-4xl font-bold">{post.title}</h1>
           <div className="w-[72px]"></div> {/* Spacer to center the heading */}
         </div>
