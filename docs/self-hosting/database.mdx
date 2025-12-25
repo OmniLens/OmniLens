@@ -1,0 +1,57 @@
+---
+title: Database Schema
+---
+
+OmniLens uses PostgreSQL to store repository and workflow data.
+
+## Tables
+
+The database contains two main tables:
+
+- **`repositories`**: Stores repository information, metadata, and user-added repos
+- **`workflows`**: Stores workflow definitions and metadata for persistence
+
+### Repositories Table
+
+- `id`: Primary key
+- `slug`: Unique repository identifier (owner-repo format)
+- `repo_path`: Full repository path (owner/repo)
+- `display_name`: Human-readable repository name
+- `html_url`: GitHub repository URL
+- `default_branch`: Repository's default branch
+- `avatar_url`: Repository owner's avatar
+- `added_at`: Timestamp when added
+- `updated_at`: Last updated timestamp
+
+### Workflows Table
+
+- `id`: Primary key
+- `repo_slug`: Foreign key to repositories
+- `workflow_id`: GitHub workflow ID
+- `workflow_name`: Workflow display name
+- `workflow_path`: Workflow file path
+- `workflow_state`: Active/disabled state
+- `created_at`: Timestamp when first saved
+- `updated_at`: Last updated timestamp
+
+## Database Commands
+
+### List all tables
+
+```bash
+psql -d omnilens -c "\dt"
+```
+
+### View table structure
+
+```bash
+psql -d omnilens -c "\d repositories"
+psql -d omnilens -c "\d workflows"
+```
+
+### Preview table data
+
+```bash
+psql -d omnilens -c "SELECT * FROM repositories LIMIT 5;"
+psql -d omnilens -c "SELECT * FROM workflows LIMIT 5;"
+```

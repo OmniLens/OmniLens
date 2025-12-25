@@ -1,0 +1,58 @@
+{
+    "$schema": "https://mintlify.com/docs.json",
+    "theme": "mint",
+    "name": "OmniLens",
+    "colors": {
+      "primary": "#ff0000"
+    },
+    "navigation": {
+      "tabs": [
+        {
+          "tab": "Welcome",
+          "pages": [
+            "home",
+            "features"
+          ]
+        },
+        {
+          "tab": "Getting Started",
+          "groups": [
+            {
+              "group": "Getting Started",
+              "pages": [
+                "using-omnilens/overview",
+                "using-omnilens/auth",
+                "using-omnilens/home-dashboard",
+                "using-omnilens/repo-dashboard",
+                "using-omnilens/github-actions-status"
+              ]
+            }
+          ]
+        },
+        {
+          "tab": "Self-Hosting",
+          "groups": [
+            {
+              "group": "Self-Hosting",
+              "pages": [
+                "self-hosting/overview",
+                "self-hosting/database"
+              ]
+            }
+          ]
+        },
+        {
+          "tab": "Contributing",
+          "groups": [
+            {
+              "group": "Contributing",
+              "pages": [
+                "contributing/guidelines",
+                "contributing/testing"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }

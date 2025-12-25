@@ -1,0 +1,79 @@
+---
+title: Test Suites
+description: An overview of the available test suites
+---
+
+# Frameworks
+
+We use the following frameworks:
+
+- **Unit tests:** Vitest with jsdom environment
+- **API tests:** Vitest with node environment
+- **E2E tests:** Playwright
+
+# Running tests
+
+## Unit tests
+
+Unit tests are located in `apps/web/__tests__/unit/` and test components, utilities, and hooks in isolation.
+
+```bash
+# Run unit tests
+bun run test:unit
+
+# Run with coverage
+bun run test:coverage:unit
+
+# Watch mode (re-run on file changes)
+bun run test:watch
+
+# Open test UI
+bun run test:ui
+```
+
+## API tests
+
+API tests are located in `apps/web/__tests__/api/routes/` and test Next.js API route handlers.
+
+```bash
+# Run API tests
+bun run test:api
+
+# Run with coverage
+bun run test:coverage:api
+```
+
+## E2E tests
+
+E2E tests are located in `e2e/tests/` and test the full application flow in a real browser environment.
+
+> **Note:** Playwright browsers are automatically installed via `postinstall` script when dependencies are installed.
+
+
+**Prerequisites:**
+- Set up environment variables in `e2e/.env` (see `e2e/README.md` for details)
+- Ensure PostgreSQL database is running and schema is initialized
+
+```bash
+# Run all E2E tests
+bun run test:e2e
+
+# Run smoke tests only
+bun run test:e2e:login
+
+# Run with UI (interactive)
+bun run test:e2e:ui
+
+# Run in debug mode
+bun run test:e2e:debug
+
+# Run in headed mode (see browser)
+bun run test:e2e:headed
+```
+
+> **Note:** Before running other E2E tests, authenticate first by running `bun run test:e2e:auth-setup` to save authenticated state.
+
+# GitHub Actions
+
+Each test suite has a corresponding GitHub Action workflow which run daily.
+Each workflow supports `workflow_dispatch`, which enables manual runs against committed branches.

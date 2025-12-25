@@ -1,0 +1,63 @@
+---
+title: Overview
+description: An overview on how to self-host OmniLens
+---
+
+## Prerequisites
+
+- Node.js 18+ or Bun
+- PostgreSQL (any installation method)
+- GitHub Personal Access Token with `repo` scope
+
+## Clone the repository
+
+```bash
+git clone https://github.com/your-username/omnilens.git
+cd omnilens
+```
+
+## Install dependencies
+
+```bash
+bun install
+```
+
+## Set up database
+
+The setup script automatically detects your PostgreSQL installation:
+
+```bash
+bun run setup
+```
+
+## Configure environment variables
+
+Copy the example file:
+
+```bash
+cp .env.example .env
+```
+
+Then update `.env` with your GitHub token and database configuration.
+
+## Set up GitHub OAuth App
+
+- Go to [GitHub Settings > Developer settings > OAuth Apps](https://github.com/settings/developers)
+- Create a new OAuth App with:
+  - Homepage URL: `http://localhost:3000`
+  - Authorization callback URL: `http://localhost:3000/api/auth/callback/github`
+- Copy the Client ID and Client Secret to your `.env`
+
+## Start the development server
+
+```bash
+bun dev
+```
+
+Navigate to [http://localhost:3000](http://localhost:3000)
+
+## Linting
+
+```bash
+bun run lint
+```

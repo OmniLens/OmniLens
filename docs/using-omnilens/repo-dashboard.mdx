@@ -1,0 +1,68 @@
+---
+title: Repository Dashboard
+---
+
+`insert image here <(''<)`
+
+## Date Selection
+
+The repository dashboard allows you to view workflow runs for any date. Use the date controls in the top-right corner:
+
+- **Today button**: Quickly jump to today's date
+- **Calendar picker**: Select any date to view historical workflow runs
+- **Refresh button**: Reload the page to fetch the latest data
+
+`insert image here <(''<)`
+
+## Daily Metrics Overview
+
+The dashboard displays four metric cards showing aggregated statistics for the selected date.
+
+`insert image here <(''<)`
+
+### Pass/Fail Rate
+
+A pie chart showing the success rate of workflow runs:
+- **Percentage**: Displayed in the center of the chart
+- **Passed runs**: Count of successful workflow runs
+- **Failed runs**: Count of failed workflow runs
+
+### Overview
+
+General workflow statistics:
+- **Workflows**: Total number of workflows configured in the repository
+- **Completed**: Total number of completed workflow runs
+- **Didn't run**: Number of workflows that didn't run on the selected date
+- **Total Runtime**: Cumulative runtime of all workflow runs (formatted as hours, minutes, and seconds)
+
+### Workflow Health
+
+Health status breakdown comparing today's runs with yesterday's:
+- **Consistent**: Workflows that are stable and passing
+- **Improved**: Workflows that got better compared to yesterday
+- **Regressed**: Workflows that got worse compared to yesterday
+- **Still failing**: Workflows that continue to fail
+
+### Runs by Hour
+
+A bar chart showing when workflows are most active throughout the day:
+- **Hourly distribution**: Stacked bars showing passed and failed runs per hour
+- **Activity patterns**: Identify peak workflow activity times
+
+## Workflow Cards
+
+The dashboard displays individual workflow cards organized into two sections.
+
+`insert image here <(''<)`
+
+### Active Workflows
+
+Workflows that have runs for the selected date. Each card shows:
+- Workflow name and status
+- Health status indicator
+- Run count and timing information
+- Link to view the workflow run on GitHub
+
+### Idle Workflows
+
+Workflows that have no runs for the selected date. These workflows are displayed separately to help you identify workflows that may need attention or scheduling adjustments.

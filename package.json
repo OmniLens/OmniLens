@@ -13,6 +13,7 @@
     "lint:es": "turbo run lint:es --filter=@omni/web",
     "lint:ts": "turbo run lint:ts --filter=@omni/web",
     "setup": "turbo run setup --filter=@omni/web",
+    "postinstall": "playwright install chromium",
     "test": "turbo run test --filter=@omni/web",
     "test:health": "turbo run test:health --filter=@omni/web",
     "test:auth:basic": "turbo run test:auth:basic --filter=@omni/web",
