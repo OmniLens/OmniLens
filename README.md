@@ -8,6 +8,8 @@
 
 An intelligent dashboard that transforms GitHub Actions chaos into actionable insights. OmniLens gives you complete visibility into your CI/CD pipeline health, helping you identify bottlenecks, track success rates, and optimize your development workflow. Just connect your repositories and instantly see which workflows are failing, when they're running, and how they're performing over time.
 
+[Our documentation can be found here, powered by Mintlify 💚](https://omnilens-626cb878.mintlify.app/home)
+
 ## ✨ Features
 
 - **Repository Management**: Add, validate, and remove GitHub repositories from dashboard
