@@ -10,8 +10,7 @@
         {
           "tab": "Welcome",
           "pages": [
-            "home",
-            "features"
+            "home"
           ]
         },
         {
@@ -20,7 +19,6 @@
             {
               "group": "Getting Started",
               "pages": [
-                "using-omnilens/overview",
                 "using-omnilens/auth",
                 "using-omnilens/home-dashboard",
                 "using-omnilens/repo-dashboard",
