@@ -1,27 +1,37 @@
 ---
-title: Home Dashboard
+title: "Home Dashboard"
 ---
 
-`insert image here <(''<)`
+<img
+  src="/images/home.png"
+  alt="Home"
+  title="Home"
+  style={{ width:"100%" }}
+/>
 
 ## Add a Repository Card
 
-`insert gif here <(''<)`
+Enter a GitHub repository URL or `owner/repo` format in the add repository dialog.
 
-Enter a GitHub repository URL or `owner/repo` format in the add repository dialog.  
-OmniLens accepts both formats and will:
+![Add Repo](/add-repo.png)
+
+OmniLens will:
 
 1. **Validation**: Verifies the repository exists and you have access to it
 2. **Addition**: Adds the repository card to your dashboard
 3. **Data Fetching**: Discovers and fetches workflow definitions to display initial run data
 
-> You can add up to 12 **public** repository cards to your dashboard
+<Tip>
+  You can add up to 12 public repository cards to your dashboard.
+</Tip>
 
 ## Repository Card Overview
 
-Each repository card on your dashboard provides a compact overview of your repository's workflow activity:
+Each repository card provides a compact overview of your repository's workflow activity.
 
-### Metrics Display
+![Repo Card](/repo-card.png)
+
+### Metrics
 
 The repository card displays the following metrics:
 
@@ -31,7 +41,7 @@ The repository card displays the following metrics:
 - **Failed Runs**: Count of workflow runs that failed
 - **In Progress Runs**: Count of workflow runs currently running
 
-### Card Actions
+### Actions
 
 Each repository card includes interactive elements:
 

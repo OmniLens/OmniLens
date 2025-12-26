@@ -1,28 +1,26 @@
 ---
-title: Repository Dashboard
+title: "Repository Dashboard"
+sidebarTitle: "test"
 ---
 
-`insert image here <(''<)`
+![Repo Dash](/images/repo-dash.png)
 
 ## Date Selection
 
-The repository dashboard allows you to view workflow runs for any date. Use the date controls in the top-right corner:
+The dashboard allows you to view workflow runs for any date. Use the date controls in the top-right corner:
 
 - **Today button**: Quickly jump to today's date
 - **Calendar picker**: Select any date to view historical workflow runs
 - **Refresh button**: Reload the page to fetch the latest data
 
-`insert image here <(''<)`
-
 ## Daily Metrics Overview
 
 The dashboard displays four metric cards showing aggregated statistics for the selected date.
 
-`insert image here <(''<)`
-
 ### Pass/Fail Rate
 
 A pie chart showing the success rate of workflow runs:
+
 - **Percentage**: Displayed in the center of the chart
 - **Passed runs**: Count of successful workflow runs
 - **Failed runs**: Count of failed workflow runs
@@ -30,6 +28,7 @@ A pie chart showing the success rate of workflow runs:
 ### Overview
 
 General workflow statistics:
+
 - **Workflows**: Total number of workflows configured in the repository
 - **Completed**: Total number of completed workflow runs
 - **Didn't run**: Number of workflows that didn't run on the selected date
@@ -38,6 +37,7 @@ General workflow statistics:
 ### Workflow Health
 
 Health status breakdown comparing today's runs with yesterday's:
+
 - **Consistent**: Workflows that are stable and passing
 - **Improved**: Workflows that got better compared to yesterday
 - **Regressed**: Workflows that got worse compared to yesterday
@@ -46,23 +46,32 @@ Health status breakdown comparing today's runs with yesterday's:
 ### Runs by Hour
 
 A bar chart showing when workflows are most active throughout the day:
+
 - **Hourly distribution**: Stacked bars showing passed and failed runs per hour
 - **Activity patterns**: Identify peak workflow activity times
 
 ## Workflow Cards
 
-The dashboard displays individual workflow cards organized into two sections.
+## Workflow  Card Overview
 
-`insert image here <(''<)`
+Each workflow card provides a compact overview of the workflow's activity.
 
-### Active Workflows
+![Workflow Card](/workflow-card.png)
 
-Workflows that have runs for the selected date. Each card shows:
-- Workflow name and status
-- Health status indicator
-- Run count and timing information
-- Link to view the workflow run on GitHub
+### Metrics
 
-### Idle Workflows
+The repository card displays the following metrics:
 
-Workflows that have no runs for the selected date. These workflows are displayed separately to help you identify workflows that may need attention or scheduling adjustments.
+- **Status badge**: Visual indicator showing Pass, Fail, Running, or Idle
+- **Run count badge**: Shows when a workflow runs multiple times
+- **Health status indicator**: Compares today's performance with yesterday (Consistent, Improved, Regressed, or Still Failing)
+- **Duration**: The total runtime of the workflow execution
+
+### Actions
+
+Each repository card includes interactive elements:
+
+- **View button**: Opens the workflow run on GitHub Actions
+- **Run count badge**: Click to view all runs
+
+![Workflow Runs](/images/workflow-runs.png)
