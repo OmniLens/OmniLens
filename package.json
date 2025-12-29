@@ -8,18 +8,14 @@
   ],
   "scripts": {
     "dev": "turbo run dev --filter=@omni/web",
-    "dev:backoffice": "turbo run dev --filter=@omni/backoffice",
-    "dev:backoffice:local": "turbo run dev:local --filter=@omni/backoffice",
-    "dev:backoffice:staging": "turbo run dev:staging --filter=@omni/backoffice",
-    "dev:backoffice:prod": "turbo run dev:prod --filter=@omni/backoffice",
     "build": "turbo run build --filter=@omni/web",
-    "build:backoffice": "turbo run build --filter=@omni/backoffice",
     "lint": "turbo run lint --filter=@omni/web",
-    "lint:backoffice": "turbo run lint --filter=@omni/backoffice",
     "lint:es": "turbo run lint:es --filter=@omni/web",
     "lint:ts": "turbo run lint:ts --filter=@omni/web",
     "setup": "turbo run setup --filter=@omni/web",
+
     "postinstall": "playwright install chromium",
+
     "test": "turbo run test --filter=@omni/web",
     "test:health": "turbo run test:health --filter=@omni/web",
     "test:auth:basic": "turbo run test:auth:basic --filter=@omni/web",
@@ -32,8 +28,8 @@
     "test:e2e:auth-setup": "cd e2e && playwright test tests/auth-setup.spec.ts --headed"
   },
   "devDependencies": {
-    "turbo": "^2.6.0",
     "@playwright/test": "^1.57.0",
-    "dotenv": "^16.6.1"
+    "dotenv": "^16.6.1",
+    "turbo": "^2.6.0"
   }
 }

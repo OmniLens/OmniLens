@@ -56,6 +56,25 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "1.3.0",
+    date: "2025-12-29",
+    type: "minor",
+    changes: {
+      added: [
+        "Holographic foil animation effects for Vercel OSS Program badge",
+        "CSS animations for foil shimmer and rotate effects",
+        "Backoffice development and build scripts in root package.json"
+      ],
+      changed: [
+        "Homepage redesigned with simplified features section and cleaner layout",
+        "Feature cards replaced interactive previews with concise capability descriptions",
+        "Sidebar theme updated with dark green color scheme",
+        "GitHub link in navigation changed from icon to text label",
+        "Turbo.json configuration extended with backoffice tasks and setup environment variables"
+      ]
+    }
+  },
+  {
     version: "1.2.0",
     date: "2025-12-22",
     type: "minor",

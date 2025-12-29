@@ -7,7 +7,7 @@ import { ArrowRight, Radio, Eye, FolderOpen, BarChart3 } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 // ============================================================================
 // Main Component
