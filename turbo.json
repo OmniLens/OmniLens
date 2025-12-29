@@ -89,6 +89,25 @@
     },
     "dev": {
       "cache": false
+    },
+    "dev:local": {
+      "cache": false
+    },
+    "dev:staging": {
+      "cache": false
+    },
+    "dev:prod": {
+      "cache": false
+    },
+    "setup": {
+      "cache": false,
+      "env": [
+        "DB_USER",
+        "DB_HOST",
+        "DB_NAME",
+        "DB_PASSWORD",
+        "DB_PORT"
+      ]
     }
   }
 }

@@ -50,6 +50,17 @@ body {
   100% { transform: translateX(100%); }
 }
 
+@keyframes foil-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes foil-rotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 @keyframes slide-in-down {
   0% { 
     transform: translateY(-100%); 
@@ -69,6 +80,15 @@ body {
   animation: shimmer 2s ease-in-out infinite;
 }
 
+.animate-foil-shimmer {
+  animation: foil-shimmer 3s ease-in-out infinite;
+}
+
+.animate-foil-rotate {
+  animation: foil-rotate 8s ease-in-out infinite;
+  background-size: 200% 200%;
+}
+
 .animate-slide-in-down {
   animation: slide-in-down 0.3s ease-out;
 }
@@ -85,17 +105,17 @@ body {
 
 @layer base {
   :root {
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-background: 150 100% 0.4%;
+    --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
+    --sidebar-accent: 0 0% 5%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 8%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --sidebar-background: 0 0% 2%;
+    --sidebar-background: 150 100% 0.4%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
