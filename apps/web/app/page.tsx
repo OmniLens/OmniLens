@@ -3,11 +3,10 @@
 // External library imports
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Radio, Eye, FolderOpen, BarChart3 } from "lucide-react";
+import { Radio, FolderOpen, BarChart3 } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import VercelBadge from "@/components/VercelBadge";
 import FeatureCard from "@/components/FeatureCard";
 import GetStartedButton from "@/components/GetStartedButton";
