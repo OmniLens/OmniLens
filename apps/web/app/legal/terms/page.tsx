@@ -140,7 +140,6 @@ export default function TermsOfServicePage() {
               <li><strong>GitHub:</strong> For repository and workflow data access</li>
               <li><strong>Vercel:</strong> For hosting and analytics</li>
               <li><strong>Neon:</strong> For PostgreSQL database hosting and management</li>
-              <li><strong>Sentry:</strong> For error monitoring and performance tracking</li>
             </ul>
             <p className="mt-4">
               Your use of these services is subject to their respective terms of service and privacy policies.

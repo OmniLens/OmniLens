@@ -6,10 +6,8 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { SidebarLayout } from "@/components/SidebarLayout";
-import * as Sentry from '@sentry/nextjs';
 import type { Metadata } from "next";
 
-// Add or edit your "generateMetadata" to include the Sentry trace data:
 export function generateMetadata(): Metadata {
   return {
     title: "OmniLens",
@@ -19,9 +17,6 @@ export function generateMetadata(): Metadata {
       shortcut: "/omnilens.jpeg",
       apple: "/omnilens.jpeg",
     },
-    other: {
-      ...Sentry.getTraceData()
-    }
   };
 }
 

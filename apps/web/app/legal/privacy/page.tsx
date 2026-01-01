@@ -86,7 +86,6 @@ export default function PrivacyPolicyPage() {
             <ul className="list-disc pl-6">
               <li><strong>Vercel Analytics:</strong> Website usage and performance analytics</li>
               <li><strong>Neon:</strong> PostgreSQL database hosting and data storage</li>
-              <li><strong>Sentry:</strong> Error monitoring and performance tracking</li>
               <li><strong>GitHub API:</strong> Repository and workflow data (only for repositories you explicitly add)</li>
             </ul>
           </section>
@@ -138,7 +137,7 @@ export default function PrivacyPolicyPage() {
               We do not sell, trade, or otherwise transfer your personal information to third parties, except:
             </p>
             <ul className="list-disc pl-6 mt-4">
-              <li><strong>Service Providers:</strong> We may share data with trusted third-party services (Vercel, Neon, Sentry) that help us operate our service</li>
+              <li><strong>Service Providers:</strong> We may share data with trusted third-party services (Vercel, Neon) that help us operate our service</li>
               <li><strong>Legal Requirements:</strong> We may disclose information if required by law or to protect our rights</li>
               <li><strong>Business Transfers:</strong> In the event of a merger or acquisition, user data may be transferred</li>
             </ul>
