@@ -3,11 +3,13 @@
 // External library imports
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Radio, Eye, FolderOpen, BarChart3 } from "lucide-react";
+import { Radio, FolderOpen, BarChart3 } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import VercelBadge from "@/components/VercelBadge";
+import FeatureCard from "@/components/FeatureCard";
+import GetStartedButton from "@/components/GetStartedButton";
 
 // ============================================================================
 // Main Component
@@ -94,71 +96,14 @@ export default function LandingPage() {
 
             {/* CTA Buttons - Primary call-to-action */}
             <div className="flex flex-col gap-4 justify-center items-center">
-              <Link 
-                href="/login"
-                className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white hover:bg-white/20 px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-white/25"
-              >
-                Get Started
-                <ArrowRight className="h-5 w-5" />
-              </Link>
+              <GetStartedButton />
             </div>
           </div>
         </div>
       </div>
 
       {/* Vercel OSS Program Badge */}
-      <div className="relative z-10 py-12 px-6 md:px-12 lg:px-16 xl:px-24">
-        <div className="w-full max-w-2xl mx-auto text-center">
-          <a 
-            href="https://vercel.com/blog/vercel-open-source-program-fall-2025-cohort#omnilens" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-block group relative rounded-xl p-5 transition-all duration-200 hover:scale-105 overflow-hidden"
-            style={{
-              background: 'linear-gradient(135deg, #2a1a0a 0%, #3a2a1a 25%, #4a3a2a 50%, #3a2a1a 75%, #2a1a0a 100%)',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(255, 215, 0, 0.15), 0 0 25px rgba(255, 165, 0, 0.2), 0 0 15px rgba(255, 20, 147, 0.15)',
-            }}
-          >
-            {/* Foil shimmer overlay */}
-            <div 
-              className="absolute inset-0 opacity-30 animate-foil-shimmer rounded-xl"
-              style={{
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
-                backgroundSize: '200% 100%',
-              }}
-            />
-            {/* Rainbow holographic gradient animation */}
-            <div 
-              className="absolute inset-0 opacity-35 animate-foil-rotate rounded-xl"
-              style={{
-                background: 'linear-gradient(45deg, #ff006e, #8338ec, #3a86ff, #06ffa5, #ffbe0b, #ff006e)',
-                backgroundSize: '200% 200%',
-              }}
-            />
-            {/* Gold base overlay */}
-            <div 
-              className="absolute inset-0 opacity-25 rounded-xl"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 223, 0, 0.25) 25%, rgba(255, 215, 0, 0.3) 50%, rgba(255, 223, 0, 0.25) 75%, rgba(255, 215, 0, 0.3) 100%)',
-              }}
-            />
-            {/* Rainbow color overlay - shifting colors */}
-            <div 
-              className="absolute inset-0 opacity-30 rounded-xl animate-foil-rotate"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255, 0, 110, 0.3) 0%, rgba(131, 56, 236, 0.3) 20%, rgba(58, 134, 255, 0.3) 40%, rgba(6, 255, 165, 0.3) 60%, rgba(255, 190, 11, 0.3) 80%, rgba(255, 0, 110, 0.3) 100%)',
-                backgroundSize: '200% 200%',
-              }}
-            />
-            {/* Badge image - on top layer */}
-            <img 
-              alt="Vercel OSS Program" 
-              src="https://vercel.com/oss/program-badge.svg" 
-              className="relative z-10 h-7 sm:h-8 transition-transform duration-200 group-hover:scale-105"
-            />
-          </a>
-        </div>
-      </div>
+      <VercelBadge />
 
       {/* Features Section - Unified feature cards */}
       <div className="relative px-6 md:px-12 lg:px-16 xl:px-24 py-12">
@@ -175,62 +120,24 @@ export default function LandingPage() {
 
           {/* Feature Cards - Three major product areas */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Feature 1: Repository Management - Green */}
-            <Card className="border-2 border-green-500 bg-card h-full">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-green-600 to-green-700 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/25 flex-shrink-0">
-                    <FolderOpen className="h-7 w-7 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-xl font-semibold text-white mb-2">
-                      Repository Management
-                    </CardTitle>
-                    <p className="text-gray-300 leading-relaxed">
-                      Add, validate, and manage repositories from a central dashboard. Keep track of all your GitHub repositories in one place.
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-
-            {/* Feature 2: Signal Ingestion - Blue */}
-            <Card className="border-2 border-blue-500 bg-card h-full">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25 flex-shrink-0">
-                    <Radio className="h-7 w-7 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-xl font-semibold text-white mb-2">
-                      Signal Ingestion
-                    </CardTitle>
-                    <p className="text-gray-300 leading-relaxed">
-                      Ingest workflow signals from tests, checks, and jobs. Collect comprehensive data from all your GitHub Actions workflows.
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-
-            {/* Feature 3: Visualization of Metrics and State - Purple */}
-            <Card className="border-2 border-purple-500 bg-card h-full">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-800 to-purple-900 rounded-xl flex items-center justify-center shadow-lg shadow-purple-800/25 flex-shrink-0">
-                    <BarChart3 className="h-7 w-7 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-xl font-semibold text-white mb-2">
-                      Metrics & State Visualization
-                    </CardTitle>
-                    <p className="text-gray-300 leading-relaxed">
-                      Track workflow health using success rates, run counts, runtimes, and stability trends.
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+            <FeatureCard
+              icon={FolderOpen}
+              title="Repository Management"
+              description="Add and manage repositories from a central dashboard."
+              colorTheme="green"
+            />
+            <FeatureCard
+              icon={Radio}
+              title="Signal Ingestion"
+              description="Ingest workflow signals from tests, checks, and jobs. Collect comprehensive data from all your GitHub Actions workflows."
+              colorTheme="blue"
+            />
+            <FeatureCard
+              icon={BarChart3}
+              title="Metrics & State Visualization"
+              description="Track workflow health using success rates, run counts, runtimes, and stability trends."
+              colorTheme="purple"
+            />
           </div>
         </div>
       </div>
@@ -238,12 +145,6 @@ export default function LandingPage() {
       {/* CTA Section - Final call-to-action */}
       <div className="relative px-6 md:px-12 lg:px-16 xl:px-24 py-12">
         <div className="w-full max-w-[1920px] mx-auto text-center relative z-10">
-          {/* Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center transition-transform duration-300 shadow-lg shadow-slate-500/25">
-              <Eye className="h-6 w-6 text-white" />
-            </div>
-          </div>
           
           {/* Heading and Description */}
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
@@ -255,13 +156,7 @@ export default function LandingPage() {
           </p>
           
           {/* CTA Button */}
-          <Link 
-            href="/login"
-            className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white hover:bg-white/20 px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-white/25"
-          >
-            Get Started
-            <ArrowRight className="h-5 w-5" />
-          </Link>
+          <GetStartedButton />
         </div>
       </div>
 

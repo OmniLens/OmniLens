@@ -42,7 +42,6 @@ export default defineConfig({
         '**/e2e/**',
         '**/components/ui/**',
         '**/instrumentation*.ts',
-        '**/sentry*.ts',
         '**/runtime-init.js',
         '**/init-db.js',
         '**/scripts/**',
