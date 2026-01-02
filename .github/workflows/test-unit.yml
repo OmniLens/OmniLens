@@ -26,8 +26,8 @@ jobs:
       - name: 🧰 Install dependencies
         run: bun install
 
-      - name: 🧪 Run unit tests with coverage
-        run: bun run test:unit
+      - name: 🧪 Run Unit Tests
+        run: bun run test:jest:ci
         working-directory: apps/web
 
       - name: 📊 Upload coverage reports

@@ -7,40 +7,52 @@ description: An overview of the available test suites
 
 We use the following frameworks:
 
-- **Unit tests:** Vitest with jsdom environment
-- **API tests:** Vitest with node environment
+- **Unit tests:** Jest with jsdom environment
+- **Integration tests:** Jest with node environment
 - **E2E tests:** Playwright
+- **API integration tests:** Bun (functional tests)
 
 # Running tests
 
-## Unit tests
+## Unit and Integration tests
 
-Unit tests are located in `apps/web/__tests__/unit/` and test components, utilities, and hooks in isolation.
+Jest tests are located in `apps/web/__tests__/` and test components, utilities, hooks, and API routes.
+
+**Test Structure:**
+- `__tests__/unit/` - Unit tests for pure functions, hooks, and components
+- `__tests__/integration/` - Integration tests for API routes and library functions
 
 ```bash
-# Run unit tests
-bun run test:unit
+# Run all Jest tests
+bun run test:jest
 
 # Run with coverage
-bun run test:coverage:unit
+bun run test:jest:coverage
 
 # Watch mode (re-run on file changes)
-bun run test:watch
+bun run test:jest:watch
 
-# Open test UI
-bun run test:ui
+# CI mode (no watch, with coverage)
+bun run test:jest:ci
 ```
 
-## API tests
+**Test Environments:**
+- Unit tests (components, hooks): Run in `jsdom` environment (browser-like)
+- Integration tests (API routes): Run in `node` environment (server-side)
+- The environment is automatically selected based on test file location
 
-API tests are located in `apps/web/__tests__/api/routes/` and test Next.js API route handlers.
+## API Integration tests
+
+Bun integration tests are located in `tests/` (root directory) and test API endpoints with real database connections.
 
 ```bash
-# Run API tests
-bun run test:api
+# Run all integration tests
+bun run test
 
-# Run with coverage
-bun run test:coverage:api
+# Run specific tests
+bun run test:health
+bun run test:auth:basic
+bun run test:github-status
 ```
 
 ## E2E tests
@@ -72,6 +84,58 @@ bun run test:e2e:headed
 ```
 
 > **Note:** Before running other E2E tests, authenticate first by running `bun run test:e2e:auth-setup` to save authenticated state.
+
+## Writing Tests
+
+### Unit Tests
+
+Unit tests should be placed in `__tests__/unit/` mirroring the source structure.
+
+**Example - Utility Test:**
+```typescript
+import { describe, it, expect } from '@jest/globals';
+import { formatRepoDisplayName } from '@/lib/utils';
+
+describe('formatRepoDisplayName', () => {
+  it('should format repository name', () => {
+    expect(formatRepoDisplayName('owner/my-repo')).toBe('My Repo');
+  });
+});
+```
+
+**Example - Component Test:**
+```typescript
+import { describe, it, expect } from '@jest/globals';
+import { render, screen } from '@testing-library/react';
+import { RepositoryCard } from '@/components/RepositoryCard';
+
+describe('RepositoryCard', () => {
+  it('should render repository name', () => {
+    render(<RepositoryCard repo={mockRepo} />);
+    expect(screen.getByText('My Repo')).toBeInTheDocument();
+  });
+});
+```
+
+### Integration Tests
+
+Integration tests should be placed in `__tests__/integration/` mirroring the route structure.
+
+**Example - API Route Test:**
+```typescript
+import { describe, it, expect } from '@jest/globals';
+import { GET } from '@/app/api/health/route';
+
+describe('GET /api/health', () => {
+  it('should return healthy status', async () => {
+    const response = await GET();
+    const data = await response.json();
+    expect(data.status).toBe('healthy');
+  });
+});
+```
+
+For more detailed testing guidelines, see [`apps/web/TEST_PLAN.md`](../../apps/web/TEST_PLAN.md).
 
 # GitHub Actions
 

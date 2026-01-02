@@ -56,6 +56,30 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "1.4.0",
+    date: "2026-01-02",
+    type: "minor",
+    changes: {
+      added: [
+        "Jest unit testing framework (v29.7.0) with comprehensive configuration",
+        "Jest test infrastructure with mocks for ESM modules (nuqs, better-auth, runtime-init)",
+        "Jest test scripts (test:jest, test:jest:watch, test:jest:coverage, test:jest:ci)",
+        "Placeholder test files for coverage baseline tracking",
+        "GitHub Actions workflow for Jest unit tests with coverage reporting"
+      ],
+      changed: [
+        "Removed Vitest testing framework and all related dependencies",
+        "Updated TypeScript configuration to use Jest types instead of Vitest",
+        "Updated .gitignore to allow Next.js coverage route directories while ignoring Jest coverage output",
+        "Test unit workflow now runs Jest tests instead of Vitest"
+      ],
+      fixed: [
+        "Window.matchMedia mock for useIsMobile hook in Jest test environment",
+        "ESM module compatibility issues in Jest test environment"
+      ]
+    }
+  },
+  {
     version: "1.3.0",
     date: "2025-12-29",
     type: "minor",

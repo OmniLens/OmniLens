@@ -55,7 +55,10 @@ temp/
 .env.sentry-build-plugin
 
 # Test Coverage
+# Ignore Jest coverage output directories (e.g., apps/web/coverage/)
+# But allow Next.js route directories (e.g., app/dashboard/[slug]/coverage/)
 coverage/
+!**/app/**/coverage/
 *.lcov
 
 # Playwright
