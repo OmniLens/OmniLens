@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Github, BookOpen, FileText } from "lucide-react";
+import { LayoutDashboard, LogOut, Github, BookOpen, FileText, BookCheck, FileCheck } from "lucide-react";
 
 // Internal component imports
 import {
@@ -17,6 +17,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -78,9 +81,12 @@ export function AppSidebar() {
   const isRepoPage = pathname?.startsWith('/dashboard/') && pathname !== '/dashboard';
   const repoSlug = isRepoPage ? pathname.split('/').slice(2)[0] : null;
   const repoPageType = isRepoPage ? pathname.split('/').slice(3)[0] || 'summary' : null;
+  const testingSubPage = isRepoPage && repoPageType === 'testing' ? pathname.split('/').slice(4)[0] : null;
 
   // Active state logic
   const isSummaryActive = isRepoPage && (!repoPageType || repoPageType === 'summary');
+  const isTestingActive = isRepoPage && repoPageType === 'testing' && !testingSubPage;
+  const isUnitTestsActive = isRepoPage && repoPageType === 'testing' && testingSubPage === 'unit';
 //   const isWorkflowsActive = isRepoPage && repoPageType === 'workflows';
 //   const isRunnersActive = isRepoPage && repoPageType === 'runners';
 //   const isUsageActive = isRepoPage && repoPageType === 'usage';
@@ -140,6 +146,27 @@ export function AppSidebar() {
                         <span>Summary</span>
                       </Link>
                     </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  {/* Testing - Links to /dashboard/[slug]/testing with sub-items */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isTestingActive || isUnitTestsActive} tooltip="Testing">
+                      <Link href={`/dashboard/${repoSlug}/testing`}>
+                        <BookCheck />
+                        <span>Testing</span>
+                      </Link>
+                    </SidebarMenuButton>
+                    <SidebarMenuSub>
+                      {/* Unit Tests - Links to /dashboard/[slug]/testing/unit */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild isActive={isUnitTestsActive}>
+                          <Link href={`/dashboard/${repoSlug}/testing/unit`}>
+                            <FileCheck />
+                            <span>Unit Tests</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
                   </SidebarMenuItem>
 
                   {/* Workflows - Links to /dashboard/[slug]/workflows */}
