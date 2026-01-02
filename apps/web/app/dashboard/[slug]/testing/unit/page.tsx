@@ -406,7 +406,7 @@ export default function UnitTestsPage() {
         // Set error message if coverage data is missing
         // Check for file not found errors in dataSource attempts
         const hasFileNotFoundError = data.dataSource?.attempted?.some(
-          attempt => !attempt.success && attempt.error && attempt.error.includes('File not found')
+          (attempt: { success: boolean; error?: string }) => !attempt.success && attempt.error && attempt.error.includes('File not found')
         );
         
         if (data.error || !data.hasCoverageData || hasFileNotFoundError) {

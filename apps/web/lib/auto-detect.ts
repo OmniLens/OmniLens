@@ -442,7 +442,9 @@ async function getCachedPnpmCatalogs(
  * @param repo - Repository name
  * @param userId - User ID for authentication
  * @returns Workspace patterns array or null if file doesn't exist
+ * @deprecated This function is not currently used but kept for potential future use
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function readPnpmWorkspaceYaml(
   owner: string,
   repo: string,
@@ -513,7 +515,9 @@ async function readPnpmWorkspaceYaml(
  * @param repo - Repository name
  * @param userId - User ID for authentication
  * @returns Workspace patterns array or null if file doesn't exist
+ * @deprecated This function is not currently used but kept for potential future use
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function readLernaJson(
   owner: string,
   repo: string,
@@ -540,7 +544,9 @@ async function readLernaJson(
 /**
  * Read pnpm-workspace.yaml from local file system
  * @returns Workspace patterns array or null if file doesn't exist
+ * @deprecated This function is not currently used but kept for potential future use
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function readPnpmWorkspaceYamlLocal(): Promise<string[] | null> {
   try {
     const { readFileSync, existsSync } = await import('fs');
@@ -595,7 +601,9 @@ async function readPnpmWorkspaceYamlLocal(): Promise<string[] | null> {
 /**
  * Read lerna.json from local file system
  * @returns Workspace patterns array or null if file doesn't exist
+ * @deprecated This function is not currently used but kept for potential future use
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function readLernaJsonLocal(): Promise<string[] | null> {
   try {
     const { readFileSync, existsSync } = await import('fs');

@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 import pluginReact from "eslint-plugin-react";
+import pluginReactHooks from "eslint-plugin-react-hooks";
 
 export default [
   {
@@ -21,9 +22,11 @@ export default [
   {
     plugins: {
       react: pluginReact,
+      "react-hooks": pluginReactHooks,
     },
     rules: {
       ...pluginReact.configs.recommended.rules,
+      ...pluginReactHooks.configs.recommended.rules,
       // Disable React JSX scope requirement for Next.js
       "react/react-in-jsx-scope": "off",
       // Disable prop-types for TypeScript projects

@@ -1,7 +1,7 @@
 'use client';
 
 // External library imports
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import SwaggerUI to avoid SSR issues
@@ -24,11 +24,9 @@ import 'swagger-ui-react/swagger-ui.css';
  * Fetches OpenAPI specification from /api/openapi endpoint.
  */
 export default function ApiDocsPage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Use lazy initializer to check if mounted (client-side)
+  // This avoids the need for useEffect to set mounted state
+  const mounted = useState(() => typeof window !== 'undefined')[0];
 
   return (
     <div className="min-h-screen bg-white">
