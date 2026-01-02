@@ -48,7 +48,7 @@ import { useSession, signOut } from "@/lib/auth-client";
 /**
  * AppSidebar component
  * Main navigation sidebar for authenticated users
- * Displays logo, navigation items (Summary, Workflows, Runners, Usage), and user menu
+ * Displays logo, navigation items (Summary, Testing Frameworks, Unit Tests), and user menu
  * Responsive design with collapsible functionality
  */
 export function AppSidebar() {
@@ -81,12 +81,12 @@ export function AppSidebar() {
   const isRepoPage = pathname?.startsWith('/dashboard/') && pathname !== '/dashboard';
   const repoSlug = isRepoPage ? pathname.split('/').slice(2)[0] : null;
   const repoPageType = isRepoPage ? pathname.split('/').slice(3)[0] || 'summary' : null;
-  const testingSubPage = isRepoPage && repoPageType === 'testing' ? pathname.split('/').slice(4)[0] : null;
+  const repoPageSubType = isRepoPage ? pathname.split('/').slice(4)[0] : null;
 
   // Active state logic
   const isSummaryActive = isRepoPage && (!repoPageType || repoPageType === 'summary');
-  const isTestingActive = isRepoPage && repoPageType === 'testing' && !testingSubPage;
-  const isUnitTestsActive = isRepoPage && repoPageType === 'testing' && testingSubPage === 'unit';
+  const isTestingActive = isRepoPage && repoPageType === 'testing';
+  const isUnitTestsActive = isRepoPage && repoPageType === 'testing' && repoPageSubType === 'unit';
 //   const isWorkflowsActive = isRepoPage && repoPageType === 'workflows';
 //   const isRunnersActive = isRepoPage && repoPageType === 'runners';
 //   const isUsageActive = isRepoPage && repoPageType === 'usage';
@@ -148,12 +148,12 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  {/* Testing - Links to /dashboard/[slug]/testing with sub-items */}
+                  {/* Testing - Links to /dashboard/[slug]/testing with Unit Tests as submenu */}
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isTestingActive || isUnitTestsActive} tooltip="Testing">
+                    <SidebarMenuButton asChild isActive={isTestingActive} tooltip="Testing Frameworks">
                       <Link href={`/dashboard/${repoSlug}/testing`}>
                         <BookCheck />
-                        <span>Testing</span>
+                        <span>Testing Frameworks</span>
                       </Link>
                     </SidebarMenuButton>
                     <SidebarMenuSub>

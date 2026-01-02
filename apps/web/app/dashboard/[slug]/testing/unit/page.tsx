@@ -3,7 +3,7 @@
 // External library imports
 import { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { FileCheck, RefreshCw, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { FileCheck, RefreshCw, AlertCircle, ChevronDown, ChevronUp, HardDrive, Cloud } from "lucide-react";
 
 // Internal component imports
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,11 +43,73 @@ interface CoverageData {
       version: string;
     };
   };
+  hasCoverageData?: boolean;
+  error?: string;
+  dataSource?: {
+    attempted: Array<{
+      source: 'repository';
+      path: string;
+      success: boolean;
+      error?: string;
+    }>;
+    used: 'repository' | 'none';
+  };
 }
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/**
+ * Framework cache key for sessionStorage
+ */
+function getFrameworkCacheKey(repoSlug: string, dataSource: 'local' | 'remote'): string {
+  return `framework_cache_${repoSlug}_${dataSource}`;
+}
+
+/**
+ * Get cached framework info from sessionStorage
+ */
+function getCachedFramework(repoSlug: string, dataSource: 'local' | 'remote'): CoverageData['framework'] | null {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const cached = sessionStorage.getItem(getFrameworkCacheKey(repoSlug, dataSource));
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (error) {
+    console.error('Error reading framework cache:', error);
+  }
+  
+  return null;
+}
+
+/**
+ * Cache framework info in sessionStorage
+ */
+function setCachedFramework(repoSlug: string, dataSource: 'local' | 'remote', framework: CoverageData['framework']): void {
+  if (typeof window === 'undefined' || !framework) return;
+  
+  try {
+    sessionStorage.setItem(getFrameworkCacheKey(repoSlug, dataSource), JSON.stringify(framework));
+  } catch (error) {
+    console.error('Error caching framework:', error);
+  }
+}
+
+/**
+ * Clear cached framework info from sessionStorage
+ */
+function clearCachedFramework(repoSlug: string, dataSource: 'local' | 'remote'): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    sessionStorage.removeItem(getFrameworkCacheKey(repoSlug, dataSource));
+  } catch (error) {
+    console.error('Error clearing framework cache:', error);
+  }
+}
 
 /**
  * Get coverage badge color based on percentage
@@ -252,6 +314,12 @@ export default function UnitTestsPage() {
   // State for view mode: 'original' (single table) or 'pro' (grouped tables)
   const [viewMode, setViewMode] = useState<'original' | 'pro'>('original');
   
+  // State for data source: 'local' or 'remote'
+  const [dataSource, setDataSource] = useState<'remote' | 'local'>('local');
+  
+  // State to force refetch (used by reload button)
+  const [forceRefetch, setForceRefetch] = useState(false);
+  
   // State for collapsed/expanded categories (default: all collapsed)
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   
@@ -300,25 +368,58 @@ export default function UnitTestsPage() {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch('/api/coverage');
+        // Clear previous coverage data when starting a new fetch
+        setCoverageData(null);
+        
+        // Check for cached framework info (unless force refetch)
+        let cachedFramework: CoverageData['framework'] | null = null;
+        if (!forceRefetch) {
+          cachedFramework = getCachedFramework(repoSlug, dataSource);
+        }
+        
+        const sourceParam = `?source=${dataSource}`;
+        const response = await fetch(`/api/auto-detect/${repoSlug}${sourceParam}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch coverage data');
         }
         
         const data = await response.json();
+        
+        // Use cached framework if available and matches dataSource, otherwise use fetched framework
+        if (cachedFramework && !forceRefetch) {
+          data.framework = cachedFramework;
+        } else if (data.framework) {
+          // Cache the framework info for future use
+          setCachedFramework(repoSlug, dataSource, data.framework);
+        }
+        
         setCoverageData(data);
+        
+        // Set error message if coverage data is missing
+        // Check for file not found errors in dataSource attempts
+        const hasFileNotFoundError = data.dataSource?.attempted?.some(
+          attempt => !attempt.success && attempt.error && attempt.error.includes('File not found')
+        );
+        
+        if (data.error || !data.hasCoverageData || hasFileNotFoundError) {
+          setError(data.error || 'No coverage data available');
+        }
+        
+        // Reset force refetch flag
+        setForceRefetch(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
+        setForceRefetch(false);
       } finally {
         setIsLoading(false);
       }
     }
 
-    if (session) {
+    if (session && repoSlug) {
       fetchCoverage();
     }
-  }, [session]);
+  }, [session, repoSlug, dataSource, forceRefetch]);
 
   // Log unsupported framework detection
   useEffect(() => {
@@ -370,6 +471,27 @@ export default function UnitTestsPage() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            {/* Data Source Switcher */}
+            <div className="flex items-center gap-1 border rounded-md p-1 bg-muted">
+              <Button
+                variant={dataSource === 'local' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDataSource('local')}
+                className="gap-2"
+              >
+                <HardDrive className="h-4 w-4" />
+                Local
+              </Button>
+              <Button
+                variant={dataSource === 'remote' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDataSource('remote')}
+                className="gap-2"
+              >
+                <Cloud className="h-4 w-4" />
+                Remote
+              </Button>
+            </div>
             {/* View Switcher */}
             <div className="flex items-center gap-1 border rounded-md p-1 bg-muted">
               <button
@@ -396,7 +518,11 @@ export default function UnitTestsPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                // Clear cached framework and force refetch
+                clearCachedFramework(repoSlug, dataSource);
+                setForceRefetch(true);
+              }}
               aria-label="Refresh coverage data"
               className="flex-shrink-0"
             >
@@ -404,18 +530,6 @@ export default function UnitTestsPage() {
             </Button>
           </div>
         </div>
-
-        {/* Error State */}
-        {error && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-destructive">
-                <AlertCircle className="h-5 w-5" />
-                <p>{error}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Loading State */}
         {isLoading && (
@@ -431,8 +545,8 @@ export default function UnitTestsPage() {
           </Card>
         )}
 
-        {/* Coverage Summary */}
-        {coverageData && (
+        {/* Coverage Summary - Only show when not loading */}
+        {!isLoading && coverageData && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Framework */}
@@ -531,8 +645,56 @@ export default function UnitTestsPage() {
               </Card>
             </div>
 
+            {/* Error State / No Coverage Data */}
+            {error && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-medium text-destructive mb-2">
+                        {error === 'No coverage data available' && coverageData?.framework?.name === "Not Found"
+                          ? 'No unit test framework detected'
+                          : error === 'No coverage data available' && coverageData?.framework?.name === "Jest"
+                          ? 'No unit test coverage detected'
+                          : error}
+                      </p>
+                      {coverageData?.framework?.name === "Not Found" && error === 'No coverage data available' && (
+                        <div className="text-sm text-muted-foreground">
+                          <p>Install a supported framework like Jest to get started.</p>
+                        </div>
+                      )}
+                      {coverageData?.framework?.name === "Jest" && error === 'No coverage data available' && (
+                        <div className="text-sm text-muted-foreground">
+                          <p>Your project has Jest installed, but no coverage data is available. Run your tests to generate coverage reports.</p>
+                          {coverageData?.dataSource?.attempted && coverageData.dataSource.attempted.length > 0 && (
+                            <p className="mt-1">Expected coverage file: <code className="text-xs bg-muted px-1 py-0.5 rounded">{coverageData.dataSource.attempted[0]?.path || 'coverage/coverage-final.json'}</code></p>
+                          )}
+                        </div>
+                      )}
+                      {error === 'Failed to read coverage data' && (
+                        <div className="text-sm text-muted-foreground">
+                          <p>An error occurred while reading the coverage file. This could be due to invalid JSON format, file permissions, or corrupted data.</p>
+                        </div>
+                      )}
+                      {error === 'Failed to fetch coverage data' && (
+                        <div className="text-sm text-muted-foreground">
+                          <p>Unable to fetch coverage data from the API. This could be due to network connectivity issues or server errors.</p>
+                        </div>
+                      )}
+                      {error === 'Unknown error' && (
+                        <div className="text-sm text-muted-foreground">
+                          <p>An unexpected error occurred. Check browser console for details.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Files Tables - Original View (Single Table) */}
-            {viewMode === 'original' && coverageData && coverageData.files.length > 0 && (
+            {viewMode === 'original' && coverageData && coverageData.hasCoverageData && coverageData.files.length > 0 && (
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-2">
@@ -598,7 +760,7 @@ export default function UnitTestsPage() {
             )}
 
             {/* Files Tables - Pro View (Grouped by Category) */}
-            {viewMode === 'pro' && groupedFiles && coverageData && coverageData.files.length > 0 && (
+            {viewMode === 'pro' && groupedFiles && coverageData && coverageData.hasCoverageData && coverageData.files.length > 0 && (
               <div className="space-y-6">
                 {Object.entries(groupedFiles)
                   .sort(([keyA], [keyB]) => {
