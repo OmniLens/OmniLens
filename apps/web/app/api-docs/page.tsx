@@ -26,6 +26,9 @@ import 'swagger-ui-react/swagger-ui.css';
 export default function ApiDocsPage() {
   const [mounted, setMounted] = useState(false);
 
+  // Set mounted to true after component mounts on client
+  // This ensures server and initial client render match (both false)
+  // Then client updates after hydration completes, avoiding hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);

@@ -61,13 +61,6 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   const { data: session, isPending } = useSession();
   const pathname = usePathname();
   
-  // Initialize sidebar state from cookie or default based on page
-  const isDashboardPage = pathname === '/dashboard';
-  const cookieState = getSidebarStateFromCookie();
-  const initialOpen = isDashboardPage ? false : (cookieState ?? true);
-  
-  const [sidebarOpen, setSidebarOpen] = useState(initialOpen);
-
   // ============================================================================
   // Computed Values
   // ============================================================================
@@ -81,21 +74,27 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   const isRepoPage = pathname?.startsWith('/dashboard/') && pathname !== '/dashboard';
   const repoSlug = isRepoPage ? pathname.split('/').slice(2)[0] : null;
 
+  // Compute desired sidebar state based on current pathname
+  const isDashboardPage = pathname === '/dashboard';
+  const desiredSidebarState = isDashboardPage 
+    ? false 
+    : (getSidebarStateFromCookie() ?? true);
+
+  // Initialize sidebar state with computed value
+  const [sidebarOpen, setSidebarOpen] = useState(() => desiredSidebarState);
+
   // ============================================================================
   // Effects
   // ============================================================================
 
-  // Force sidebar closed when navigating to dashboard page
-  // Always collapsed on dashboard, regardless of previous state
+  // Update sidebar state when pathname changes
+  // Use setTimeout to avoid synchronous setState in effect
   useEffect(() => {
-    if (isDashboardPage) {
-      setSidebarOpen(false);
-    } else {
-      // On repo pages, restore from cookie if available, otherwise default to open
-      const cookieState = getSidebarStateFromCookie();
-      setSidebarOpen(cookieState ?? true);
-    }
-  }, [isDashboardPage, pathname]);
+    const timeoutId = setTimeout(() => {
+      setSidebarOpen(desiredSidebarState);
+    }, 0);
+    return () => clearTimeout(timeoutId);
+  }, [desiredSidebarState]);
 
   // ============================================================================
   // Render Logic

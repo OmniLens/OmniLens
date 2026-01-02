@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Github, BookOpen, FileText } from "lucide-react";
+import { LayoutDashboard, LogOut, Github, BookOpen, FileText, BookCheck, FileCheck, Globe } from "lucide-react";
 
 // Internal component imports
 import {
@@ -17,6 +17,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -26,10 +29,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { RepoSwitcherMenuItem } from "@/components/RepoSwitcher";
 
 // Utility imports
 import packageJson from "../package.json";
+import { isFeatureEnabled } from "@/lib/utils";
 
 // Hook imports
 import { useSession, signOut } from "@/lib/auth-client";
@@ -45,7 +50,7 @@ import { useSession, signOut } from "@/lib/auth-client";
 /**
  * AppSidebar component
  * Main navigation sidebar for authenticated users
- * Displays logo, navigation items (Summary, Workflows, Runners, Usage), and user menu
+ * Displays logo, navigation items (Summary, Testing Frameworks, Unit Tests), and user menu
  * Responsive design with collapsible functionality
  */
 export function AppSidebar() {
@@ -78,12 +83,18 @@ export function AppSidebar() {
   const isRepoPage = pathname?.startsWith('/dashboard/') && pathname !== '/dashboard';
   const repoSlug = isRepoPage ? pathname.split('/').slice(2)[0] : null;
   const repoPageType = isRepoPage ? pathname.split('/').slice(3)[0] || 'summary' : null;
+  const repoPageSubType = isRepoPage ? pathname.split('/').slice(4)[0] : null;
 
   // Active state logic
   const isSummaryActive = isRepoPage && (!repoPageType || repoPageType === 'summary');
+  const isTestingActive = isRepoPage && repoPageType === 'testing';
+  const isUnitTestsActive = isRepoPage && repoPageType === 'testing' && repoPageSubType === 'unit';
 //   const isWorkflowsActive = isRepoPage && repoPageType === 'workflows';
 //   const isRunnersActive = isRepoPage && repoPageType === 'runners';
 //   const isUsageActive = isRepoPage && repoPageType === 'usage';
+
+  // Feature flags
+  const isUnitTestsEnabled = isFeatureEnabled('UNIT_TESTS');
 
   // ============================================================================
   // Main Render
@@ -140,6 +151,30 @@ export function AppSidebar() {
                         <span>Summary</span>
                       </Link>
                     </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  {/* Testing - Links to /dashboard/[slug]/testing with Unit Tests as submenu */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isTestingActive} tooltip="Testing Frameworks">
+                      <Link href={`/dashboard/${repoSlug}/testing`}>
+                        <BookCheck />
+                        <span>Testing Frameworks</span>
+                      </Link>
+                    </SidebarMenuButton>
+                    {/* Unit Tests submenu - Only shown if feature flag is enabled */}
+                    {isUnitTestsEnabled && (
+                      <SidebarMenuSub>
+                        {/* Unit Tests - Links to /dashboard/[slug]/testing/unit */}
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={isUnitTestsActive}>
+                            <Link href={`/dashboard/${repoSlug}/testing/unit`}>
+                              <FileCheck />
+                              <span>Unit Tests</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    )}
                   </SidebarMenuItem>
 
                   {/* Workflows - Links to /dashboard/[slug]/workflows */}
@@ -258,7 +293,7 @@ export function AppSidebar() {
                         <FileText className="h-4 w-4 mr-2" />
                         Changelog
                       </div>
-                      <span className="text-muted-foreground ml-4">v{packageJson.version}</span>
+                      <Badge variant="outline" className="ml-4">v{packageJson.version}</Badge>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -271,6 +306,12 @@ export function AppSidebar() {
                       <Github className="h-4 w-4 mr-2" />
                       GitHub
                     </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/" className="flex items-center cursor-pointer">
+                      <Globe className="h-4 w-4 mr-2" />
+                      Website
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">

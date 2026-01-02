@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Github, BookOpen } from "lucide-react";
+import { LogOut, Github, BookOpen, Globe } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
@@ -143,6 +143,12 @@ export default function Header() {
                     <Github className="h-4 w-4 mr-2" />
                     GitHub
                   </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/" className="flex items-center">
+                    <Globe className="h-4 w-4 mr-2" />
+                    Website
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />

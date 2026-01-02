@@ -25,3 +25,5 @@ You can read more about OmniLens here:
 - 🗂️ **Repository Management**: Add and manage repositories from a central dashboard
 - 📡 **Signal Ingestion**: Ingest workflow signals from tests, checks, and jobs
 - 📊 **Metrics & State Visualization**: Track workflow health using success rates, run counts, runtimes, and stability trends
+- 🔍 **Test Framework Auto-Detection**: Automatically detect unit testing frameworks in your repositories
+  - **Supported Frameworks**: Jest, Vitest, and Mocha

@@ -56,6 +56,33 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "1.5.0",
+    date: "2026-01-02",
+    type: "minor",
+    changes: {
+      added: [
+        "Test framework auto-detection system supporting Jest, Vitest, Mocha, and 6 additional frameworks with monorepo support",
+        "Testing Frameworks and Unit Tests pages (/dashboard/[slug]/testing) with framework detection and coverage visualization",
+        "Feature flag system (isFeatureEnabled utility) with local/remote data source switcher",
+        "Framework detection API endpoint (/api/auto-detect/[slug]) with sessionStorage caching",
+        "Auto-detect section on landing page with orange theme showcasing supported frameworks",
+        "Website link in header dropdown and sidebar user menu",
+        "ESLint react-hooks plugin for improved React hooks linting"
+      ],
+      changed: [
+        "Sidebar navigation updated with Testing Frameworks menu and Unit Tests submenu (feature flag controlled)",
+        "FeatureCard component extended with orange color theme",
+        "SidebarLayout and SidebarMenuSkeleton components refactored to use useState lazy initializers",
+        "Changelog page version badge styling updated to use Badge component",
+        "README.md updated with test framework auto-detection documentation"
+      ],
+      fixed: [
+        "React hydration mismatch issues in ApiDocsPage and SidebarMenuSkeleton components",
+        "SidebarLayout state initialization and synchronous setState calls in useEffect"
+      ]
+    }
+  },
+  {
     version: "1.4.0",
     date: "2026-01-02",
     type: "minor",
