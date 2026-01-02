@@ -35,6 +35,14 @@ interface CoverageFile {
 interface CoverageData {
   summary: CoverageSummary;
   files: CoverageFile[];
+  framework?: {
+    name: "Jest" | "Not Found";
+    version: string | null;
+    detected?: {
+      name: string;
+      version: string;
+    };
+  };
 }
 
 // ============================================================================
@@ -119,22 +127,45 @@ function calculateCategorySummary(files: CoverageFile[]): {
 }
 
 /**
- * Group files by category (App, Components, Hooks, Lib, Lib/Hooks)
+ * Get display name for a category key
  */
-function groupFilesByCategory(files: CoverageFile[]): {
-  app: CoverageFile[];
-  components: CoverageFile[];
-  hooks: CoverageFile[];
-  lib: CoverageFile[];
-  libHooks: CoverageFile[];
-} {
-  const grouped = {
-    app: [] as CoverageFile[],
-    components: [] as CoverageFile[],
-    hooks: [] as CoverageFile[],
-    lib: [] as CoverageFile[],
-    libHooks: [] as CoverageFile[],
+function getCategoryDisplayName(categoryKey: string): string {
+  const displayNameMap: Record<string, string> = {
+    app: "App",
+    components: "Components",
+    hooks: "Hooks",
+    lib: "Lib",
+    libHooks: "Lib/Hooks",
   };
+
+  if (displayNameMap[categoryKey]) {
+    return displayNameMap[categoryKey];
+  }
+
+  // For dynamic categories, capitalize first letter
+  return categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
+}
+
+/**
+ * Group files by category dynamically
+ * Uses hybrid approach: common patterns + any other top-level directories
+ */
+function groupFilesByCategory(files: CoverageFile[]): Record<string, CoverageFile[]> {
+  const grouped: Record<string, CoverageFile[]> = {};
+  
+  // Define common patterns with their category keys
+  const commonPatterns: Array<{ prefix: string; key: string }> = [
+    { prefix: 'app/', key: 'app' },
+    { prefix: 'components/', key: 'components' },
+    { prefix: 'hooks/', key: 'hooks' },
+    { prefix: 'lib/hooks/', key: 'libHooks' },
+    { prefix: 'lib/', key: 'lib' },
+  ];
+
+  // Initialize common pattern categories
+  commonPatterns.forEach(({ key }) => {
+    grouped[key] = [];
+  });
 
   for (const file of files) {
     // Normalize path - remove leading slash and handle absolute paths
@@ -156,23 +187,45 @@ function groupFilesByCategory(files: CoverageFile[]): {
       normalizedPath = normalizedPath.slice(2);
     }
     
-    // Group by normalized path
-    if (normalizedPath.startsWith('app/')) {
-      grouped.app.push({ ...file, path: normalizedPath });
-    } else if (normalizedPath.startsWith('components/')) {
-      grouped.components.push({ ...file, path: normalizedPath });
-    } else if (normalizedPath.startsWith('hooks/')) {
-      grouped.hooks.push({ ...file, path: normalizedPath });
-    } else if (normalizedPath.startsWith('lib/hooks/')) {
-      grouped.libHooks.push({ ...file, path: normalizedPath });
-    } else if (normalizedPath.startsWith('lib/')) {
-      grouped.lib.push({ ...file, path: normalizedPath });
+    // Try to match common patterns first
+    let matched = false;
+    for (const { prefix, key } of commonPatterns) {
+      if (normalizedPath.startsWith(prefix)) {
+        grouped[key].push({ ...file, path: normalizedPath });
+        matched = true;
+        break;
+      }
+    }
+
+    // If no common pattern matched, extract first directory for dynamic category
+    if (!matched) {
+      const firstSlashIndex = normalizedPath.indexOf('/');
+      if (firstSlashIndex > 0) {
+        const categoryKey = normalizedPath.substring(0, firstSlashIndex);
+        if (!grouped[categoryKey]) {
+          grouped[categoryKey] = [];
+        }
+        grouped[categoryKey].push({ ...file, path: normalizedPath });
+      } else {
+        // File at root level - use 'root' category
+        if (!grouped['root']) {
+          grouped['root'] = [];
+        }
+        grouped['root'].push({ ...file, path: normalizedPath });
+      }
     }
   }
 
   // Sort each category by path
   Object.values(grouped).forEach((category) => {
     category.sort((a, b) => a.path.localeCompare(b.path));
+  });
+
+  // Remove empty categories
+  Object.keys(grouped).forEach((key) => {
+    if (grouped[key].length === 0) {
+      delete grouped[key];
+    }
   });
 
   return grouped;
@@ -200,13 +253,7 @@ export default function UnitTestsPage() {
   const [viewMode, setViewMode] = useState<'original' | 'pro'>('original');
   
   // State for collapsed/expanded categories (default: all collapsed)
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    app: false,
-    components: false,
-    hooks: false,
-    lib: false,
-    libHooks: false,
-  });
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => ({
@@ -221,10 +268,18 @@ export default function UnitTestsPage() {
       return null;
     }
     const grouped = groupFilesByCategory(coverageData.files);
-    // Debug: log if no files are being grouped
-    if (grouped.app.length === 0 && grouped.components.length === 0 && grouped.hooks.length === 0 && grouped.lib.length === 0 && grouped.libHooks.length === 0) {
-      console.warn('No files grouped. Sample paths:', coverageData.files.slice(0, 5).map(f => f.path));
-    }
+    
+    // Initialize expandedCategories state for all categories (all collapsed by default)
+    setExpandedCategories(prev => {
+      const newState = { ...prev };
+      Object.keys(grouped).forEach((key) => {
+        if (!(key in newState)) {
+          newState[key] = false;
+        }
+      });
+      return newState;
+    });
+    
     return grouped;
   }, [coverageData]);
 
@@ -264,6 +319,15 @@ export default function UnitTestsPage() {
       fetchCoverage();
     }
   }, [session]);
+
+  // Log unsupported framework detection
+  useEffect(() => {
+    if (coverageData?.framework?.detected) {
+      console.warn(
+        `Unsupported framework detected: ${coverageData.framework.detected.name} v${coverageData.framework.detected.version}`
+      );
+    }
+  }, [coverageData]);
 
   // ============================================================================
   // Render Logic - Early Returns
@@ -380,8 +444,12 @@ export default function UnitTestsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">Jest</span>
-                    <Badge variant="default">v29.7.0</Badge>
+                    <span className="text-2xl font-bold">
+                      {coverageData.framework?.name || "Not Found"}
+                    </span>
+                    {coverageData.framework?.name === "Jest" && coverageData.framework?.version && (
+                      <Badge variant="default">v{coverageData.framework.version}</Badge>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -467,7 +535,10 @@ export default function UnitTestsPage() {
             {viewMode === 'original' && coverageData && coverageData.files.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Coverage by File</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Coverage by File</CardTitle>
+                    <Badge variant="secondary">{coverageData.files.length} {coverageData.files.length === 1 ? 'file' : 'files'}</Badge>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -529,24 +600,38 @@ export default function UnitTestsPage() {
             {/* Files Tables - Pro View (Grouped by Category) */}
             {viewMode === 'pro' && groupedFiles && coverageData && coverageData.files.length > 0 && (
               <div className="space-y-6">
-                {groupedFiles.app.length > 0 && (() => {
-                  const summary = calculateCategorySummary(groupedFiles.app);
+                {Object.entries(groupedFiles)
+                  .sort(([keyA], [keyB]) => {
+                    // Prioritize common patterns first, then alphabetical
+                    const commonPatterns = ['app', 'components', 'hooks', 'lib', 'libHooks'];
+                    const indexA = commonPatterns.indexOf(keyA);
+                    const indexB = commonPatterns.indexOf(keyB);
+                    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                    if (indexA !== -1) return -1;
+                    if (indexB !== -1) return 1;
+                    return keyA.localeCompare(keyB);
+                  })
+                  .map(([categoryKey, files]) => {
+                  if (files.length === 0) return null;
+                  const summary = calculateCategorySummary(files);
+                  const displayName = getCategoryDisplayName(categoryKey);
+                  const isExpanded = expandedCategories[categoryKey] || false;
                   return (
-                    <Card>
+                    <Card key={categoryKey}>
                       <CardHeader>
                         <button
-                          onClick={() => toggleCategory('app')}
+                          onClick={() => toggleCategory(categoryKey)}
                           className="flex items-center justify-between w-full text-left hover:opacity-80 transition-opacity"
                         >
-                          <CardTitle>App</CardTitle>
-                          {expandedCategories.app ? (
+                          <CardTitle>{displayName}</CardTitle>
+                          {isExpanded ? (
                             <ChevronUp className="h-4 w-4" />
                           ) : (
                             <ChevronDown className="h-4 w-4" />
                           )}
                         </button>
                       </CardHeader>
-                      {expandedCategories.app ? (
+                      {isExpanded ? (
                         <CardContent>
                           <div className="overflow-x-auto">
                             <table className="w-full border-collapse">
@@ -560,7 +645,7 @@ export default function UnitTestsPage() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {groupedFiles.app.map((file) => (
+                                {files.map((file) => (
                                   <tr key={file.path} className="border-b hover:bg-muted/50">
                                     <td className="p-2 text-sm font-mono">{file.path}</td>
                                     <td className="p-2 text-right text-sm">
@@ -641,463 +726,7 @@ export default function UnitTestsPage() {
                       )}
                     </Card>
                   );
-                })()}
-
-                {groupedFiles.components.length > 0 && (() => {
-                  const summary = calculateCategorySummary(groupedFiles.components);
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <button
-                          onClick={() => toggleCategory('components')}
-                          className="flex items-center justify-between w-full text-left hover:opacity-80 transition-opacity"
-                        >
-                          <CardTitle>Components</CardTitle>
-                          {expandedCategories.components ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </button>
-                      </CardHeader>
-                      {expandedCategories.components ? (
-                        <CardContent>
-                          <div className="overflow-x-auto">
-                            <table className="w-full border-collapse">
-                              <thead>
-                                <tr className="border-b">
-                                  <th className="text-left p-2 font-medium">File</th>
-                                  <th className="text-right p-2 font-medium">Statements</th>
-                                  <th className="text-right p-2 font-medium">Branches</th>
-                                  <th className="text-right p-2 font-medium">Functions</th>
-                                  <th className="text-right p-2 font-medium">Lines</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {groupedFiles.components.map((file) => (
-                                  <tr key={file.path} className="border-b hover:bg-muted/50">
-                                    <td className="p-2 text-sm font-mono">{file.path}</td>
-                                    <td className="p-2 text-right text-sm">
-                                      <span className={file.statements.percentage >= 80 ? 'text-green-600' : file.statements.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                        {formatPercentage(file.statements.percentage)}%
-                                      </span>
-                                      <span className="text-muted-foreground ml-1">
-                                        ({file.statements.covered}/{file.statements.total})
-                                      </span>
-                                    </td>
-                                    <td className="p-2 text-right text-sm">
-                                      <span className={file.branches.percentage >= 80 ? 'text-green-600' : file.branches.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                        {formatPercentage(file.branches.percentage)}%
-                                      </span>
-                                      <span className="text-muted-foreground ml-1">
-                                        ({file.branches.covered}/{file.branches.total})
-                                      </span>
-                                    </td>
-                                    <td className="p-2 text-right text-sm">
-                                      <span className={file.functions.percentage >= 80 ? 'text-green-600' : file.functions.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                        {formatPercentage(file.functions.percentage)}%
-                                      </span>
-                                      <span className="text-muted-foreground ml-1">
-                                        ({file.functions.covered}/{file.functions.total})
-                                      </span>
-                                    </td>
-                                    <td className="p-2 text-right text-sm">
-                                      <span className={file.lines.percentage >= 80 ? 'text-green-600' : file.lines.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                        {formatPercentage(file.lines.percentage)}%
-                                      </span>
-                                      <span className="text-muted-foreground ml-1">
-                                        ({file.lines.covered}/{file.lines.total})
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </CardContent>
-                      ) : (
-                        <CardContent>
-                          <div className="grid grid-cols-5 gap-4 py-2">
-                            <div>
-                              <div className="text-sm text-muted-foreground">Files</div>
-                              <div className="text-lg font-semibold">{summary.totalFiles}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Statements</div>
-                              <div className={`text-lg font-semibold ${summary.avgStatements >= 80 ? 'text-green-600' : summary.avgStatements >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgStatements)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalStatements.covered}/{summary.totalStatements.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Branches</div>
-                              <div className={`text-lg font-semibold ${summary.avgBranches >= 80 ? 'text-green-600' : summary.avgBranches >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgBranches)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalBranches.covered}/{summary.totalBranches.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Functions</div>
-                              <div className={`text-lg font-semibold ${summary.avgFunctions >= 80 ? 'text-green-600' : summary.avgFunctions >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgFunctions)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalFunctions.covered}/{summary.totalFunctions.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Lines</div>
-                              <div className={`text-lg font-semibold ${summary.avgLines >= 80 ? 'text-green-600' : summary.avgLines >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgLines)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalLines.covered}/{summary.totalLines.total}</div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      )}
-                    </Card>
-                  );
-                })()}
-
-                {groupedFiles.hooks.length > 0 && (() => {
-                  const summary = calculateCategorySummary(groupedFiles.hooks);
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <button
-                          onClick={() => toggleCategory('hooks')}
-                          className="flex items-center justify-between w-full text-left hover:opacity-80 transition-opacity"
-                        >
-                          <CardTitle>Hooks</CardTitle>
-                          {expandedCategories.hooks ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </button>
-                      </CardHeader>
-                      {expandedCategories.hooks ? (
-                        <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left p-2 font-medium">File</th>
-                              <th className="text-right p-2 font-medium">Statements</th>
-                              <th className="text-right p-2 font-medium">Branches</th>
-                              <th className="text-right p-2 font-medium">Functions</th>
-                              <th className="text-right p-2 font-medium">Lines</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {groupedFiles.hooks.map((file) => (
-                              <tr key={file.path} className="border-b hover:bg-muted/50">
-                                <td className="p-2 text-sm font-mono">{file.path}</td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.statements.percentage >= 80 ? 'text-green-600' : file.statements.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.statements.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.statements.covered}/{file.statements.total})
-                                  </span>
-                                </td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.branches.percentage >= 80 ? 'text-green-600' : file.branches.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.branches.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.branches.covered}/{file.branches.total})
-                                  </span>
-                                </td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.functions.percentage >= 80 ? 'text-green-600' : file.functions.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.functions.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.functions.covered}/{file.functions.total})
-                                  </span>
-                                </td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.lines.percentage >= 80 ? 'text-green-600' : file.lines.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.lines.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.lines.covered}/{file.lines.total})
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                        </CardContent>
-                      ) : (
-                        <CardContent>
-                          <div className="grid grid-cols-5 gap-4 py-2">
-                            <div>
-                              <div className="text-sm text-muted-foreground">Files</div>
-                              <div className="text-lg font-semibold">{summary.totalFiles}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Statements</div>
-                              <div className={`text-lg font-semibold ${summary.avgStatements >= 80 ? 'text-green-600' : summary.avgStatements >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgStatements)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalStatements.covered}/{summary.totalStatements.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Branches</div>
-                              <div className={`text-lg font-semibold ${summary.avgBranches >= 80 ? 'text-green-600' : summary.avgBranches >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgBranches)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalBranches.covered}/{summary.totalBranches.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Functions</div>
-                              <div className={`text-lg font-semibold ${summary.avgFunctions >= 80 ? 'text-green-600' : summary.avgFunctions >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgFunctions)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalFunctions.covered}/{summary.totalFunctions.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Lines</div>
-                              <div className={`text-lg font-semibold ${summary.avgLines >= 80 ? 'text-green-600' : summary.avgLines >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgLines)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalLines.covered}/{summary.totalLines.total}</div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      )}
-                    </Card>
-                  );
-                })()}
-
-                {groupedFiles.lib.length > 0 && (() => {
-                  const summary = calculateCategorySummary(groupedFiles.lib);
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <button
-                          onClick={() => toggleCategory('lib')}
-                          className="flex items-center justify-between w-full text-left hover:opacity-80 transition-opacity"
-                        >
-                          <CardTitle>Lib</CardTitle>
-                          {expandedCategories.lib ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </button>
-                      </CardHeader>
-                      {expandedCategories.lib ? (
-                        <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left p-2 font-medium">File</th>
-                              <th className="text-right p-2 font-medium">Statements</th>
-                              <th className="text-right p-2 font-medium">Branches</th>
-                              <th className="text-right p-2 font-medium">Functions</th>
-                              <th className="text-right p-2 font-medium">Lines</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {groupedFiles.lib.map((file) => (
-                              <tr key={file.path} className="border-b hover:bg-muted/50">
-                                <td className="p-2 text-sm font-mono">{file.path}</td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.statements.percentage >= 80 ? 'text-green-600' : file.statements.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.statements.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.statements.covered}/{file.statements.total})
-                                  </span>
-                                </td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.branches.percentage >= 80 ? 'text-green-600' : file.branches.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.branches.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.branches.covered}/{file.branches.total})
-                                  </span>
-                                </td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.functions.percentage >= 80 ? 'text-green-600' : file.functions.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.functions.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.functions.covered}/{file.functions.total})
-                                  </span>
-                                </td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.lines.percentage >= 80 ? 'text-green-600' : file.lines.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.lines.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.lines.covered}/{file.lines.total})
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                        </CardContent>
-                      ) : (
-                        <CardContent>
-                          <div className="grid grid-cols-5 gap-4 py-2">
-                            <div>
-                              <div className="text-sm text-muted-foreground">Files</div>
-                              <div className="text-lg font-semibold">{summary.totalFiles}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Statements</div>
-                              <div className={`text-lg font-semibold ${summary.avgStatements >= 80 ? 'text-green-600' : summary.avgStatements >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgStatements)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalStatements.covered}/{summary.totalStatements.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Branches</div>
-                              <div className={`text-lg font-semibold ${summary.avgBranches >= 80 ? 'text-green-600' : summary.avgBranches >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgBranches)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalBranches.covered}/{summary.totalBranches.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Functions</div>
-                              <div className={`text-lg font-semibold ${summary.avgFunctions >= 80 ? 'text-green-600' : summary.avgFunctions >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgFunctions)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalFunctions.covered}/{summary.totalFunctions.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Lines</div>
-                              <div className={`text-lg font-semibold ${summary.avgLines >= 80 ? 'text-green-600' : summary.avgLines >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgLines)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalLines.covered}/{summary.totalLines.total}</div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      )}
-                    </Card>
-                  );
-                })()}
-
-                {groupedFiles.libHooks.length > 0 && (() => {
-                  const summary = calculateCategorySummary(groupedFiles.libHooks);
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <button
-                          onClick={() => toggleCategory('libHooks')}
-                          className="flex items-center justify-between w-full text-left hover:opacity-80 transition-opacity"
-                        >
-                          <CardTitle>Lib/Hooks</CardTitle>
-                          {expandedCategories.libHooks ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </button>
-                      </CardHeader>
-                      {expandedCategories.libHooks ? (
-                        <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left p-2 font-medium">File</th>
-                              <th className="text-right p-2 font-medium">Statements</th>
-                              <th className="text-right p-2 font-medium">Branches</th>
-                              <th className="text-right p-2 font-medium">Functions</th>
-                              <th className="text-right p-2 font-medium">Lines</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {groupedFiles.libHooks.map((file) => (
-                              <tr key={file.path} className="border-b hover:bg-muted/50">
-                                <td className="p-2 text-sm font-mono">{file.path}</td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.statements.percentage >= 80 ? 'text-green-600' : file.statements.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.statements.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.statements.covered}/{file.statements.total})
-                                  </span>
-                                </td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.branches.percentage >= 80 ? 'text-green-600' : file.branches.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.branches.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.branches.covered}/{file.branches.total})
-                                  </span>
-                                </td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.functions.percentage >= 80 ? 'text-green-600' : file.functions.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.functions.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.functions.covered}/{file.functions.total})
-                                  </span>
-                                </td>
-                                <td className="p-2 text-right text-sm">
-                                  <span className={file.lines.percentage >= 80 ? 'text-green-600' : file.lines.percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                                    {formatPercentage(file.lines.percentage)}%
-                                  </span>
-                                  <span className="text-muted-foreground ml-1">
-                                    ({file.lines.covered}/{file.lines.total})
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                        </CardContent>
-                      ) : (
-                        <CardContent>
-                          <div className="grid grid-cols-5 gap-4 py-2">
-                            <div>
-                              <div className="text-sm text-muted-foreground">Files</div>
-                              <div className="text-lg font-semibold">{summary.totalFiles}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Statements</div>
-                              <div className={`text-lg font-semibold ${summary.avgStatements >= 80 ? 'text-green-600' : summary.avgStatements >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgStatements)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalStatements.covered}/{summary.totalStatements.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Branches</div>
-                              <div className={`text-lg font-semibold ${summary.avgBranches >= 80 ? 'text-green-600' : summary.avgBranches >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgBranches)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalBranches.covered}/{summary.totalBranches.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Functions</div>
-                              <div className={`text-lg font-semibold ${summary.avgFunctions >= 80 ? 'text-green-600' : summary.avgFunctions >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgFunctions)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalFunctions.covered}/{summary.totalFunctions.total}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-muted-foreground">Lines</div>
-                              <div className={`text-lg font-semibold ${summary.avgLines >= 80 ? 'text-green-600' : summary.avgLines >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {formatPercentage(summary.avgLines)}%
-                              </div>
-                              <div className="text-xs text-muted-foreground">{summary.totalLines.covered}/{summary.totalLines.total}</div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      )}
-                    </Card>
-                  );
-                })()}
+                })}
               </div>
             )}
           </>

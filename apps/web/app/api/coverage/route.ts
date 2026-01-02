@@ -3,6 +3,67 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 /**
+ * Detect test framework from package.json
+ * Returns framework info: Jest (supported) or detected unsupported framework
+ */
+function detectFramework(): {
+  name: "Jest" | "Not Found";
+  version: string | null;
+  detected?: {
+    name: string;
+    version: string;
+  };
+} {
+  try {
+    const packageJsonPath = join(process.cwd(), 'package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    
+    const allDependencies = {
+      ...(packageJson.dependencies || {}),
+      ...(packageJson.devDependencies || {}),
+    };
+
+    // Check for Jest (supported framework)
+    if (allDependencies.jest) {
+      // Extract version (handle ranges like "^29.7.0" or "29.7.0")
+      const version = allDependencies.jest.replace(/^[\^~]/, '');
+      return {
+        name: "Jest",
+        version,
+      };
+    }
+
+    // Check for other test frameworks (unsupported, but capture for future use)
+    const unsupportedFrameworks = ['vitest', 'mocha', 'ava', 'jasmine', 'tape', 'tap'];
+    for (const framework of unsupportedFrameworks) {
+      if (allDependencies[framework]) {
+        const version = allDependencies[framework].replace(/^[\^~]/, '');
+        return {
+          name: "Not Found",
+          version: null,
+          detected: {
+            name: framework.charAt(0).toUpperCase() + framework.slice(1),
+            version,
+          },
+        };
+      }
+    }
+
+    // No framework detected
+    return {
+      name: "Not Found",
+      version: null,
+    };
+  } catch (error) {
+    console.error('Error detecting framework:', error);
+    return {
+      name: "Not Found",
+      version: null,
+    };
+  }
+}
+
+/**
  * API route to serve Jest coverage data
  * Reads coverage-final.json and returns structured coverage data
  */
@@ -10,6 +71,9 @@ export async function GET() {
   try {
     const coveragePath = join(process.cwd(), 'coverage', 'coverage-final.json');
     const coverageData = JSON.parse(readFileSync(coveragePath, 'utf-8'));
+    
+    // Detect framework
+    const framework = detectFramework();
 
     // Transform coverage data into a more usable format
     const summary = {
@@ -102,6 +166,7 @@ export async function GET() {
     return NextResponse.json({
       summary,
       files: files.sort((a, b) => a.path.localeCompare(b.path)),
+      framework,
     });
   } catch (error) {
     console.error('Error reading coverage data:', error);
