@@ -342,25 +342,28 @@ export default function UnitTestsPage() {
     if (!coverageData || !coverageData.files || coverageData.files.length === 0) {
       return null;
     }
-    const grouped = groupFilesByCategory(coverageData.files);
-    
-    // Initialize expandedCategories state for all categories (all collapsed by default)
-    setExpandedCategories(prev => {
-      const newState = { ...prev };
-      Object.keys(grouped).forEach((key) => {
-        if (!(key in newState)) {
-          newState[key] = false;
-        }
-      });
-      return newState;
-    });
-    
-    return grouped;
+    return groupFilesByCategory(coverageData.files);
   }, [coverageData]);
 
   // ============================================================================
   // Effects
   // ============================================================================
+
+  // Initialize expandedCategories state when groupedFiles changes
+  // All categories are collapsed by default
+  useEffect(() => {
+    if (groupedFiles) {
+      setExpandedCategories(prev => {
+        const newState = { ...prev };
+        Object.keys(groupedFiles).forEach((key) => {
+          if (!(key in newState)) {
+            newState[key] = false;
+          }
+        });
+        return newState;
+      });
+    }
+  }, [groupedFiles]);
 
   // Authentication guard - redirect to login if not authenticated
   useEffect(() => {

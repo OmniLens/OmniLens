@@ -26,4 +26,4 @@ You can read more about OmniLens here:
 - 📡 **Signal Ingestion**: Ingest workflow signals from tests, checks, and jobs
 - 📊 **Metrics & State Visualization**: Track workflow health using success rates, run counts, runtimes, and stability trends
 - 🔍 **Test Framework Auto-Detection**: Automatically detect unit testing frameworks in your repositories
-  - **Supported Frameworks**: Jest, Vitest, Mocha, Jasmine, AVA, Tape, Tap, uvu, and QUnit
+  - **Supported Frameworks**: Jest, Vitest, and Mocha

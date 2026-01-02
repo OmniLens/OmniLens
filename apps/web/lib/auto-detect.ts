@@ -84,6 +84,24 @@ function decodeBase64Content(encodedContent: string): string {
 }
 
 /**
+ * Encode a file path for GitHub API URL
+ * Encodes each path segment separately while preserving slashes
+ * This is required because GitHub Contents API expects literal slashes, not encoded ones
+ * @param path - File or directory path (e.g., "coverage/coverage-final.json")
+ * @returns Encoded path with slashes preserved (e.g., "coverage/coverage-final.json" or "path%20with%20spaces/file.json")
+ * @example
+ * encodeGitHubPath("coverage/coverage-final.json") // "coverage/coverage-final.json"
+ * encodeGitHubPath("path with spaces/file.json") // "path%20with%20spaces/file.json"
+ */
+function encodeGitHubPath(path: string): string {
+  // Empty path should remain empty
+  if (!path) return '';
+  
+  // Split by slashes, encode each segment, then join back with slashes
+  return path.split('/').map(segment => encodeURIComponent(segment)).join('/');
+}
+
+/**
  * List directory contents from GitHub repository using Contents API
  * @param owner - Repository owner
  * @param repo - Repository name
@@ -98,7 +116,7 @@ async function listDirectoryFromGitHub(
   userId: string
 ): Promise<GitHubContentsResponse[] | null> {
   try {
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeGitHubPath(path)}`;
     const response = await makeGitHubRequest(userId, url);
 
     if (response.status === 404) {
@@ -140,7 +158,7 @@ async function readFileFromGitHub(
   userId: string
 ): Promise<string | null> {
   try {
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeGitHubPath(path)}`;
     const response = await makeGitHubRequest(userId, url);
 
     if (response.status === 404) {

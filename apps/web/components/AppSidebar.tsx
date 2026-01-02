@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Github, BookOpen, FileText, BookCheck, FileCheck } from "lucide-react";
+import { LayoutDashboard, LogOut, Github, BookOpen, FileText, BookCheck, FileCheck, Globe } from "lucide-react";
 
 // Internal component imports
 import {
@@ -29,6 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { RepoSwitcherMenuItem } from "@/components/RepoSwitcher";
 
 // Utility imports
@@ -292,7 +293,7 @@ export function AppSidebar() {
                         <FileText className="h-4 w-4 mr-2" />
                         Changelog
                       </div>
-                      <span className="text-muted-foreground ml-4">v{packageJson.version}</span>
+                      <Badge variant="outline" className="ml-4">v{packageJson.version}</Badge>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -305,6 +306,12 @@ export function AppSidebar() {
                       <Github className="h-4 w-4 mr-2" />
                       GitHub
                     </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/" className="flex items-center cursor-pointer">
+                      <Globe className="h-4 w-4 mr-2" />
+                      Website
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">

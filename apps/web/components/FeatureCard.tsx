@@ -18,7 +18,7 @@ export interface FeatureCardProps {
   icon: LucideIcon;
   title: string;
   description: string;
-  colorTheme: 'green' | 'blue' | 'purple';
+  colorTheme: 'green' | 'blue' | 'purple' | 'orange';
 }
 
 // ============================================================================
@@ -36,6 +36,8 @@ function getBorderColor(theme: FeatureCardProps['colorTheme']): string {
       return 'border-blue-500';
     case 'purple':
       return 'border-purple-500';
+    case 'orange':
+      return 'border-orange-500';
     default:
       return 'border-border';
   }
@@ -52,6 +54,8 @@ function getGradientClasses(theme: FeatureCardProps['colorTheme']): string {
       return 'from-blue-600 to-blue-700 shadow-blue-500/25';
     case 'purple':
       return 'from-purple-800 to-purple-900 shadow-purple-800/25';
+    case 'orange':
+      return 'from-orange-600 to-orange-700 shadow-orange-500/25';
     default:
       return 'from-gray-600 to-gray-700 shadow-gray-500/25';
   }
