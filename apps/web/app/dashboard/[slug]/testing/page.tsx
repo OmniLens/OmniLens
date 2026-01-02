@@ -89,7 +89,7 @@ export default function TestingPage() {
   
   const [framework, setFramework] = useState<FrameworkInfo | null>(null);
   const [isLoadingFramework, setIsLoadingFramework] = useState(true);
-  const [dataSource, setDataSource] = useState<'remote' | 'local'>('local');
+  const [dataSource, setDataSource] = useState<'remote' | 'local'>('remote');
 
   // Feature flags
   const isLocalRemoteSwitcherEnabled = isFeatureEnabled('LOCAL_REMOTE_SWITCHER');

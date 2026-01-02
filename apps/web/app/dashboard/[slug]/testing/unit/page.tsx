@@ -318,7 +318,8 @@ export default function UnitTestsPage() {
   const [viewMode, setViewMode] = useState<'original' | 'pro'>('original');
   
   // State for data source: 'local' or 'remote'
-  const [dataSource, setDataSource] = useState<'remote' | 'local'>('local');
+  // Defaults to 'remote' to read from GitHub repository instead of deployment filesystem
+  const [dataSource, setDataSource] = useState<'remote' | 'local'>('remote');
   
   // State to force refetch (used by reload button)
   const [forceRefetch, setForceRefetch] = useState(false);
