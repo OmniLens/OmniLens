@@ -33,6 +33,7 @@ import { RepoSwitcherMenuItem } from "@/components/RepoSwitcher";
 
 // Utility imports
 import packageJson from "../package.json";
+import { isFeatureEnabled } from "@/lib/utils";
 
 // Hook imports
 import { useSession, signOut } from "@/lib/auth-client";
@@ -90,6 +91,9 @@ export function AppSidebar() {
 //   const isWorkflowsActive = isRepoPage && repoPageType === 'workflows';
 //   const isRunnersActive = isRepoPage && repoPageType === 'runners';
 //   const isUsageActive = isRepoPage && repoPageType === 'usage';
+
+  // Feature flags
+  const isUnitTestsEnabled = isFeatureEnabled('UNIT_TESTS');
 
   // ============================================================================
   // Main Render
@@ -156,17 +160,20 @@ export function AppSidebar() {
                         <span>Testing Frameworks</span>
                       </Link>
                     </SidebarMenuButton>
-                    <SidebarMenuSub>
-                      {/* Unit Tests - Links to /dashboard/[slug]/testing/unit */}
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild isActive={isUnitTestsActive}>
-                          <Link href={`/dashboard/${repoSlug}/testing/unit`}>
-                            <FileCheck />
-                            <span>Unit Tests</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    </SidebarMenuSub>
+                    {/* Unit Tests submenu - Only shown if feature flag is enabled */}
+                    {isUnitTestsEnabled && (
+                      <SidebarMenuSub>
+                        {/* Unit Tests - Links to /dashboard/[slug]/testing/unit */}
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={isUnitTestsActive}>
+                            <Link href={`/dashboard/${repoSlug}/testing/unit`}>
+                              <FileCheck />
+                              <span>Unit Tests</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    )}
                   </SidebarMenuItem>
 
                   {/* Workflows - Links to /dashboard/[slug]/workflows */}

@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+// Utility imports
+import { isFeatureEnabled } from "@/lib/utils";
+
 // Hook imports
 import { useSession } from "@/lib/auth-client";
 
@@ -88,6 +91,9 @@ export default function TestingPage() {
   const [isLoadingFramework, setIsLoadingFramework] = useState(true);
   const [dataSource, setDataSource] = useState<'remote' | 'local'>('local');
 
+  // Feature flags
+  const isLocalRemoteSwitcherEnabled = isFeatureEnabled('LOCAL_REMOTE_SWITCHER');
+
   // ============================================================================
   // Effects
   // ============================================================================
@@ -160,27 +166,29 @@ export default function TestingPage() {
         {/* Header Section */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl sm:text-3xl font-bold">Testing Frameworks</h1>
-          {/* Data Source Switcher */}
-          <div className="flex items-center gap-2 border rounded-md p-1 bg-muted">
-            <Button
-              variant={dataSource === 'local' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setDataSource('local')}
-              className="gap-2"
-            >
-              <HardDrive className="h-4 w-4" />
-              Local
-            </Button>
-            <Button
-              variant={dataSource === 'remote' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setDataSource('remote')}
-              className="gap-2"
-            >
-              <Cloud className="h-4 w-4" />
-              Remote
-            </Button>
-          </div>
+          {/* Data Source Switcher - Only shown if feature flag is enabled */}
+          {isLocalRemoteSwitcherEnabled && (
+            <div className="flex items-center gap-2 border rounded-md p-1 bg-muted">
+              <Button
+                variant={dataSource === 'local' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDataSource('local')}
+                className="gap-2"
+              >
+                <HardDrive className="h-4 w-4" />
+                Local
+              </Button>
+              <Button
+                variant={dataSource === 'remote' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDataSource('remote')}
+                className="gap-2"
+              >
+                <Cloud className="h-4 w-4" />
+                Remote
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Test Type Cards Grid - Each card in its own row */}

@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+// Utility imports
+import { isFeatureEnabled } from "@/lib/utils";
+
 // Hook imports
 import { useSession } from "@/lib/auth-client";
 
@@ -330,6 +333,10 @@ export default function UnitTestsPage() {
     }));
   };
 
+  // Feature flags
+  const isLocalRemoteSwitcherEnabled = isFeatureEnabled('LOCAL_REMOTE_SWITCHER');
+  const isFreeProSwitcherEnabled = isFeatureEnabled('FREE_PRO_SWITCHER');
+
   // Group files by category using useMemo
   const groupedFiles = useMemo(() => {
     if (!coverageData || !coverageData.files || coverageData.files.length === 0) {
@@ -471,50 +478,54 @@ export default function UnitTestsPage() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            {/* Data Source Switcher */}
-            <div className="flex items-center gap-1 border rounded-md p-1 bg-muted">
-              <Button
-                variant={dataSource === 'local' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setDataSource('local')}
-                className="gap-2"
-              >
-                <HardDrive className="h-4 w-4" />
-                Local
-              </Button>
-              <Button
-                variant={dataSource === 'remote' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setDataSource('remote')}
-                className="gap-2"
-              >
-                <Cloud className="h-4 w-4" />
-                Remote
-              </Button>
-            </div>
-            {/* View Switcher */}
-            <div className="flex items-center gap-1 border rounded-md p-1 bg-muted">
-              <button
-                onClick={() => setViewMode('original')}
-                className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
-                  viewMode === 'original'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Free
-              </button>
-              <button
-                onClick={() => setViewMode('pro')}
-                className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
-                  viewMode === 'pro'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Pro
-              </button>
-            </div>
+            {/* Data Source Switcher - Only shown if feature flag is enabled */}
+            {isLocalRemoteSwitcherEnabled && (
+              <div className="flex items-center gap-1 border rounded-md p-1 bg-muted">
+                <Button
+                  variant={dataSource === 'local' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setDataSource('local')}
+                  className="gap-2"
+                >
+                  <HardDrive className="h-4 w-4" />
+                  Local
+                </Button>
+                <Button
+                  variant={dataSource === 'remote' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setDataSource('remote')}
+                  className="gap-2"
+                >
+                  <Cloud className="h-4 w-4" />
+                  Remote
+                </Button>
+              </div>
+            )}
+            {/* View Switcher - Only shown if feature flag is enabled */}
+            {isFreeProSwitcherEnabled && (
+              <div className="flex items-center gap-1 border rounded-md p-1 bg-muted">
+                <button
+                  onClick={() => setViewMode('original')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                    viewMode === 'original'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Free
+                </button>
+                <button
+                  onClick={() => setViewMode('pro')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                    viewMode === 'pro'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Pro
+                </button>
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"

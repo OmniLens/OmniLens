@@ -102,3 +102,31 @@ export function formatRunTime(dateString: string): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// ============================================================================
+// Feature Flag Utilities
+// ============================================================================
+
+/**
+ * Check if a feature is enabled based on environment variables
+ * Checks NEXT_PUBLIC_ENABLE_<FEATURE> environment variable
+ * Falls back to NODE_ENV !== 'production' if env var not set
+ * Returns true in development, false in production by default
+ * @param feature - Feature name (e.g., 'UNIT_TESTS', 'LOCAL_REMOTE_SWITCHER')
+ * @returns true if feature is enabled, false otherwise
+ * @example
+ * isFeatureEnabled('UNIT_TESTS') // Checks NEXT_PUBLIC_ENABLE_UNIT_TESTS
+ * isFeatureEnabled('LOCAL_REMOTE_SWITCHER') // Checks NEXT_PUBLIC_ENABLE_LOCAL_REMOTE_SWITCHER
+ */
+export function isFeatureEnabled(feature: string): boolean {
+  const envVarName = `NEXT_PUBLIC_ENABLE_${feature}`;
+  const envValue = process.env[envVarName];
+  
+  // If environment variable is explicitly set, use its value
+  if (envValue !== undefined) {
+    return envValue === 'true' || envValue === '1';
+  }
+  
+  // Default behavior: enabled in development, disabled in production
+  return process.env.NODE_ENV !== 'production';
+}
+
