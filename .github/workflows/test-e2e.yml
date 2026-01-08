@@ -12,7 +12,7 @@ on:
 jobs:
   test-e2e:
     name: 🎭 Run E2E tests
-    runs-on: tenki-standard-autoscale
+    runs-on: ubuntu-latest
 
     env:
       PLAYWRIGHT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL }}

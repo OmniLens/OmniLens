@@ -12,7 +12,7 @@ on:
 jobs:
   test-unit:
     name: 🧪 Run unit tests
-    runs-on: tenki-standard-autoscale
+    runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout code

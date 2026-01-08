@@ -12,7 +12,7 @@ on:
 jobs:
   test-github-status:
     name: 🧪 Run GitHub status tests
-    runs-on: tenki-standard-autoscale
+    runs-on: ubuntu-latest
 
     env:
       GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
