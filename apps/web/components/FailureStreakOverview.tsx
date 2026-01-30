@@ -60,15 +60,17 @@ export default function FailureStreakOverview({
   }, [runsAsOfToday]);
 
   return (
-    <Card className="w-full flex flex-col">
-      <CardHeader className="pb-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <TrendingDown className="h-5 w-5 text-amber-500" />
-          <CardTitle className="text-base font-medium">Failure Streak</CardTitle>
+    <Card className="w-full min-w-0 flex flex-col">
+      <CardHeader className="pb-2 shrink-0 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <TrendingDown className="h-4 w-4 text-amber-500 shrink-0" />
+          <CardTitle className="text-sm font-medium text-muted-foreground whitespace-nowrap truncate min-w-0">
+            Failure Streak
+          </CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 pb-4">
-        <div className="text-2xl font-bold">{longestFailureStreak}</div>
+      <CardContent className="pt-0 pb-3">
+        <div className="text-base font-semibold tabular-nums">{longestFailureStreak}</div>
       </CardContent>
     </Card>
   );

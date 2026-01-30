@@ -44,34 +44,34 @@ export default function WorkflowYearSummaryBar({
   const majorityOsLabel = majorityRuntimeOs ?? placeholder;
 
   return (
-    <Card className="w-full flex-1 min-h-0 flex flex-col">
-      <CardContent className="px-5 py-5 sm:px-6 sm:py-6 flex-1 flex flex-col justify-center min-h-[4rem]">
-        <div className="flex w-full flex-wrap items-center justify-between gap-x-10 gap-y-5 sm:gap-x-14 sm:gap-y-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-500/15">
-              <Server className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+    <Card className="w-full flex-1 min-h-0 flex flex-col min-w-0">
+      <CardContent className="px-3 py-3 sm:px-5 sm:py-4 flex-1 flex flex-col justify-center min-h-[4rem] min-w-0">
+        <div className="grid grid-cols-3 w-full min-w-0 gap-2 sm:gap-4 items-center">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/15 sm:h-9 sm:w-9">
+              <Server className="h-4 w-4 text-sky-600 dark:text-sky-400 sm:h-5 sm:w-5" />
             </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Hosted runners</p>
-              <p className="text-sm font-semibold">{hostedLabel}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/15">
-              <Monitor className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Self-hosted runners</p>
-              <p className="text-sm font-semibold">{selfHostedLabel}</p>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate">Hosted runners</p>
+              <p className="text-sm font-semibold truncate tabular-nums">{hostedLabel}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-500/15">
-              <Cpu className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 sm:h-9 sm:w-9">
+              <Monitor className="h-4 w-4 text-amber-600 dark:text-amber-400 sm:h-5 sm:w-5" />
             </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Majority Runtime OS</p>
-              <p className="text-sm font-semibold">{majorityOsLabel}</p>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate">Self-hosted runners</p>
+              <p className="text-sm font-semibold truncate tabular-nums">{selfHostedLabel}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-500/15 sm:h-9 sm:w-9">
+              <Cpu className="h-4 w-4 text-rose-600 dark:text-rose-400 sm:h-5 sm:w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate">Runtime OS</p>
+              <p className="text-sm font-semibold truncate tabular-nums">{majorityOsLabel}</p>
             </div>
           </div>
         </div>

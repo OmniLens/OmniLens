@@ -44,7 +44,7 @@ export default function WorkflowRunsHistoryMonth({
     <div className="flex flex-col gap-4 w-full h-full min-h-0">
       {/* Three widgets – content height, no stretch */}
       <div className="flex gap-6 w-full items-start shrink-0">
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-[7.5rem]">
           <FailureStreakOverview runs={runs} />
         </div>
         <div className="flex-1 min-w-0">

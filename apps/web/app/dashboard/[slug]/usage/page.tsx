@@ -191,7 +191,7 @@ export default function RepoUsagePage() {
                   <Cpu className="h-5 w-5 text-rose-600 dark:text-rose-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Majority Runtime OS</p>
+                  <p className="text-sm font-medium text-muted-foreground">Runtime OS</p>
                   <p className="text-lg font-semibold">
                     {isLoading ? "—" : summary?.majorityRuntimeOs ?? "—"}
                   </p>
