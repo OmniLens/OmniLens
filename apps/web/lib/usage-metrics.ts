@@ -13,7 +13,6 @@ export type RuntimeOs = "Linux" | "macOS" | "Windows";
 
 export interface UsageSummary {
   totalMinutes: number;
-  totalJobRuns: number;
   totalJobs: number;
   /** Number of distinct workflows that used hosted runners (for long widget: "one runner per workflow") */
   totalHostedJobRuns: number;
@@ -207,7 +206,6 @@ export async function getUsageMetrics(
   return {
     summary: {
       totalMinutes: Math.round(totalMinutes * 10) / 10,
-      totalJobRuns: runs.length,
       totalJobs,
       totalHostedJobRuns: workflowsUsingHosted,
       totalSelfHostedJobRuns: workflowsUsingSelfHosted,

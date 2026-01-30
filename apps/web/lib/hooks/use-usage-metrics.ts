@@ -8,7 +8,6 @@ export type RuntimeOs = "Linux" | "macOS" | "Windows";
 
 export interface UsageSummary {
   totalMinutes: number;
-  totalJobRuns: number;
   totalJobs: number;
   totalHostedJobRuns: number;
   totalSelfHostedJobRuns: number;

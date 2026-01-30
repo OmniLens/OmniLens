@@ -145,19 +145,6 @@ export default function RepoUsagePage() {
               </p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium text-muted-foreground">Total job runs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">
-                {isLoading ? "—" : summary != null ? summary.totalJobRuns : "—"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Total workflow runs across all workflows in this repository for the selected period
-              </p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Long widget: Hosted / Self-hosted / Majority OS */}

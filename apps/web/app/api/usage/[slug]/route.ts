@@ -114,7 +114,6 @@ export const GET = withAuth(async (request: NextRequest, context, authData) => {
 
     // Debug: log what we return so we can verify usage bar gets real data
     console.log("[usage API]", validatedSlug, period, {
-      runsInRange: result.summary.totalJobRuns,
       totalHostedJobRuns: result.summary.totalHostedJobRuns,
       totalSelfHostedJobRuns: result.summary.totalSelfHostedJobRuns,
       majorityRuntimeOs: result.summary.majorityRuntimeOs,
