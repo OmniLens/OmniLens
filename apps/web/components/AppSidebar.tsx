@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Github, BookOpen, FileText, BookCheck, FileCheck, Globe } from "lucide-react";
+import { LayoutDashboard, LogOut, Github, BookOpen, FileText, BookCheck, FileCheck, Globe, BarChart3 } from "lucide-react";
 
 // Internal component imports
 import {
@@ -50,8 +50,9 @@ import { useSession, signOut } from "@/lib/auth-client";
 /**
  * AppSidebar component
  * Main navigation sidebar for authenticated users
- * Displays logo, navigation items (Summary, Testing Frameworks, Unit Tests), and user menu
+ * Displays logo, navigation items (Summary, Workflows), and user menu
  * Responsive design with collapsible functionality
+ * Note: Testing Frameworks menu temporarily disabled - functionality preserved for later restoration
  */
 export function AppSidebar() {
   const pathname = usePathname();
@@ -87,8 +88,10 @@ export function AppSidebar() {
 
   // Active state logic
   const isSummaryActive = isRepoPage && (!repoPageType || repoPageType === 'summary');
-  const isTestingActive = isRepoPage && repoPageType === 'testing';
-  const isUnitTestsActive = isRepoPage && repoPageType === 'testing' && repoPageSubType === 'unit';
+  // Temporarily disabled - functionality preserved for later restoration
+  // const isTestingActive = isRepoPage && repoPageType === 'testing';
+  // const isUnitTestsActive = isRepoPage && repoPageType === 'testing' && repoPageSubType === 'unit';
+  const isWorkflowsActive = isRepoPage && repoPageType === 'workflows';
 //   const isWorkflowsActive = isRepoPage && repoPageType === 'workflows';
 //   const isRunnersActive = isRepoPage && repoPageType === 'runners';
 //   const isUsageActive = isRepoPage && repoPageType === 'usage';
@@ -153,7 +156,19 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
+                  {/* Workflows - Links to /dashboard/[slug]/workflows */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isWorkflowsActive} tooltip="Workflows">
+                      <Link href={`/dashboard/${repoSlug}/workflows`}>
+                        <BarChart3 />
+                        <span>Workflows</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
                   {/* Testing - Links to /dashboard/[slug]/testing with Unit Tests as submenu */}
+                  {/* Temporarily disabled - functionality preserved for later restoration */}
+                  {/* 
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={isTestingActive} tooltip="Testing Frameworks">
                       <Link href={`/dashboard/${repoSlug}/testing`}>
@@ -161,10 +176,8 @@ export function AppSidebar() {
                         <span>Testing Frameworks</span>
                       </Link>
                     </SidebarMenuButton>
-                    {/* Unit Tests submenu - Only shown if feature flag is enabled */}
                     {isUnitTestsEnabled && (
                       <SidebarMenuSub>
-                        {/* Unit Tests - Links to /dashboard/[slug]/testing/unit */}
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton asChild isActive={isUnitTestsActive}>
                             <Link href={`/dashboard/${repoSlug}/testing/unit`}>
@@ -176,16 +189,7 @@ export function AppSidebar() {
                       </SidebarMenuSub>
                     )}
                   </SidebarMenuItem>
-
-                  {/* Workflows - Links to /dashboard/[slug]/workflows */}
-                  {/* <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isWorkflowsActive} tooltip="Workflows">
-                      <Link href={`/dashboard/${repoSlug}/workflows`}>
-                        <BarChart3 />
-                        <span>Workflows</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem> */}
+                  */}
 
                   {/* Runners - Links to /dashboard/[slug]/runners */}
                   {/* <SidebarMenuItem>

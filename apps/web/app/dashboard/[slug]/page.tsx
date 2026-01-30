@@ -477,6 +477,7 @@ export default function DashboardPage() {
                           key={workflow.id}
                           run={enhancedRun}
                           healthStatus={healthStatus}
+                          repoSlug={repoSlug}
                         />
                       );
                     })}
@@ -499,7 +500,7 @@ export default function DashboardPage() {
                   {/* Idle workflow cards grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {idleWorkflows.map((workflow) => (
-                      <IdleWorkflowCard key={workflow.id} workflow={workflow} />
+                      <IdleWorkflowCard key={workflow.id} workflow={workflow} repoSlug={repoSlug} />
                     ))}
                   </div>
                 </div>

@@ -215,6 +215,47 @@ export async function deleteWorkflows(repoSlug: string, userId: string) {
   }
 }
 
+/**
+ * Get all workflows across all repositories for a user
+ * Returns workflows with their repository information
+ */
+export async function getAllUserWorkflows(userId: string): Promise<Array<{
+  id: number;
+  name: string;
+  path: string;
+  state: string;
+  repoSlug: string;
+  repoPath: string;
+  repoDisplayName: string;
+  createdAt: string;
+  updatedAt: string;
+}>> {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        w.workflow_id as id,
+        w.workflow_name as name,
+        w.workflow_path as path,
+        w.workflow_state as state,
+        w.repo_slug as "repoSlug",
+        r.repo_path as "repoPath",
+        r.display_name as "repoDisplayName",
+        w.created_at as "createdAt",
+        w.updated_at as "updatedAt"
+      FROM workflows w
+      INNER JOIN repositories r ON w.repo_slug = r.slug AND w.user_id = r.user_id
+      WHERE w.user_id = $1 AND w.workflow_state = 'active'
+      ORDER BY w.workflow_name, r.display_name`,
+      [userId]
+    );
+    
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting all user workflows:', error);
+    throw error;
+  }
+}
+
 // User management functions
 export interface User {
   id: string;
