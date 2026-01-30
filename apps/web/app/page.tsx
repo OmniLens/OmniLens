@@ -3,7 +3,7 @@
 // External library imports
 import Image from "next/image";
 import Link from "next/link";
-import { Radio, FolderOpen, BarChart3, ScanSearch } from "lucide-react";
+import { Radio, FolderOpen, BarChart3 } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
@@ -142,75 +142,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Auto-Detect Section - Premium feature */}
-      <div className="relative px-6 md:px-12 lg:px-16 xl:px-24 py-16">
-        <div className="w-full max-w-[1920px] mx-auto relative z-10">
-          {/* Section Header */}
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              Auto-Detect
-            </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Intelligent framework detection for your testing infrastructure.
-            </p>
-          </div>
-
-          {/* Premium Content Card - Full width with gradient border */}
-          <div className="relative group">
-            {/* Gradient border effect */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 rounded-2xl opacity-20 group-hover:opacity-30 blur-sm transition-opacity"></div>
-            
-            {/* Main content container */}
-            <div className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-orange-500/30 rounded-2xl p-8 md:p-12 lg:p-16 shadow-2xl">
-              <div className="flex flex-col lg:flex-row items-start gap-10 lg:gap-16">
-                {/* Icon and Visual Element */}
-                <div className="flex-shrink-0">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-600 to-orange-700 rounded-2xl blur-xl opacity-40"></div>
-                    <div className="relative w-24 h-24 bg-gradient-to-br from-orange-600 to-orange-700 rounded-2xl flex items-center justify-center shadow-2xl">
-                      <ScanSearch className="h-12 w-12 text-white" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content Section */}
-                <div className="flex-1 w-full">
-                  <div className="mb-8">
-                    <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                      Unit Testing Frameworks
-                    </h3>
-                    <p className="text-gray-200 text-lg md:text-xl leading-relaxed">
-                      OmniLens intelligently scans your project files and identifies the testing framework you're using.
-                    </p>
-                  </div>
-
-                  {/* Supported Frameworks - Premium display */}
-                  <div>
-                    <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-6">
-                      Supported Frameworks
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {['Jest', 'Vitest', 'Mocha'].map((framework) => (
-                        <div
-                          key={framework}
-                          className="relative group/framework"
-                        >
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-600/50 to-orange-500/50 rounded-lg opacity-0 group-hover/framework:opacity-100 blur transition-opacity"></div>
-                          <div className="relative px-4 py-3 bg-gradient-to-br from-orange-500/60 to-orange-600/50 border border-orange-500/70 rounded-lg shadow-md">
-                            <span className="text-orange-100 font-semibold text-sm">
-                              {framework}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* CTA Section - Final call-to-action */}
       <div className="relative px-6 md:px-12 lg:px-16 xl:px-24 py-12">

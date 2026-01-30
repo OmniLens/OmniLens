@@ -2,12 +2,14 @@
 
 // External library imports
 import React from "react";
-import { CheckCircle, Clock, XCircle, TrendingUp, TrendingDown, AlertTriangle, Workflow } from 'lucide-react';
+import { CheckCircle, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { Bar, BarChart, PieChart, Pie, Cell, XAxis } from 'recharts';
 
 // Internal component imports
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import WorkflowCountsOverview from '@/components/WorkflowCountsOverview';
+import RuntimeOverview from '@/components/RuntimeOverview';
 
 // ============================================================================
 // Type Definitions
@@ -21,30 +23,6 @@ interface WorkflowMetricsPreviewProps {
   dataDuration?: number;
   /** Whether to auto-play the animation (deprecated - no longer used) */
   autoPlay?: boolean;
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Format duration from seconds to human-readable format
- * Converts total seconds to hours, minutes, and seconds display
- * @param seconds - Total duration in seconds
- * @returns Formatted duration string (e.g., "2h 30m", "45m 30s", "30s")
- */
-function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  } else {
-    return `${secs}s`;
-  }
 }
 
 // ============================================================================
@@ -149,7 +127,7 @@ export default function WorkflowMetricsPreview(_props?: WorkflowMetricsPreviewPr
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* Card 1: Pass/Fail Rate */}
         <Card className="w-full">
           <CardHeader>
@@ -162,46 +140,17 @@ export default function WorkflowMetricsPreview(_props?: WorkflowMetricsPreviewPr
           </CardContent>
         </Card>
 
-        {/* Card 2: Overview */}
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-xl">Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Workflow className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm">Workflows</span>
-                </div>
-                <span className="text-sm font-medium">Workflows {overviewData.activeWorkflows}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-sm">Completed</span>
-                </div>
-                <span className="text-sm font-medium">{overviewData.completedRuns}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <XCircle className="h-4 w-4 text-red-500" />
-                  <span className="text-sm">Didn&apos;t run</span>
-                </div>
-                <span className="text-sm font-medium">{overviewData.didntRunCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Clock className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm">Total Runtime</span>
-                </div>
-                <span className="text-sm font-medium">{formatDuration(overviewData.totalRuntime)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Card 2: Workflow Counts - Workflow and run count statistics */}
+        <WorkflowCountsOverview
+          activeWorkflows={overviewData.activeWorkflows}
+          completedRuns={overviewData.completedRuns}
+          didntRunCount={overviewData.didntRunCount}
+        />
 
-        {/* Card 3: Workflow Health */}
+        {/* Card 3: Runtime - Total runtime statistics */}
+        <RuntimeOverview totalRuntime={overviewData.totalRuntime} />
+
+        {/* Card 4: Workflow Health */}
         <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-xl">Workflow Health</CardTitle>
@@ -240,7 +189,7 @@ export default function WorkflowMetricsPreview(_props?: WorkflowMetricsPreviewPr
           </CardContent>
         </Card>
 
-        {/* Card 4: Runs by Hour */}
+        {/* Card 5: Runs by Hour */}
         <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-xl">Runs by hour</CardTitle>

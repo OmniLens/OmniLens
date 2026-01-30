@@ -1,5 +1,5 @@
 // External library imports
-import { Clock, Eye, CheckCircle, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { Clock, Eye, CheckCircle, TrendingUp, TrendingDown, AlertTriangle, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 // Type imports
@@ -28,6 +28,7 @@ interface WorkflowCardProps {
   highlightColor?: string;
   rightAction?: React.ReactNode; // Optional right-side action button (e.g., delete)
   healthStatus?: 'consistent' | 'improved' | 'regressed' | 'still_failing' | 'no_runs_today';
+  repoSlug?: string; // Repository slug for linking to workflows page
 }
 
 // ============================================================================
@@ -67,7 +68,8 @@ export default function WorkflowCard({
   isHighlighted = false,
   highlightColor = '',
   rightAction,
-  healthStatus
+  healthStatus,
+  repoSlug
 }: WorkflowCardProps) {
   // Determine workflow run status - use conclusion if available, otherwise fall back to status
   const status = run.conclusion ?? run.status;
@@ -286,13 +288,21 @@ export default function WorkflowCard({
                  (run.run_started_at && run.updated_at ? duration(run.run_started_at, run.updated_at) : "No duration")}
               </span>
             </div>
-            {/* View button - Links to GitHub Actions run page */}
+            {/* Action buttons - View on GitHub and View Details */}
             <div className="flex items-center gap-2">
               {run.html_url && (
                 <Button variant="outline" size="sm" asChild>
                   <Link href={run.html_url} target="_blank">
                     <Eye className="h-3 w-3 mr-1" />
                     View
+                  </Link>
+                </Button>
+              )}
+              {repoSlug && run.workflow_id && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/dashboard/${repoSlug}/workflows/${run.workflow_id}`}>
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Details
                   </Link>
                 </Button>
               )}
@@ -312,13 +322,14 @@ export default function WorkflowCard({
  * Component for displaying workflows that exist but have no runs yet
  * Uses WorkflowCard with mock data to show an "Idle" state
  */
-export function IdleWorkflowCard({ workflow }: { workflow: Workflow }) {
+export function IdleWorkflowCard({ workflow, repoSlug }: { workflow: Workflow; repoSlug?: string }) {
   const mockRun = createMockRunFromWorkflow(workflow);
 
   return (
     <WorkflowCard
       run={mockRun}
       healthStatus="no_runs_today"
+      repoSlug={repoSlug}
     />
   );
 }
