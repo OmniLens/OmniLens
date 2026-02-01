@@ -66,8 +66,8 @@ export default function WorkflowYearSummaryBar({
             </div>
           </div>
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-500/15 sm:h-9 sm:w-9">
-              <Cpu className="h-4 w-4 text-rose-600 dark:text-rose-400 sm:h-5 sm:w-5" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/15 sm:h-9 sm:w-9">
+              <Cpu className="h-4 w-4 text-purple-600 dark:text-purple-400 sm:h-5 sm:w-5" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground truncate">Runtime OS</p>

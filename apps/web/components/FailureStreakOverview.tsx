@@ -4,7 +4,7 @@ import { TrendingDown } from "lucide-react";
 import type { WorkflowRun } from "@/lib/github";
 
 // Internal component imports
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import OverviewStatCard from "@/components/OverviewStatCard";
 
 // ============================================================================
 // Type Definitions
@@ -60,18 +60,12 @@ export default function FailureStreakOverview({
   }, [runsAsOfToday]);
 
   return (
-    <Card className="w-full min-w-0 flex flex-col">
-      <CardHeader className="pb-2 shrink-0 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <TrendingDown className="h-4 w-4 text-amber-500 shrink-0" />
-          <CardTitle className="text-sm font-medium text-muted-foreground whitespace-nowrap truncate min-w-0">
-            Failure Streak
-          </CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0 pb-3">
-        <div className="text-base font-semibold tabular-nums">{longestFailureStreak}</div>
-      </CardContent>
-    </Card>
+    <OverviewStatCard
+      icon={TrendingDown}
+      iconBgClass="bg-rose-500/15"
+      iconColorClass="text-rose-600 dark:text-rose-400"
+      title="Failure Streak"
+      value={longestFailureStreak}
+    />
   );
 }

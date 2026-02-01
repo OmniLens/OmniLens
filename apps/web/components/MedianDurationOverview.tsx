@@ -4,7 +4,7 @@ import { Clock } from "lucide-react";
 import type { WorkflowRun } from "@/lib/github";
 
 // Internal component imports
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import OverviewStatCard from "@/components/OverviewStatCard";
 
 // Utility imports
 import { formatDurationSeconds } from "@/lib/utils";
@@ -63,21 +63,18 @@ export default function MedianDurationOverview({
       : durations[mid]!;
   }, [runsAsOfToday]);
 
+  const value =
+    medianDurationSeconds === null
+      ? "—"
+      : formatDurationSeconds(medianDurationSeconds);
+
   return (
-    <Card className="w-full flex flex-col">
-      <CardHeader className="pb-1.5 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <Clock className="h-4 w-4 text-purple-500 shrink-0" />
-          <CardTitle className="text-sm font-medium text-muted-foreground whitespace-nowrap truncate min-w-0">Median Time</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0 pb-3">
-        <div className="text-base font-semibold tabular-nums">
-          {medianDurationSeconds === null
-            ? "—"
-            : formatDurationSeconds(medianDurationSeconds)}
-        </div>
-      </CardContent>
-    </Card>
+    <OverviewStatCard
+      icon={Clock}
+      iconBgClass="bg-orange-500/15"
+      iconColorClass="text-orange-600 dark:text-orange-400"
+      title="Median Time"
+      value={value}
+    />
   );
 }

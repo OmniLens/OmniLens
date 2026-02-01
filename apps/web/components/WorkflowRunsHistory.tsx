@@ -14,11 +14,17 @@ interface WorkflowRunsHistoryProps {
   runs: WorkflowRun[];
   startDate: Date;
   endDate: Date;
+  /** Display mode: 'count' shows run count intensity (overview page), 'result' shows workflow result per day (summary page) */
+  mode?: "count" | "result";
 }
+
+/** Result for a single day: derived from the most recent run that day */
+type DayResult = "success" | "failure" | "none";
 
 interface DayData {
   date: Date;
   count: number;
+  result: DayResult;
   dateString: string;
   isInRange: boolean; // Whether this day is within the startDate-endDate range
 }
@@ -75,53 +81,77 @@ function getIntensityLevel(count: number, maxCount: number): number {
   return 1;
 }
 
+/**
+ * Get workflow result for a day from its runs (most recent run wins).
+ * Runs should be sorted by run_started_at descending.
+ * Note: Does not include "running" state - only success/failure/none.
+ */
+function getDayResult(runs: WorkflowRun[]): DayResult {
+  if (runs.length === 0) return "none";
+  const latest = runs[0];
+  if (latest.conclusion === "success") return "success";
+  if (latest.conclusion === "failure") return "failure";
+  // For other statuses (running, cancelled, skipped, etc.), treat as none
+  return "none";
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
 
 /**
  * WorkflowRunsHistory component
- * Displays workflow runs per day in a GitHub commit history-style grid
- * Shows a grid of squares representing each day, with color intensity based on run count
+ * Displays workflow runs per day in a GitHub commit history-style grid.
+ * 
+ * Two modes:
+ * - 'count' (default): Colors by run count intensity (for overview page)
+ * - 'result': Colors by workflow result per day - Passed (green), Failed (red), or No runs (muted) (for summary page)
  */
 export default function WorkflowRunsHistory({
   runs,
   startDate,
-  endDate
+  endDate,
+  mode = "count"
 }: WorkflowRunsHistoryProps) {
-  // Calculate runs per day
+  // Group runs by day and compute data per day
   const runsPerDay = useMemo(() => {
-    const dayMap = new Map<string, number>();
-    
-    // Initialize all days in range with 0
-    const allDays = getAllDaysInRange(startDate, endDate);
-    allDays.forEach(day => {
-      dayMap.set(formatDateString(day), 0);
-    });
-    
-    // Count runs per day
+    const runsByDayMap = new Map<string, WorkflowRun[]>();
     runs.forEach(run => {
       const runDate = new Date(run.run_started_at);
       const dateKey = formatDateString(runDate);
-      const currentCount = dayMap.get(dateKey) || 0;
-      dayMap.set(dateKey, currentCount + 1);
+      if (!runsByDayMap.has(dateKey)) runsByDayMap.set(dateKey, []);
+      runsByDayMap.get(dateKey)!.push(run);
     });
-    
-    // Convert to array of DayData - only include days within the range
-    const dayData: DayData[] = allDays.map(day => ({
-      date: day,
-      count: dayMap.get(formatDateString(day)) || 0,
-      dateString: formatDateString(day),
-      isInRange: true // All days from getAllDaysInRange are in range
-    }));
-    
+    // Sort each day's runs by run_started_at descending (most recent first)
+    runsByDayMap.forEach(dayRuns => {
+      dayRuns.sort(
+        (a, b) =>
+          new Date(b.run_started_at).getTime() -
+          new Date(a.run_started_at).getTime()
+      );
+    });
+
+    const allDays = getAllDaysInRange(startDate, endDate);
+    const dayData: DayData[] = allDays.map(day => {
+      const dateKey = formatDateString(day);
+      const dayRuns = runsByDayMap.get(dateKey) || [];
+      const result = mode === "result" ? getDayResult(dayRuns) : "none";
+      return {
+        date: day,
+        count: dayRuns.length,
+        result,
+        dateString: dateKey,
+        isInRange: true
+      };
+    });
     return dayData;
-  }, [runs, startDate, endDate]);
+  }, [runs, startDate, endDate, mode]);
   
-  // Calculate max count for intensity scaling
+  // Calculate max count for intensity scaling (only used in count mode)
   const maxCount = useMemo(() => {
+    if (mode !== "count") return 1;
     return Math.max(...runsPerDay.map(d => d.count), 1);
-  }, [runsPerDay]);
+  }, [runsPerDay, mode]);
   
   // Group days by week (Sunday to Saturday)
   // Only show data squares for days within the current year (startDate to endDate)
@@ -160,6 +190,7 @@ export default function WorkflowRunsHistory({
         const dayData = dayMap.get(dateString) || {
           date: new Date(currentDate),
           count: 0,
+          result: "none" as DayResult,
           dateString,
           isInRange: true
         };
@@ -169,6 +200,7 @@ export default function WorkflowRunsHistory({
         currentWeek.push({
           date: new Date(currentDate),
           count: 0,
+          result: "none" as DayResult,
           dateString,
           isInRange: false
         });
@@ -225,17 +257,34 @@ export default function WorkflowRunsHistory({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl">Runs This Year</CardTitle>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="text-[10px]">Less</span>
-            <div className="flex items-center gap-0.5">
-              <div className="w-2.5 h-2.5 rounded-[2px] bg-muted border border-border" />
-              <div className="w-2.5 h-2.5 rounded-[2px] bg-[#9be9a8] dark:bg-[#0e4429]" />
-              <div className="w-2.5 h-2.5 rounded-[2px] bg-[#40c463] dark:bg-[#006d32]" />
-              <div className="w-2.5 h-2.5 rounded-[2px] bg-[#30a14e] dark:bg-[#26a641]" />
-              <div className="w-2.5 h-2.5 rounded-[2px] bg-[#216e39] dark:bg-[#39d353]" />
+          {mode === "count" ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="text-[10px]">Less</span>
+              <div className="flex items-center gap-0.5">
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-muted border border-border" />
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-[#9be9a8] dark:bg-[#0e4429]" />
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-[#40c463] dark:bg-[#006d32]" />
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-[#30a14e] dark:bg-[#26a641]" />
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-[#216e39] dark:bg-[#39d353]" />
+              </div>
+              <span className="text-[10px]">More</span>
             </div>
-            <span className="text-[10px]">More</span>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-muted border border-border" title="No runs" />
+                <span className="text-[10px]">No runs</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-[#22c55e] dark:bg-[#16a34a]" title="Passed" />
+                <span className="text-[10px]">Passed</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-[#ef4444] dark:bg-[#dc2626]" title="Failed" />
+                <span className="text-[10px]">Failed</span>
+              </div>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="pt-0 pb-3">
@@ -268,25 +317,53 @@ export default function WorkflowRunsHistory({
                     const isFuture = dayDate > today;
                     const isToday = formatDateString(day.date) === formatDateString(new Date());
                     
-                    // For future dates, always show as empty (0 intensity)
-                    const intensity = isFuture ? 0 : getIntensityLevel(day.count, maxCount);
+                    // Determine color and label based on mode
+                    let colorClass: string;
+                    let tooltipLabel: string;
                     
-                    // GitHub-style color classes (matching GitHub's contribution graph colors)
-                    const colorClasses = [
-                      'bg-muted border border-border', // 0 runs or future
-                      'bg-[#9be9a8] dark:bg-[#0e4429]', // 1 (low)
-                      'bg-[#40c463] dark:bg-[#006d32]', // 2 (medium-low)
-                      'bg-[#30a14e] dark:bg-[#26a641]', // 3 (medium-high)
-                      'bg-[#216e39] dark:bg-[#39d353]'  // 4 (high)
-                    ];
-                    
+                    if (mode === "count") {
+                      // Count mode: use intensity-based coloring
+                      const intensity = isFuture ? 0 : getIntensityLevel(day.count, maxCount);
+                      const colorClasses = [
+                        "bg-muted border border-border", // 0 runs or future
+                        "bg-[#9be9a8] dark:bg-[#0e4429]", // 1 (low)
+                        "bg-[#40c463] dark:bg-[#006d32]", // 2 (medium-low)
+                        "bg-[#30a14e] dark:bg-[#26a641]", // 3 (medium-high)
+                        "bg-[#216e39] dark:bg-[#39d353]"  // 4 (high)
+                      ];
+                      colorClass = colorClasses[intensity];
+                      tooltipLabel = isFuture 
+                        ? "No runs" 
+                        : `${day.count} ${day.count === 1 ? "run" : "runs"}`;
+                    } else {
+                      // Result mode: use result-based coloring
+                      const displayResult = isFuture ? "none" : day.result;
+                      const resultColorClasses: Record<DayResult, string> = {
+                        none: "bg-muted border border-border",
+                        success: "bg-[#22c55e] dark:bg-[#16a34a]",
+                        failure: "bg-[#ef4444] dark:bg-[#dc2626]"
+                      };
+                      const resultLabels: Record<DayResult, string> = {
+                        none: "No runs",
+                        success: "Passed",
+                        failure: "Failed"
+                      };
+                      colorClass = resultColorClasses[displayResult];
+                      const resultLabel = resultLabels[displayResult];
+                      tooltipLabel = isFuture
+                        ? "No runs"
+                        : day.count > 0
+                          ? `${resultLabel} — ${day.count} ${day.count === 1 ? "run" : "runs"}`
+                          : resultLabel;
+                    }
+
                     return (
                       <Tooltip key={`${day.dateString}-${dayIndex}`}>
                         <TooltipTrigger asChild>
                           <div
-                            className={`w-2.5 h-2.5 rounded-[2px] ${colorClasses[intensity]} ${
-                              isToday ? 'ring-1 ring-primary ring-offset-1' : ''
-                            } ${isFuture ? 'opacity-50' : 'cursor-pointer hover:ring-1 hover:ring-primary hover:ring-offset-1'} transition-all`}
+                            className={`w-2.5 h-2.5 rounded-[2px] ${colorClass} ${
+                              isToday ? "ring-1 ring-primary ring-offset-1" : ""
+                            } ${isFuture ? "opacity-50" : "cursor-pointer hover:ring-1 hover:ring-primary hover:ring-offset-1"} transition-all`}
                           />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="bg-gray-900 text-white border-gray-700">
@@ -295,23 +372,24 @@ export default function WorkflowRunsHistory({
                               <>
                                 <div className="font-semibold text-white">No runs</div>
                                 <div className="text-gray-300">
-                                  {day.date.toLocaleDateString('en-US', { 
-                                    weekday: 'long', 
-                                    month: 'long', 
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                  })} (Future)
+                                  {day.date.toLocaleDateString("en-US", {
+                                    weekday: "long",
+                                    month: "long",
+                                    day: "numeric",
+                                    year: "numeric"
+                                  })}{" "}
+                                  (Future)
                                 </div>
                               </>
                             ) : (
                               <>
-                                <div className="font-semibold text-white">{day.count} {day.count === 1 ? 'run' : 'runs'}</div>
+                                <div className="font-semibold text-white">{tooltipLabel}</div>
                                 <div className="text-gray-300">
-                                  {day.date.toLocaleDateString('en-US', { 
-                                    weekday: 'long', 
-                                    month: 'long', 
-                                    day: 'numeric',
-                                    year: 'numeric'
+                                  {day.date.toLocaleDateString("en-US", {
+                                    weekday: "long",
+                                    month: "long",
+                                    day: "numeric",
+                                    year: "numeric"
                                   })}
                                 </div>
                               </>

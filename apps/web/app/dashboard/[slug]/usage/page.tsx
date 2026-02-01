@@ -174,8 +174,8 @@ export default function RepoUsagePage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-500/15">
-                  <Cpu className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-500/15">
+                  <Cpu className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Runtime OS</p>

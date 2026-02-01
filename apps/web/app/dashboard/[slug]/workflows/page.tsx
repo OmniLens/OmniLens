@@ -151,7 +151,7 @@ export default function RepoWorkflowsPage() {
             {/* GitHub-style commit history cards - side by side */}
             {allRunsForMonth.length > 0 && yearDateRange && (
               <div className="flex gap-6 w-full items-stretch">
-                {/* Runs This Year */}
+                {/* Runs This Year - natural width */}
                 <div className="shrink-0">
                   <WorkflowRunsHistory
                     runs={allRunsForMonth}

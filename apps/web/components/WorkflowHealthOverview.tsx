@@ -4,8 +4,7 @@ import { CalendarCheck, Clock, TrendingDown } from "lucide-react";
 import type { WorkflowRun } from "@/lib/github";
 
 // Internal component imports
-import WorkflowHealthStats, { type StatConfig } from "@/components/WorkflowHealthStats";
-import WorkflowYearSummaryBar from "@/components/WorkflowYearSummaryBar";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Utility imports
 import { formatDurationSeconds } from "@/lib/utils";
@@ -14,18 +13,11 @@ import { formatDurationSeconds } from "@/lib/utils";
 // Type Definitions
 // ============================================================================
 
-export interface UsageSummaryForBar {
-  totalHostedJobRuns: number | null;
-  totalSelfHostedJobRuns: number | null;
-  majorityRuntimeOs: string | null;
-}
-
-interface WorkflowRunsHistoryMonthProps {
+/**
+ * Props for the WorkflowHealthOverview component
+ */
+export interface WorkflowHealthOverviewProps {
   runs: WorkflowRun[];
-  /** Usage summary for the long widget (from usage API); when not provided, bar shows — for each value */
-  usageSummary?: UsageSummaryForBar | null;
-  /** When true, bar shows loading placeholder for usage values */
-  usageLoading?: boolean;
 }
 
 // ============================================================================
@@ -33,17 +25,14 @@ interface WorkflowRunsHistoryMonthProps {
 // ============================================================================
 
 /**
- * WorkflowRunsHistoryMonth component
- * Top row: one card with three health stats displayed horizontally (Failure Streak, Days Since Failure, Median Duration).
- * Bottom row: one full-width component spanning the width of the three widgets.
- * Used in workflow history page next to "Runs This Year" heatmap.
+ * WorkflowHealthOverview component
+ * Single card with three health stats in one row (same layout as WorkflowYearSummaryBar):
+ * Failure Streak, Since Last Fail, Median Time.
+ * Used on the workflow overview next to "Runs This Year" heatmap.
  */
-export default function WorkflowRunsHistoryMonth({
+export default function WorkflowHealthOverview({
   runs,
-  usageSummary = null,
-  usageLoading = false,
-}: WorkflowRunsHistoryMonthProps) {
-  // Filter runs to only include those up to today
+}: WorkflowHealthOverviewProps) {
   const runsAsOfToday = useMemo(() => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
@@ -53,7 +42,6 @@ export default function WorkflowRunsHistoryMonth({
     });
   }, [runs]);
 
-  // Calculate longest failure streak
   const longestFailureStreak = useMemo(() => {
     const completed = runsAsOfToday
       .filter((run) => run.status === "completed")
@@ -75,7 +63,6 @@ export default function WorkflowRunsHistoryMonth({
     return maxStreak;
   }, [runsAsOfToday]);
 
-  // Calculate days since last failure
   const daysSinceLastFailure = useMemo(() => {
     const failedRuns = runsAsOfToday.filter(
       (run) => run.status === "completed" && run.conclusion === "failure"
@@ -95,7 +82,6 @@ export default function WorkflowRunsHistoryMonth({
     );
   }, [runsAsOfToday]);
 
-  // Calculate median duration
   const medianDurationSeconds = useMemo(() => {
     const durations = runsAsOfToday
       .filter(
@@ -118,7 +104,6 @@ export default function WorkflowRunsHistoryMonth({
       : durations[mid]!;
   }, [runsAsOfToday]);
 
-  // Format values
   const sinceLastFailValue =
     daysSinceLastFailure === null
       ? "—"
@@ -128,51 +113,54 @@ export default function WorkflowRunsHistoryMonth({
       ? "—"
       : formatDurationSeconds(medianDurationSeconds);
 
-  // Create stats array for WorkflowHealthStats component
-  const stats: StatConfig[] = useMemo(
-    () => [
-      {
-        icon: TrendingDown,
-        iconBgClass: "bg-rose-500/15",
-        iconColorClass: "text-rose-600 dark:text-rose-400",
-        title: "Failure Streak",
-        value: longestFailureStreak,
-      },
-      {
-        icon: CalendarCheck,
-        iconBgClass: "bg-green-500/15",
-        iconColorClass: "text-green-600 dark:text-green-400",
-        title: "Since Last Fail",
-        value: sinceLastFailValue,
-      },
-      {
-        icon: Clock,
-        iconBgClass: "bg-orange-500/15",
-        iconColorClass: "text-orange-600 dark:text-orange-400",
-        title: "Median Time",
-        value: medianTimeValue,
-      },
-    ],
-    [longestFailureStreak, sinceLastFailValue, medianTimeValue]
-  );
-
   return (
-    <div className="flex flex-col gap-4 w-full h-full min-h-0">
-      {/* Health stats: Failure Streak, Since Last Fail, Median Time (one card with three stats horizontally) */}
-      <div className="w-full flex-1 min-h-0 flex">
-        <WorkflowHealthStats stats={stats} />
-      </div>
-
-      {/* Full-width bar: Hosted runners, Self-hosted, Runtime OS */}
-      <div className="w-full flex-1 min-h-0 flex">
-        <WorkflowYearSummaryBar
-          runs={runs}
-          totalHostedJobRuns={usageSummary?.totalHostedJobRuns ?? null}
-          totalSelfHostedJobRuns={usageSummary?.totalSelfHostedJobRuns ?? null}
-          majorityRuntimeOs={usageSummary?.majorityRuntimeOs ?? null}
-          isLoading={usageLoading}
-        />
-      </div>
-    </div>
+    <Card className="w-full min-w-0 flex flex-col shrink-0">
+      <CardContent className="px-3 py-3 sm:px-5 sm:py-4 flex flex-col justify-center min-h-[4rem] min-w-0">
+        <div className="grid grid-cols-3 w-full min-w-0 gap-2 sm:gap-4 items-center">
+          {/* Failure Streak */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-500/15 sm:h-9 sm:w-9">
+              <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400 sm:h-5 sm:w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate">
+                Failure Streak
+              </p>
+              <p className="text-sm font-semibold truncate tabular-nums">
+                {longestFailureStreak}
+              </p>
+            </div>
+          </div>
+          {/* Since Last Fail */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/15 sm:h-9 sm:w-9">
+              <CalendarCheck className="h-4 w-4 text-green-600 dark:text-green-400 sm:h-5 sm:w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate">
+                Since Last Fail
+              </p>
+              <p className="text-sm font-semibold truncate tabular-nums">
+                {sinceLastFailValue}
+              </p>
+            </div>
+          </div>
+          {/* Median Time */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-500/15 sm:h-9 sm:w-9">
+              <Clock className="h-4 w-4 text-orange-600 dark:text-orange-400 sm:h-5 sm:w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate">
+                Median Time
+              </p>
+              <p className="text-sm font-semibold truncate tabular-nums">
+                {medianTimeValue}
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

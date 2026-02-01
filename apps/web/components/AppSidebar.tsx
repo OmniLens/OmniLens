@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Github, BookOpen, FileText, BookCheck, FileCheck, Globe, BarChart3 } from "lucide-react";
+import { LayoutDashboard, LogOut, Github, BookOpen, FileText, BookCheck, FileCheck, Globe, BarChart3, Sparkles } from "lucide-react";
 
 // Internal component imports
 import {
@@ -91,8 +91,8 @@ export function AppSidebar() {
   // Temporarily disabled - functionality preserved for later restoration
   // const isTestingActive = isRepoPage && repoPageType === 'testing';
   // const isUnitTestsActive = isRepoPage && repoPageType === 'testing' && repoPageSubType === 'unit';
-  const isWorkflowsActive = isRepoPage && repoPageType === 'workflows';
-//   const isWorkflowsActive = isRepoPage && repoPageType === 'workflows';
+  const isWorkflowsActive = isRepoPage && repoPageType === 'workflows' && !repoPageSubType;
+  const isWorkflowSummaryActive = isRepoPage && repoPageType === 'workflows' && !!repoPageSubType;
 //   const isRunnersActive = isRepoPage && repoPageType === 'runners';
 //   const isUsageActive = isRepoPage && repoPageType === 'usage';
 
@@ -164,7 +164,31 @@ export function AppSidebar() {
                         <span>Workflows</span>
                       </Link>
                     </SidebarMenuButton>
+                    {isWorkflowSummaryActive && (
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive tooltip="Summary">
+                            <Link href={pathname ?? ''}>
+                              <Sparkles />
+                              <span>Summary</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    )}
                   </SidebarMenuItem>
+
+                  {/* Workflow Summary icon - visible only when sidebar is collapsed (sub-menu is hidden in icon mode) */}
+                  {isWorkflowSummaryActive ? (
+                    <SidebarMenuItem className="hidden group-data-[collapsible=icon]:flex">
+                      <SidebarMenuButton asChild isActive tooltip="Summary">
+                        <Link href={pathname ?? ''}>
+                          <Sparkles />
+                          <span>Summary</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ) : null}
 
                   {/* Testing - Links to /dashboard/[slug]/testing with Unit Tests as submenu */}
                   {/* Temporarily disabled - functionality preserved for later restoration */}
