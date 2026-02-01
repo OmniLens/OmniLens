@@ -1,6 +1,6 @@
 // External library imports
 import { useMemo } from "react";
-import { CalendarCheck, Clock, TrendingDown } from "lucide-react";
+import { CalendarCheck, Clock, CheckCircle } from "lucide-react";
 import type { WorkflowRun } from "@/lib/github";
 
 // Internal component imports
@@ -34,7 +34,7 @@ interface WorkflowRunsHistoryMonthProps {
 
 /**
  * WorkflowRunsHistoryMonth component
- * Top row: one card with three health stats displayed horizontally (Failure Streak, Days Since Failure, Median Duration).
+ * Top row: one card with three health stats displayed horizontally (Pass Rate, Days Since Failure, Median Duration).
  * Bottom row: one full-width component spanning the width of the three widgets.
  * Used in workflow history page next to "Runs This Year" heatmap.
  */
@@ -53,26 +53,16 @@ export default function WorkflowRunsHistoryMonth({
     });
   }, [runs]);
 
-  // Calculate longest failure streak
-  const longestFailureStreak = useMemo(() => {
-    const completed = runsAsOfToday
-      .filter((run) => run.status === "completed")
-      .sort(
-        (a, b) =>
-          new Date(a.run_started_at).getTime() -
-          new Date(b.run_started_at).getTime()
-      );
-    let maxStreak = 0;
-    let currentStreak = 0;
-    for (const run of completed) {
-      if (run.conclusion === "failure") {
-        currentStreak += 1;
-        maxStreak = Math.max(maxStreak, currentStreak);
-      } else {
-        currentStreak = 0;
-      }
-    }
-    return maxStreak;
+  // Calculate pass rate (success rate percentage)
+  const passRate = useMemo(() => {
+    const completedRuns = runsAsOfToday.filter(
+      (run) => run.status === "completed"
+    );
+    if (completedRuns.length === 0) return null;
+    const passedRuns = completedRuns.filter(
+      (run) => run.conclusion === "success"
+    ).length;
+    return Math.round((passedRuns / completedRuns.length) * 100);
   }, [runsAsOfToday]);
 
   // Calculate days since last failure
@@ -119,6 +109,8 @@ export default function WorkflowRunsHistoryMonth({
   }, [runsAsOfToday]);
 
   // Format values
+  const passRateValue =
+    passRate === null ? "—" : `${passRate}%`;
   const sinceLastFailValue =
     daysSinceLastFailure === null
       ? "—"
@@ -132,16 +124,16 @@ export default function WorkflowRunsHistoryMonth({
   const stats: StatConfig[] = useMemo(
     () => [
       {
-        icon: TrendingDown,
-        iconBgClass: "bg-rose-500/15",
-        iconColorClass: "text-rose-600 dark:text-rose-400",
-        title: "Failure Streak",
-        value: longestFailureStreak,
+        icon: CheckCircle,
+        iconBgClass: "bg-green-500/15",
+        iconColorClass: "text-green-600 dark:text-green-400",
+        title: "Pass Rate",
+        value: passRateValue,
       },
       {
         icon: CalendarCheck,
-        iconBgClass: "bg-green-500/15",
-        iconColorClass: "text-green-600 dark:text-green-400",
+        iconBgClass: "bg-blue-500/15",
+        iconColorClass: "text-blue-600 dark:text-blue-400",
         title: "Since Last Fail",
         value: sinceLastFailValue,
       },
@@ -153,12 +145,12 @@ export default function WorkflowRunsHistoryMonth({
         value: medianTimeValue,
       },
     ],
-    [longestFailureStreak, sinceLastFailValue, medianTimeValue]
+    [passRateValue, sinceLastFailValue, medianTimeValue]
   );
 
   return (
     <div className="flex flex-col gap-4 w-full h-full min-h-0">
-      {/* Health stats: Failure Streak, Since Last Fail, Median Time (one card with three stats horizontally) */}
+      {/* Health stats: Pass Rate, Since Last Fail, Median Time (one card with three stats horizontally) */}
       <div className="w-full flex-1 min-h-0 flex">
         <WorkflowHealthStats stats={stats} />
       </div>

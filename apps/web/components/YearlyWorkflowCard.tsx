@@ -8,6 +8,7 @@ import type { WorkflowRun } from "@/lib/hooks/use-workflows";
 // Internal component imports
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 // Utility imports
 import { cn } from "@/lib/utils";
@@ -36,6 +37,72 @@ interface WorkflowYearlyMetrics {
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/**
+ * Format date to YYYY-MM-DD string using local time (not UTC)
+ * This prevents timezone issues where dates can appear one day ahead
+ */
+function formatDateToDay(dateString: string): string {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Get today's date key (YYYY-MM-DD) for filtering current-day runs
+ */
+function getTodayKey(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Get the latest run status for today only
+ * Returns 'success', 'failure', 'running', or null if no runs today
+ */
+function getTodayLatestRunStatus(runs: WorkflowRun[]): 'success' | 'failure' | 'running' | null {
+  const todayKey = getTodayKey();
+  
+  // Filter runs to only include today's runs
+  const todayRuns = runs.filter(run => formatDateToDay(run.run_started_at) === todayKey);
+  
+  // If no runs today, return null (will show as Idle)
+  if (todayRuns.length === 0) {
+    return null;
+  }
+  
+  // Sort by run_started_at descending to get the most recent run
+  const sortedRuns = [...todayRuns].sort((a, b) => 
+    new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime()
+  );
+  
+  const mostRecent = sortedRuns[0];
+  if (!mostRecent) {
+    return null;
+  }
+  
+  // Check if currently running
+  if (mostRecent.status === 'in_progress' || mostRecent.status === 'queued') {
+    return 'running';
+  }
+  
+  // Check conclusion
+  if (mostRecent.conclusion === 'success') {
+    return 'success';
+  }
+  
+  if (mostRecent.conclusion === 'failure') {
+    return 'failure';
+  }
+  
+  // Default to null if status is unclear
+  return null;
+}
 
 /**
  * Calculate yearly metrics for a workflow
@@ -120,6 +187,9 @@ export default function YearlyWorkflowCard({ workflow, runs, repoSlug }: YearlyW
   const metrics = calculateYearlyMetrics(runs);
   const healthScore = metrics.successRate;
   
+  // Get today's latest run status (only for today's runs)
+  const todayLatestStatus = getTodayLatestRunStatus(runs);
+  
   const getHealthColor = () => {
     if (healthScore >= 90) return 'text-green-500';
     if (healthScore >= 70) return 'text-yellow-500';
@@ -158,17 +228,34 @@ export default function YearlyWorkflowCard({ workflow, runs, repoSlug }: YearlyW
           <CardTitle className="text-base font-semibold truncate flex-1">
             {workflow.name}
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="shrink-0 h-8 w-8 p-0"
-            aria-label="View workflow details"
-          >
-            <a href={`/dashboard/${repoSlug}/workflows/${workflow.id}`}>
-              <Eye className="h-4 w-4" />
-            </a>
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Latest Run Result Badge - Shows Pass, Fail, Running (for today only), or Idle if no runs today */}
+            <Badge
+              variant={
+                todayLatestStatus === 'success' ? 'success' :
+                todayLatestStatus === 'failure' ? 'destructive' :
+                todayLatestStatus === 'running' ? 'destructive' :
+                'secondary'
+              }
+              className={todayLatestStatus === 'running' ? 'bg-blue-500 hover:bg-blue-600 text-white' : ''}
+            >
+              {todayLatestStatus === 'success' ? 'Pass' :
+               todayLatestStatus === 'failure' ? 'Fail' :
+               todayLatestStatus === 'running' ? 'Running' :
+               'Idle'}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="shrink-0 h-8 w-8 p-0"
+              aria-label="View workflow details"
+            >
+              <a href={`/dashboard/${repoSlug}/workflows/${workflow.id}`}>
+                <Eye className="h-4 w-4" />
+              </a>
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-4">
@@ -220,17 +307,23 @@ export function IdleYearlyWorkflowCard({ workflow, repoSlug }: IdleYearlyWorkflo
           <CardTitle className="text-base font-semibold truncate flex-1">
             {workflow.name}
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="shrink-0 h-8 w-8 p-0"
-            aria-label="View workflow details"
-          >
-            <a href={`/dashboard/${repoSlug}/workflows/${workflow.id}`}>
-              <Eye className="h-4 w-4" />
-            </a>
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Latest Run Result Badge - Shows Idle for workflows with no runs */}
+            <Badge variant="secondary">
+              Idle
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="shrink-0 h-8 w-8 p-0"
+              aria-label="View workflow details"
+            >
+              <a href={`/dashboard/${repoSlug}/workflows/${workflow.id}`}>
+                <Eye className="h-4 w-4" />
+              </a>
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-4">

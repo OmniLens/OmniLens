@@ -27,7 +27,7 @@ export interface WorkflowYearSummaryBarProps {
 
 /**
  * WorkflowYearSummaryBar component
- * Full-width bar below the three yearly health widgets (Failure Streak, Days Since Failure, Median Duration).
+ * Full-width bar below the three yearly health widgets (Pass Rate, Days Since Failure, Median Duration).
  * Shows: total hosted runners, total self-hosted runners, majority runtime OS.
  * Pass totalHostedJobRuns, totalSelfHostedJobRuns, majorityRuntimeOs from the usage API; shows — when not yet loaded or unavailable.
  */

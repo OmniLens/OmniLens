@@ -3,7 +3,7 @@
 // External library imports
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ChevronRight, ChevronDown, Github, CheckCircle, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { ChevronRight, ChevronDown, Github, CheckCircle, TrendingUp, TrendingDown, AlertTriangle, Eye } from "lucide-react";
 import { startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 
 // Internal component imports
@@ -763,9 +763,24 @@ export default function WorkflowDetailPage() {
                               {runs.length} {runs.length === 1 ? 'run' : 'runs'}
                             </Badge>
                           )}
-                          <ChevronRight 
-                            className={`h-4 w-4 text-muted-foreground transition-transform ml-auto ${isExpanded ? 'rotate-90' : ''}`}
-                          />
+                          <div className="flex items-center gap-2 ml-auto">
+                            {hasMultipleRuns && isExpanded && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/dashboard/${repoSlug}`);
+                                }}
+                                title="View repository dashboard"
+                                aria-label="View repository dashboard"
+                                className="w-8 h-8 p-1.5 border rounded hover:bg-muted/50 transition-colors flex items-center justify-center flex-shrink-0"
+                              >
+                                <Eye className="h-3 w-3" />
+                              </button>
+                            )}
+                            <ChevronRight 
+                              className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                            />
+                          </div>
                         </div>
                       </div>
                       

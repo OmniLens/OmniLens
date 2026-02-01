@@ -17,7 +17,6 @@ import { useUsageMetrics } from "@/lib/hooks/use-usage-metrics";
 // Component imports
 import WorkflowRunsHistory from "@/components/WorkflowRunsHistory";
 import WorkflowRunsHistoryMonth from "@/components/WorkflowRunsHistoryMonth";
-import WorkflowsPageSkeleton from "@/components/WorkflowsPageSkeleton";
 import YearlyWorkflowCards from "@/components/YearlyWorkflowCards";
 
 // ============================================================================
@@ -142,8 +141,15 @@ export default function RepoWorkflowsPage() {
           </Card>
         )}
 
-        {/* Data loading - show skeleton while workflows/runs are loading */}
-        {(isLoading || isLoadingWorkflows) && <WorkflowsPageSkeleton />}
+        {/* Data loading - show spinner while workflows/runs are loading */}
+        {(isLoading || isLoadingWorkflows) && (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading workflows...</p>
+            </div>
+          </div>
+        )}
 
         {/* Workflow Gallery */}
         {!isLoading && !isLoadingWorkflows && (
