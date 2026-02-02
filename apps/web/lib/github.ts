@@ -457,4 +457,151 @@ export async function getYesterdayOverviewData(repoSlug: string, userId: string)
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   return getOverviewDataForDate(yesterday, repoSlug, userId);
-} 
+}
+
+/**
+ * Get workflow runs for a date range (from startDate to endDate)
+ * Fetches runs from all branches and handles pagination
+ */
+export async function getWorkflowRunsForDateRange(
+  startDate: Date,
+  endDate: Date,
+  repoSlug: string,
+  userId: string
+): Promise<WorkflowRun[]> {
+  const { token, repo } = await getRepoInfo(repoSlug, userId);
+
+  // Format dates to ISO strings for GitHub API
+  const startStr = format(startDate, "yyyy-MM-dd");
+  const endStr = format(endDate, "yyyy-MM-dd");
+
+  // Get workflow runs for the date range (from start of startDate to end of endDate)
+  const startTime = `${startStr}T00:00:00Z`;
+  const endTime = `${endStr}T23:59:59Z`;
+
+  // Fetch all workflow runs for the date range from ALL branches, handling pagination
+  let allRuns: WorkflowRun[] = [];
+  let page = 1;
+  let hasMorePages = true;
+
+  while (hasMorePages) {
+    const res = await fetch(
+      `${API_BASE}/repos/${repo}/actions/runs?created=${startTime}..${endTime}&per_page=100&page=${page}&_t=${Date.now()}`,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28",
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      }
+    );
+
+    if (res.status === 304) {
+      break;
+    }
+
+    if (!res.ok) {
+      if (res.status === 404) {
+        return [];
+      }
+      if (res.status === 403) {
+        throw new Error(`GitHub API error: ${res.status} ${res.statusText} - Repository access denied`);
+      }
+      throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
+    }
+
+    const json = await res.json();
+    const pageRuns = json.workflow_runs as WorkflowRun[];
+
+    allRuns = allRuns.concat(pageRuns);
+
+    hasMorePages = pageRuns.length === 100;
+    page++;
+
+    // Safety break to avoid infinite loops
+    if (page > 50) { // Increased limit for date ranges which may have more data
+      break;
+    }
+  }
+
+  // Filter runs to include those that started within the date range
+  const rangeStart = new Date(startDate);
+  rangeStart.setHours(0, 0, 0, 0);
+  const rangeEnd = new Date(endDate);
+  rangeEnd.setHours(23, 59, 59, 999);
+
+  // Check if the end date is today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isEndDateToday = rangeEnd.getTime() >= today.getTime();
+
+  const filteredRuns = allRuns.filter(run => {
+    const runStartTime = new Date(run.run_started_at);
+    const startedInRange = runStartTime >= rangeStart && runStartTime <= rangeEnd;
+    const isCurrentlyRunning = run.status === 'in_progress' || run.status === 'queued';
+
+    // Include if it started in the range OR if it's currently running (only when viewing up to today)
+    return startedInRange || (isCurrentlyRunning && isEndDateToday);
+  });
+
+  return filteredRuns;
+}
+
+// ============================================================================
+// Workflow Jobs (for usage metrics: runner type, runtime OS, job duration)
+// ============================================================================
+
+/**
+ * Minimal job shape from GitHub Actions API (list jobs for a workflow run).
+ * Used to derive runner type, runtime OS, and job duration for usage metrics.
+ */
+export interface WorkflowJob {
+  id: number;
+  run_id: number;
+  started_at: string | null;
+  completed_at: string | null;
+  labels: string[];
+}
+
+interface GitHubJobsResponse {
+  total_count: number;
+  jobs: WorkflowJob[];
+}
+
+/**
+ * Get jobs for a single workflow run.
+ * Used by usage metrics to compute job count, runner type, runtime OS, and duration.
+ */
+export async function getJobsForRun(
+  repoSlug: string,
+  runId: number,
+  userId: string
+): Promise<WorkflowJob[]> {
+  const { token, repo } = await getRepoInfo(repoSlug, userId);
+
+  const res = await fetch(
+    `${API_BASE}/repos/${repo}/actions/runs/${runId}/jobs?per_page=100`,
+    {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    }
+  );
+
+  if (res.status === 404) {
+    return [];
+  }
+  if (!res.ok) {
+    if (res.status === 403) {
+      throw new Error(`GitHub API error: 403 - Repository access denied`);
+    }
+    throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
+  }
+
+  const json = (await res.json()) as GitHubJobsResponse;
+  return json.jobs ?? [];
+}

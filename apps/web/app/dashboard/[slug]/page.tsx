@@ -142,6 +142,37 @@ export default function DashboardPage() {
   }, []);
 
   /**
+   * Get the last available run result (success or failure) for a specific workflow from historical runs
+   * Checks both workflowRuns (selected date) and yesterdayRuns to find the most recent historical run
+   * Excludes today's runs to get the most recent historical run
+   * @param workflowId - The workflow ID to check
+   * @returns 'success', 'failure', or null if no runs found
+   */
+  const getLastAvailableRunResult = useCallback((workflowId: number): 'success' | 'failure' | null => {
+    // Get today's date key for filtering
+    const today = new Date();
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    // Combine workflowRuns and yesterdayRuns, excluding today's runs
+    const allHistoricalRuns = [...workflowRuns, ...yesterdayRuns].filter(run => {
+      if (run.workflow_id !== workflowId) return false;
+      const runDate = new Date(run.run_started_at);
+      const runDateKey = `${runDate.getFullYear()}-${String(runDate.getMonth() + 1).padStart(2, '0')}-${String(runDate.getDate()).padStart(2, '0')}`;
+      return runDateKey !== todayKey;
+    });
+    
+    if (allHistoricalRuns.length === 0) return null;
+    
+    // Sort by run_started_at descending and get the most recent
+    const sortedRuns = allHistoricalRuns.sort((a, b) => 
+      new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime()
+    );
+    
+    const lastRun = sortedRuns[0];
+    return lastRun.conclusion === 'success' ? 'success' : 'failure';
+  }, [workflowRuns, yesterdayRuns]);
+
+  /**
    * Classify workflow health status by comparing today's runs with yesterday's
    * Determines if workflow is consistent, improved, regressed, still failing, or has no runs
    * @param workflowId - The workflow ID to classify
@@ -161,7 +192,17 @@ export default function DashboardPage() {
       return todayRuns.length === 0 ? 'no_runs_today' : 'consistent';
     }
     
+    // If no runs today, use the last available run result to determine health status
     if (todayRuns.length === 0) {
+      const lastAvailableResult = getLastAvailableRunResult(workflowId);
+      // If the last available result was success, show consistent (was good, still good)
+      // If the last available result was failure, show still_failing (was failing, still failing)
+      // If no historical data, return no_runs_today
+      if (lastAvailableResult === 'success') {
+        return 'consistent';
+      } else if (lastAvailableResult === 'failure') {
+        return 'still_failing';
+      }
       return 'no_runs_today';
     }
     
@@ -172,44 +213,48 @@ export default function DashboardPage() {
     // Get yesterday's last run result
     const yesterdayLastResult = getLastRunResult(workflowId, yesterdayRuns);
     
+    // If no yesterday data, check historical runs
+    let previousResult = yesterdayLastResult;
+    if (previousResult === null) {
+      previousResult = getLastAvailableRunResult(workflowId);
+    }
+    
     if (allSuccessfulToday) {
-      if (yesterdayLastResult === 'failure') {
+      if (previousResult === 'failure') {
         return 'improved';
       } else {
         return 'consistent';
       }
     } else if (allFailedToday) {
-      if (yesterdayLastResult === 'success') {
+      if (previousResult === 'success') {
         return 'regressed';
       } else {
         return 'still_failing';
       }
     } else {
-      // Mixed results today
+      // Mixed results today - compare last run results
       const todayLastResult = getLastRunResult(workflowId, todayRuns);
       
-      if (yesterdayLastResult === null) {
-        const successCount = todayRuns.filter(run => run.conclusion === 'success').length;
-        const failureCount = todayRuns.filter(run => run.conclusion === 'failure').length;
-        return successCount > failureCount ? 'improved' : 'regressed';
+      // Compare last results
+      if (previousResult === null) {
+        // No historical data at all - use today's last result
+        return todayLastResult === 'success' ? 'consistent' : 'regressed';
       }
       
-      if (yesterdayLastResult === 'failure' && todayLastResult === 'success') {
-        return 'improved';
-      } else if (yesterdayLastResult === 'success' && todayLastResult === 'failure') {
+      if (previousResult === 'success' && todayLastResult === 'success') {
+        return 'consistent';
+      } else if (previousResult === 'success' && todayLastResult === 'failure') {
         return 'regressed';
-      } else {
-        const successCount = todayRuns.filter(run => run.conclusion === 'success').length;
-        const failureCount = todayRuns.filter(run => run.conclusion === 'failure').length;
-        
-        if (yesterdayLastResult === 'success') {
-          return successCount > failureCount ? 'consistent' : 'regressed';
-        } else {
-          return successCount > failureCount ? 'improved' : 'still_failing';
-        }
+      } else if (previousResult === 'failure' && todayLastResult === 'failure') {
+        return 'still_failing';
+      } else if (previousResult === 'failure' && todayLastResult === 'success') {
+        return 'improved';
       }
+      
+      // Fallback (should not reach here)
+      return 'consistent';
     }
-  }, [workflowRuns, yesterdayRuns, getLastRunResult]);
+  }, [workflowRuns, yesterdayRuns, getLastRunResult, getLastAvailableRunResult]);
 
   /**
    * Calculate aggregate health metrics across all workflows
@@ -477,6 +522,7 @@ export default function DashboardPage() {
                           key={workflow.id}
                           run={enhancedRun}
                           healthStatus={healthStatus}
+                          repoSlug={repoSlug}
                         />
                       );
                     })}
@@ -499,7 +545,7 @@ export default function DashboardPage() {
                   {/* Idle workflow cards grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {idleWorkflows.map((workflow) => (
-                      <IdleWorkflowCard key={workflow.id} workflow={workflow} />
+                      <IdleWorkflowCard key={workflow.id} workflow={workflow} repoSlug={repoSlug} />
                     ))}
                   </div>
                 </div>

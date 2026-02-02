@@ -1,6 +1,8 @@
 // External library imports
 import { Clock, Eye, CheckCircle, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRef, useCallback, useEffect } from "react";
 
 // Type imports
 import type { WorkflowRun } from "@/lib/github";
@@ -16,6 +18,60 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { duration, formatRunTime } from "@/lib/utils";
 
 // ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Format date to YYYY-MM-DD string using local time (not UTC)
+ * This prevents timezone issues where dates can appear one day ahead
+ */
+function formatDateToDay(dateString: string): string {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Get today's date key (YYYY-MM-DD) for filtering current-day runs
+ */
+function getTodayKey(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Filter runs to only include today's runs
+ * Preserves the full run object structure
+ */
+function filterTodayRuns<T extends { run_started_at: string }>(runs: T[]): T[] {
+  const todayKey = getTodayKey();
+  return runs.filter(run => formatDateToDay(run.run_started_at) === todayKey);
+}
+
+/**
+ * Get the latest run status for today only
+ * Returns the status from the most recent run today, or null if no runs today
+ */
+function getTodayLatestRunStatus<T extends { conclusion: string | null; status: string; run_started_at: string }>(runs: T[]): T | null {
+  const todayRuns = filterTodayRuns(runs);
+  if (todayRuns.length === 0) {
+    return null;
+  }
+  
+  // Sort by run_started_at descending to get the most recent run
+  const sortedRuns = [...todayRuns].sort((a, b) => 
+    new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime()
+  );
+  
+  return sortedRuns[0] || null;
+}
+
+// ============================================================================
 // Type Definitions
 // ============================================================================
 
@@ -28,6 +84,7 @@ interface WorkflowCardProps {
   highlightColor?: string;
   rightAction?: React.ReactNode; // Optional right-side action button (e.g., delete)
   healthStatus?: 'consistent' | 'improved' | 'regressed' | 'still_failing' | 'no_runs_today';
+  repoSlug?: string; // Repository slug for linking to workflows page
 }
 
 // ============================================================================
@@ -67,13 +124,89 @@ export default function WorkflowCard({
   isHighlighted = false,
   highlightColor = '',
   rightAction,
-  healthStatus
+  healthStatus,
+  repoSlug
 }: WorkflowCardProps) {
-  // Determine workflow run status - use conclusion if available, otherwise fall back to status
-  const status = run.conclusion ?? run.status;
+  const queryClient = useQueryClient();
+  const prefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Filter to today's runs only for status and badge display
+  const todayRuns = run.all_runs ? filterTodayRuns(run.all_runs) : [];
+  const todayLatestRun = getTodayLatestRunStatus(run.all_runs || []);
+
+  /**
+   * Debounced prefetch handler for workflow detail page
+   * Prefetches workflow data when user hovers over card (~300ms delay)
+   * Makes navigation instant when user clicks
+   */
+  const handlePrefetch = useCallback(() => {
+    if (!repoSlug || !run.workflow_id) return;
+
+    // Clear any existing timeout
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+    }
+
+    // Debounce prefetch by 300ms
+    prefetchTimeoutRef.current = setTimeout(() => {
+      // Prefetch using the same query key as the summary page
+      queryClient.prefetchQuery({
+        queryKey: ['workflows-all-runs', repoSlug],
+        queryFn: async () => {
+          const response = await fetch(
+            `/api/workflows?slug=${encodeURIComponent(repoSlug)}`,
+            {
+              cache: 'no-store',
+              credentials: 'include',
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch workflows');
+          }
+
+          return response.json();
+        },
+        staleTime: 15 * 60 * 1000, // 15 minutes
+      });
+    }, 300);
+  }, [repoSlug, run.workflow_id, queryClient]);
+
+  /**
+   * Cleanup prefetch timeout on unmount
+   */
+  const handleMouseLeave = useCallback(() => {
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+      prefetchTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (prefetchTimeoutRef.current) {
+        clearTimeout(prefetchTimeoutRef.current);
+      }
+    };
+  }, []);
+  
+  // Determine workflow run status from today's latest run only
+  // If no runs today, status is 'no_runs' (will show as Idle)
+  const status = todayLatestRun 
+    ? (todayLatestRun.conclusion ?? todayLatestRun.status)
+    : 'no_runs';
   const isSuccess = status === "success";
   const isInProgress = status === "in_progress" || status === 'queued';
-  const hasNoRuns = status === 'no_runs';
+  const hasNoRuns = status === 'no_runs' || todayRuns.length === 0;
+  
+  // Today's run count
+  const todayRunCount = todayRuns.length;
 
   // Determine border classes
   const getBorderClass = () => {
@@ -110,7 +243,11 @@ export default function WorkflowCard({
   };
 
   return (
-    <Card className={`${cardHeightClass} ${getBorderClass()}`}>
+    <Card
+      className={`${cardHeightClass} ${getBorderClass()}`}
+      onMouseEnter={handlePrefetch}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Card Header - Contains workflow name and status badges */}
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
@@ -119,22 +256,22 @@ export default function WorkflowCard({
             {getDisplayName()}
           </h3>
           <div className="flex items-center gap-2">
-            {/* Run Count Badge - Shows popover with all runs if workflow ran multiple times */}
+            {/* Run Count Badge - Shows popover with today's runs if workflow ran multiple times today */}
             {(() => {
-              return run.run_count && run.run_count > 1 ? (
+              return todayRunCount > 1 ? (
                 <Popover>
                 <PopoverTrigger asChild>
                   <Badge variant="secondary" className="shrink-0 text-xs cursor-pointer hover:opacity-80">
-                    {run.run_count}
+                    {todayRunCount}
                   </Badge>
                 </PopoverTrigger>
                 <PopoverContent className="w-80" side="bottom" align="end">
                   <div className="space-y-2">
-                    <h4 className="font-medium text-sm">All Runs</h4>
+                    <h4 className="font-medium text-sm">Today&apos;s Runs</h4>
                     <div className="space-y-1">
-                      {run.all_runs && run.all_runs.length > 0 ? (
-                        // List all runs for this workflow with time, ID, status badge, and view link
-                        run.all_runs.map((runDetail) => (
+                      {todayRuns.length > 0 ? (
+                        // List all today's runs for this workflow with time, ID, status badge, and view link
+                        todayRuns.map((runDetail) => (
                           <div key={runDetail.id} className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-2 text-xs">
                             {/* Run time */}
                             <span className="text-muted-foreground w-16">
@@ -275,30 +412,48 @@ export default function WorkflowCard({
           </div>
         )}
         
-        {/* Duration and View Button Section - Only shown for workflows with runs */}
-        {healthStatus !== 'no_runs_today' && !hasNoRuns && (
-          <div className="flex items-center justify-between">
-            {/* Duration display - Shows "Running" for in-progress workflows, or calculated duration */}
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>
-                {isInProgress ? "Running" : 
-                 (run.run_started_at && run.updated_at ? duration(run.run_started_at, run.updated_at) : "No duration")}
-              </span>
-            </div>
-            {/* View button - Links to GitHub Actions run page */}
-            <div className="flex items-center gap-2">
-              {run.html_url && (
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={run.html_url} target="_blank">
-                    <Eye className="h-3 w-3 mr-1" />
-                    View
-                  </Link>
-                </Button>
-              )}
-            </div>
+        {/* Duration and Action Buttons Section */}
+        <div className="flex items-center justify-between">
+          {/* Duration display - Shown for workflows with runs today or idle workflows with last available run */}
+          {(() => {
+            // Show duration if:
+            // 1. Has runs today (not idle) - show today's run duration
+            // 2. Is idle but has a last available run with duration data - show last run duration
+            const hasRunsToday = !hasNoRuns && todayLatestRun;
+            const isIdleWithLastRun = hasNoRuns && run.run_started_at && run.updated_at;
+            const shouldShowDuration = hasRunsToday || isIdleWithLastRun;
+            
+            if (!shouldShowDuration) return null;
+            
+            // For idle workflows, use the last available run's duration
+            // For active workflows, use today's run duration
+            const durationStart = run.run_started_at;
+            const durationEnd = run.updated_at;
+            
+            return (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>
+                  {isInProgress ? "Running" : 
+                   (durationStart && durationEnd
+                     ? duration(durationStart, durationEnd)
+                     : "No duration")}
+                </span>
+              </div>
+            );
+          })()}
+          {/* Action buttons - View button always shown */}
+          <div className="flex items-center gap-2 ml-auto">
+            {repoSlug && run.workflow_id && (
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/dashboard/${repoSlug}/workflows/${run.workflow_id}`}>
+                  <Eye className="h-3 w-3 mr-1" />
+                  View
+                </Link>
+              </Button>
+            )}
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -311,14 +466,43 @@ export default function WorkflowCard({
 /**
  * Component for displaying workflows that exist but have no runs yet
  * Uses WorkflowCard with mock data to show an "Idle" state
+ * @param workflow - The workflow to display
+ * @param repoSlug - Optional repository slug for linking
+ * @param healthStatus - Optional health status to display (from last available run)
+ * @param lastAvailableRun - Optional last available run to show duration
  */
-export function IdleWorkflowCard({ workflow }: { workflow: Workflow }) {
+export function IdleWorkflowCard({ 
+  workflow, 
+  repoSlug,
+  healthStatus,
+  lastAvailableRun
+}: { 
+  workflow: Workflow; 
+  repoSlug?: string;
+  healthStatus?: 'consistent' | 'improved' | 'regressed' | 'still_failing' | 'no_runs_today';
+  lastAvailableRun?: { run_started_at: string; updated_at: string } | null;
+}) {
   const mockRun = createMockRunFromWorkflow(workflow);
+  
+  // Enhance the mock run with last available run data if available
+  const enhancedRun = lastAvailableRun ? {
+    ...mockRun,
+    run_started_at: lastAvailableRun.run_started_at,
+    updated_at: lastAvailableRun.updated_at,
+    all_runs: [{
+      id: mockRun.id,
+      conclusion: mockRun.conclusion,
+      status: mockRun.status,
+      html_url: mockRun.html_url,
+      run_started_at: lastAvailableRun.run_started_at
+    }]
+  } : mockRun;
 
   return (
     <WorkflowCard
-      run={mockRun}
-      healthStatus="no_runs_today"
+      run={enhancedRun}
+      healthStatus={healthStatus || 'no_runs_today'}
+      repoSlug={repoSlug}
     />
   );
 }

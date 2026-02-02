@@ -494,7 +494,7 @@ export default function DashboardHomePage() {
             {displayData.map((item, index) => (
               <Link
                 key={item.slug || `repo-${index}`}
-                href={`/dashboard/${item.slug}`}
+                href={`/dashboard/${item.slug}/workflows`}
                 className="block h-full cursor-pointer"
               >
                 <RepositoryCard

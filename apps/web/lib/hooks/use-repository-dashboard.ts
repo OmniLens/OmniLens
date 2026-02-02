@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useQueryState, parseAsString } from "nuqs";
+import { useMemo, useCallback } from "react";
+import { startOfMonth } from "date-fns";
 
 export interface Workflow {
   id: number;
@@ -181,6 +183,60 @@ export function useDateState() {
     selectedDate,
     setSelectedDate,
   };
+}
+
+// Hook to manage month state with URL persistence
+// Similar to useDateState but for month selection (YYYY-MM format)
+export function useMonthState() {
+  // Get default month string (current month) - compute once at module level
+  const getDefaultMonthString = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  const [monthString, setMonthString] = useQueryState(
+    'month',
+    parseAsString.withDefault(getDefaultMonthString())
+  );
+
+  const selectedMonth = useMemo(() => {
+    // Ensure monthString is a valid string
+    const validMonthString = monthString || getDefaultMonthString();
+    
+    // Validate format (YYYY-MM)
+    if (!validMonthString || typeof validMonthString !== 'string') {
+      const now = new Date();
+      return startOfMonth(now);
+    }
+
+    const parts = validMonthString.split('-');
+    if (parts.length !== 2) {
+      const now = new Date();
+      return startOfMonth(now);
+    }
+
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+
+    // Validate year and month are valid numbers
+    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
+      const now = new Date();
+      return startOfMonth(now);
+    }
+
+    return startOfMonth(new Date(year, month - 1, 1));
+  }, [monthString]);
+
+  const setSelectedMonth = useCallback(
+    (month: Date) => {
+      const year = month.getFullYear();
+      const monthNum = month.getMonth() + 1;
+      setMonthString(`${year}-${String(monthNum).padStart(2, '0')}`);
+    },
+    [setMonthString]
+  );
+
+  return { selectedMonth, setSelectedMonth };
 }
 
 // Fetch workflows for a repository
