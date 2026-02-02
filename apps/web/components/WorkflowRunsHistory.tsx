@@ -27,6 +27,8 @@ interface DayData {
   result: DayResult;
   dateString: string;
   isInRange: boolean; // Whether this day is within the startDate-endDate range
+  passedCount: number; // Number of passed runs (conclusion === 'success' and status === 'completed')
+  failedCount: number; // Number of failed runs (conclusion === 'failure' and status === 'completed')
 }
 
 // ============================================================================
@@ -95,6 +97,48 @@ function getDayResult(runs: WorkflowRun[]): DayResult {
   return "none";
 }
 
+/**
+ * Get color intensity for a day based on pass/fail ratio
+ * Returns an object with color type ('green' | 'red' | 'muted') and intensity level (0-4)
+ * Intensity is based on the ratio of passes or failures to total completed runs
+ */
+function getPassFailRatioIntensity(
+  passedCount: number,
+  failedCount: number
+): { colorType: 'green' | 'red' | 'muted'; intensity: number } {
+  const totalCompleted = passedCount + failedCount;
+  
+  // No runs or no completed runs
+  if (totalCompleted === 0) {
+    return { colorType: 'muted', intensity: 0 };
+  }
+  
+  // Equal passes and failures
+  if (passedCount === failedCount) {
+    return { colorType: 'muted', intensity: 0 };
+  }
+  
+  // More passes than failures - use green with intensity based on pass ratio
+  if (passedCount > failedCount) {
+    const passRatio = passedCount / totalCompleted;
+    // Map ratio to intensity: 0.5-0.6 = 1, 0.6-0.75 = 2, 0.75-0.9 = 3, 0.9+ = 4
+    let intensity = 1;
+    if (passRatio >= 0.9) intensity = 4;
+    else if (passRatio >= 0.75) intensity = 3;
+    else if (passRatio >= 0.6) intensity = 2;
+    return { colorType: 'green', intensity };
+  }
+  
+  // More failures than passes - use red with intensity based on fail ratio
+  const failRatio = failedCount / totalCompleted;
+  // Map ratio to intensity: 0.5-0.6 = 1, 0.6-0.75 = 2, 0.75-0.9 = 3, 0.9+ = 4
+  let intensity = 1;
+  if (failRatio >= 0.9) intensity = 4;
+  else if (failRatio >= 0.75) intensity = 3;
+  else if (failRatio >= 0.6) intensity = 2;
+  return { colorType: 'red', intensity };
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -104,7 +148,7 @@ function getDayResult(runs: WorkflowRun[]): DayResult {
  * Displays workflow runs per day in a GitHub commit history-style grid.
  * 
  * Two modes:
- * - 'count' (default): Colors by run count intensity (for overview page)
+ * - 'count' (default): Colors by pass/fail ratio intensity - More passes = more green, More failures = more red (for overview page)
  * - 'result': Colors by workflow result per day - Passed (green), Failed (red), or No runs (muted) (for summary page)
  */
 export default function WorkflowRunsHistory({
@@ -136,22 +180,24 @@ export default function WorkflowRunsHistory({
       const dateKey = formatDateString(day);
       const dayRuns = runsByDayMap.get(dateKey) || [];
       const result = mode === "result" ? getDayResult(dayRuns) : "none";
+      
+      // Calculate pass/fail counts for completed runs only
+      const completedRuns = dayRuns.filter(run => run.status === 'completed');
+      const passedCount = completedRuns.filter(run => run.conclusion === 'success').length;
+      const failedCount = completedRuns.filter(run => run.conclusion === 'failure').length;
+      
       return {
         date: day,
         count: dayRuns.length,
         result,
         dateString: dateKey,
-        isInRange: true
+        isInRange: true,
+        passedCount,
+        failedCount
       };
     });
     return dayData;
   }, [runs, startDate, endDate, mode]);
-  
-  // Calculate max count for intensity scaling (only used in count mode)
-  const maxCount = useMemo(() => {
-    if (mode !== "count") return 1;
-    return Math.max(...runsPerDay.map(d => d.count), 1);
-  }, [runsPerDay, mode]);
   
   // Group days by week (Sunday to Saturday)
   // Only show data squares for days within the current year (startDate to endDate)
@@ -192,7 +238,9 @@ export default function WorkflowRunsHistory({
           count: 0,
           result: "none" as DayResult,
           dateString,
-          isInRange: true
+          isInRange: true,
+          passedCount: 0,
+          failedCount: 0
         };
         currentWeek.push(dayData);
       } else {
@@ -202,7 +250,9 @@ export default function WorkflowRunsHistory({
           count: 0,
           result: "none" as DayResult,
           dateString,
-          isInRange: false
+          isInRange: false,
+          passedCount: 0,
+          failedCount: 0
         });
       }
       
@@ -259,15 +309,28 @@ export default function WorkflowRunsHistory({
           <CardTitle className="text-xl">Runs This Year</CardTitle>
           {mode === "count" ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="text-[10px]">Less</span>
-              <div className="flex items-center gap-0.5">
-                <div className="w-2.5 h-2.5 rounded-[2px] bg-muted border border-border" />
-                <div className="w-2.5 h-2.5 rounded-[2px] bg-[#9be9a8] dark:bg-[#0e4429]" />
-                <div className="w-2.5 h-2.5 rounded-[2px] bg-[#40c463] dark:bg-[#006d32]" />
-                <div className="w-2.5 h-2.5 rounded-[2px] bg-[#30a14e] dark:bg-[#26a641]" />
-                <div className="w-2.5 h-2.5 rounded-[2px] bg-[#216e39] dark:bg-[#39d353]" />
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-muted border border-border" title="No runs" />
+                <span className="text-[10px]">No runs</span>
               </div>
-              <span className="text-[10px]">More</span>
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-0.5">
+                  <div className="w-2.5 h-2.5 rounded-[2px] bg-[#9be9a8] dark:bg-[#0e4429]" />
+                  <div className="w-2.5 h-2.5 rounded-[2px] bg-[#40c463] dark:bg-[#006d32]" />
+                  <div className="w-2.5 h-2.5 rounded-[2px] bg-[#30a14e] dark:bg-[#26a641]" />
+                  <div className="w-2.5 h-2.5 rounded-[2px] bg-[#216e39] dark:bg-[#39d353]" />
+                </div>
+                <span className="text-[10px]">More passes</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-0.5">
+                  <div className="w-2.5 h-2.5 rounded-[2px] bg-[#ffc0cb] dark:bg-[#7f1d1d]" />
+                  <div className="w-2.5 h-2.5 rounded-[2px] bg-[#ff6b6b] dark:bg-[#991b1b]" />
+                  <div className="w-2.5 h-2.5 rounded-[2px] bg-[#ef4444] dark:bg-[#dc2626]" />
+                  <div className="w-2.5 h-2.5 rounded-[2px] bg-[#dc2626] dark:bg-[#991b1b]" />
+                </div>
+                <span className="text-[10px]">More failures</span>
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -322,19 +385,52 @@ export default function WorkflowRunsHistory({
                     let tooltipLabel: string;
                     
                     if (mode === "count") {
-                      // Count mode: use intensity-based coloring
-                      const intensity = isFuture ? 0 : getIntensityLevel(day.count, maxCount);
-                      const colorClasses = [
-                        "bg-muted border border-border", // 0 runs or future
-                        "bg-[#9be9a8] dark:bg-[#0e4429]", // 1 (low)
-                        "bg-[#40c463] dark:bg-[#006d32]", // 2 (medium-low)
-                        "bg-[#30a14e] dark:bg-[#26a641]", // 3 (medium-high)
-                        "bg-[#216e39] dark:bg-[#39d353]"  // 4 (high)
-                      ];
-                      colorClass = colorClasses[intensity];
-                      tooltipLabel = isFuture 
-                        ? "No runs" 
-                        : `${day.count} ${day.count === 1 ? "run" : "runs"}`;
+                      // Count mode: use pass/fail ratio-based coloring
+                      if (isFuture) {
+                        colorClass = "bg-muted border border-border";
+                        tooltipLabel = "No runs";
+                      } else {
+                        const { colorType, intensity } = getPassFailRatioIntensity(
+                          day.passedCount,
+                          day.failedCount
+                        );
+                        
+                        if (colorType === 'muted') {
+                          colorClass = "bg-muted border border-border";
+                          const totalCompleted = day.passedCount + day.failedCount;
+                          if (totalCompleted === 0) {
+                            tooltipLabel = "No runs";
+                          } else {
+                            tooltipLabel = `${day.passedCount} passed, ${day.failedCount} failed`;
+                          }
+                        } else if (colorType === 'green') {
+                          // Green color scale for pass-dominant days
+                          const greenColorClasses = [
+                            "bg-muted border border-border", // Shouldn't happen (intensity 0)
+                            "bg-[#9be9a8] dark:bg-[#0e4429]", // 1 (low pass ratio)
+                            "bg-[#40c463] dark:bg-[#006d32]", // 2 (medium-low pass ratio)
+                            "bg-[#30a14e] dark:bg-[#26a641]", // 3 (medium-high pass ratio)
+                            "bg-[#216e39] dark:bg-[#39d353]"  // 4 (high pass ratio)
+                          ];
+                          colorClass = greenColorClasses[intensity];
+                          const totalCompleted = day.passedCount + day.failedCount;
+                          const passRatio = Math.round((day.passedCount / totalCompleted) * 100);
+                          tooltipLabel = `${day.passedCount} passed, ${day.failedCount} failed (${passRatio}% pass rate)`;
+                        } else {
+                          // Red color scale for fail-dominant days
+                          const redColorClasses = [
+                            "bg-muted border border-border", // Shouldn't happen (intensity 0)
+                            "bg-[#ffc0cb] dark:bg-[#7f1d1d]", // 1 (low fail ratio) - light red
+                            "bg-[#ff6b6b] dark:bg-[#991b1b]", // 2 (medium-low fail ratio) - medium red
+                            "bg-[#ef4444] dark:bg-[#dc2626]", // 3 (medium-high fail ratio) - red
+                            "bg-[#dc2626] dark:bg-[#991b1b]"  // 4 (high fail ratio) - dark red
+                          ];
+                          colorClass = redColorClasses[intensity];
+                          const totalCompleted = day.passedCount + day.failedCount;
+                          const failRatio = Math.round((day.failedCount / totalCompleted) * 100);
+                          tooltipLabel = `${day.passedCount} passed, ${day.failedCount} failed (${failRatio}% fail rate)`;
+                        }
+                      }
                     } else {
                       // Result mode: use result-based coloring
                       const displayResult = isFuture ? "none" : day.result;

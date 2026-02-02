@@ -1,6 +1,8 @@
 // External library imports
 import { Clock, Eye, CheckCircle, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRef, useCallback, useEffect } from "react";
 
 // Type imports
 import type { WorkflowRun } from "@/lib/github";
@@ -125,9 +127,74 @@ export default function WorkflowCard({
   healthStatus,
   repoSlug
 }: WorkflowCardProps) {
+  const queryClient = useQueryClient();
+  const prefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Filter to today's runs only for status and badge display
   const todayRuns = run.all_runs ? filterTodayRuns(run.all_runs) : [];
   const todayLatestRun = getTodayLatestRunStatus(run.all_runs || []);
+
+  /**
+   * Debounced prefetch handler for workflow detail page
+   * Prefetches workflow data when user hovers over card (~300ms delay)
+   * Makes navigation instant when user clicks
+   */
+  const handlePrefetch = useCallback(() => {
+    if (!repoSlug || !run.workflow_id) return;
+
+    // Clear any existing timeout
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+    }
+
+    // Debounce prefetch by 300ms
+    prefetchTimeoutRef.current = setTimeout(() => {
+      // Prefetch using the same query key as the summary page
+      queryClient.prefetchQuery({
+        queryKey: ['workflows-all-runs', repoSlug],
+        queryFn: async () => {
+          const response = await fetch(
+            `/api/workflows?slug=${encodeURIComponent(repoSlug)}`,
+            {
+              cache: 'no-store',
+              credentials: 'include',
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch workflows');
+          }
+
+          return response.json();
+        },
+        staleTime: 15 * 60 * 1000, // 15 minutes
+      });
+    }, 300);
+  }, [repoSlug, run.workflow_id, queryClient]);
+
+  /**
+   * Cleanup prefetch timeout on unmount
+   */
+  const handleMouseLeave = useCallback(() => {
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+      prefetchTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (prefetchTimeoutRef.current) {
+        clearTimeout(prefetchTimeoutRef.current);
+      }
+    };
+  }, []);
   
   // Determine workflow run status from today's latest run only
   // If no runs today, status is 'no_runs' (will show as Idle)
@@ -176,7 +243,11 @@ export default function WorkflowCard({
   };
 
   return (
-    <Card className={`${cardHeightClass} ${getBorderClass()}`}>
+    <Card
+      className={`${cardHeightClass} ${getBorderClass()}`}
+      onMouseEnter={handlePrefetch}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Card Header - Contains workflow name and status badges */}
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">

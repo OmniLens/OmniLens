@@ -12,7 +12,7 @@ import WorkflowCard, { IdleWorkflowCard } from "@/components/WorkflowCard";
 
 // Hook imports
 import { useSession } from "@/lib/auth-client";
-import { useRepositoryWorkflows, useWorkflowRuns, type WorkflowRun as RepoWorkflowRun } from "@/lib/hooks/use-repository-dashboard";
+import { useRepositoryWorkflows, type WorkflowRun as RepoWorkflowRun } from "@/lib/hooks/use-repository-dashboard";
 import { useWorkflowsForRepo, type WorkflowRun } from "@/lib/hooks/use-workflows";
 import { useUsageMetrics } from "@/lib/hooks/use-usage-metrics";
 
@@ -50,37 +50,6 @@ export default function RepoWorkflowsPage() {
   // Fetch usage metrics for the year (for long widget: hosted/self-hosted runners, majority OS)
   const { data: usageData, isLoading: isUsageLoading } = useUsageMetrics(repoSlug, { period: "current_year" });
 
-  // Calculate today's date string for fetching today's runs
-  const todayDateString = useMemo(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }, []);
-
-  // Calculate yesterday's date string for fetching yesterday's runs
-  const yesterdayDateString = useMemo(() => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const year = yesterday.getFullYear();
-    const month = String(yesterday.getMonth() + 1).padStart(2, '0');
-    const day = String(yesterday.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }, []);
-
-  // Fetch today's workflow runs for health status comparison
-  const { 
-    data: todayRuns = [], 
-    isLoading: isLoadingTodayRuns 
-  } = useWorkflowRuns(repoSlug, todayDateString);
-
-  // Fetch yesterday's workflow runs for health status comparison
-  const { 
-    data: yesterdayRuns = [], 
-    isLoading: isLoadingYesterdayRuns 
-  } = useWorkflowRuns(repoSlug, yesterdayDateString);
-
   // ============================================================================
   // Effects
   // ============================================================================
@@ -101,6 +70,49 @@ export default function RepoWorkflowsPage() {
     if (!data) return [];
     return data.allRuns || [];
   }, [data]);
+
+  // Calculate today's date string for filtering runs
+  const todayDateString = useMemo(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  // Calculate yesterday's date string for filtering runs
+  const yesterdayDateString = useMemo(() => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const year = yesterday.getFullYear();
+    const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const day = String(yesterday.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  // Derive today's runs from allRuns instead of separate API call
+  const todayRuns = useMemo(() => {
+    return allRunsForMonth.filter((run) => {
+      const runDate = new Date(run.run_started_at);
+      const year = runDate.getFullYear();
+      const month = String(runDate.getMonth() + 1).padStart(2, '0');
+      const day = String(runDate.getDate()).padStart(2, '0');
+      const runDateKey = `${year}-${month}-${day}`;
+      return runDateKey === todayDateString;
+    }) as RepoWorkflowRun[];
+  }, [allRunsForMonth, todayDateString]);
+
+  // Derive yesterday's runs from allRuns instead of separate API call
+  const yesterdayRuns = useMemo(() => {
+    return allRunsForMonth.filter((run) => {
+      const runDate = new Date(run.run_started_at);
+      const year = runDate.getFullYear();
+      const month = String(runDate.getMonth() + 1).padStart(2, '0');
+      const day = String(runDate.getDate()).padStart(2, '0');
+      const runDateKey = `${year}-${month}-${day}`;
+      return runDateKey === yesterdayDateString;
+    }) as RepoWorkflowRun[];
+  }, [allRunsForMonth, yesterdayDateString]);
 
   // Group workflow runs by workflow ID for efficient lookup
   const groupedWorkflowRuns = useMemo(() => {
@@ -228,42 +240,46 @@ export default function RepoWorkflowsPage() {
     // Get yesterday's last run result
     const yesterdayLastResult = getLastRunResult(workflowId, yesterdayRuns);
     
+    // If no yesterday data, check historical runs
+    let previousResult = yesterdayLastResult;
+    if (previousResult === null) {
+      previousResult = getLastAvailableRunResult(workflowId);
+    }
+    
     if (allSuccessfulToday) {
-      if (yesterdayLastResult === 'failure') {
+      if (previousResult === 'failure') {
         return 'improved';
       } else {
         return 'consistent';
       }
     } else if (allFailedToday) {
-      if (yesterdayLastResult === 'success') {
+      if (previousResult === 'success') {
         return 'regressed';
       } else {
         return 'still_failing';
       }
     } else {
-      // Mixed results today
+      // Mixed results today - compare last run results
       const todayLastResult = getLastRunResult(workflowId, todayWorkflowRuns);
       
-      if (yesterdayLastResult === null) {
-        const successCount = todayWorkflowRuns.filter(run => run.conclusion === 'success').length;
-        const failureCount = todayWorkflowRuns.filter(run => run.conclusion === 'failure').length;
-        return successCount > failureCount ? 'improved' : 'regressed';
+      // Compare last results (previousResult already set above)
+      if (previousResult === null) {
+        // No historical data at all - use today's last result
+        return todayLastResult === 'success' ? 'consistent' : 'regressed';
       }
       
-      if (yesterdayLastResult === 'failure' && todayLastResult === 'success') {
-        return 'improved';
-      } else if (yesterdayLastResult === 'success' && todayLastResult === 'failure') {
+      if (previousResult === 'success' && todayLastResult === 'success') {
+        return 'consistent';
+      } else if (previousResult === 'success' && todayLastResult === 'failure') {
         return 'regressed';
-      } else {
-        const successCount = todayWorkflowRuns.filter(run => run.conclusion === 'success').length;
-        const failureCount = todayWorkflowRuns.filter(run => run.conclusion === 'failure').length;
-        
-        if (yesterdayLastResult === 'success') {
-          return successCount > failureCount ? 'consistent' : 'regressed';
-        } else {
-          return successCount > failureCount ? 'improved' : 'still_failing';
-        }
+      } else if (previousResult === 'failure' && todayLastResult === 'failure') {
+        return 'still_failing';
+      } else if (previousResult === 'failure' && todayLastResult === 'success') {
+        return 'improved';
       }
+      
+      // Fallback (should not reach here)
+      return 'consistent';
     }
   }, [todayRuns, yesterdayRuns, getLastRunResult, getLastAvailableRunResult]);
 
@@ -342,7 +358,7 @@ export default function RepoWorkflowsPage() {
         )}
 
         {/* Data loading - show spinner while workflows/runs are loading */}
-        {(isLoading || isLoadingWorkflows || isLoadingTodayRuns || isLoadingYesterdayRuns) && (
+        {(isLoading || isLoadingWorkflows) && (
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -352,7 +368,7 @@ export default function RepoWorkflowsPage() {
         )}
 
         {/* Workflow Gallery */}
-        {!isLoading && !isLoadingWorkflows && !isLoadingTodayRuns && !isLoadingYesterdayRuns && (
+        {!isLoading && !isLoadingWorkflows && (
           <div className="space-y-6">
             {/* GitHub-style commit history cards - side by side */}
             {allRunsForMonth.length > 0 && yearDateRange && (

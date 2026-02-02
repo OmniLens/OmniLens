@@ -28,7 +28,7 @@ import { formatDurationSeconds } from "@/lib/utils";
 // Hook imports
 import { useSession } from "@/lib/auth-client";
 import { useWorkflowsForRepo, type WorkflowRun } from "@/lib/hooks/use-workflows";
-import { useYesterdayWorkflowRuns, useRepositoryWorkflows } from "@/lib/hooks/use-repository-dashboard";
+import { useRepositoryWorkflows, useMonthState } from "@/lib/hooks/use-repository-dashboard";
 
 // ============================================================================
 // Helper Functions
@@ -118,11 +118,8 @@ export default function WorkflowDetailPage() {
   // Track which days are expanded in the Recent Runs section
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
 
-  // Track selected month for Recent Runs filtering (defaults to current month)
-  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
-    const now = new Date();
-    return startOfMonth(now);
-  });
+  // Track selected month for Recent Runs filtering (synced with URL using nuqs)
+  const { selectedMonth, setSelectedMonth } = useMonthState();
 
   // Fetch workflow metrics and runs
   const { 
@@ -166,10 +163,22 @@ export default function WorkflowDetailPage() {
     return `${year}-${month}-${day}`;
   }, []);
 
-  // Fetch yesterday's workflow runs for comparison
-  const { 
-    data: yesterdayRuns = []
-  } = useYesterdayWorkflowRuns(repoSlug, todayKey);
+  // Calculate yesterday's date key for filtering runs
+  const yesterdayKey = useMemo(() => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const year = yesterday.getFullYear();
+    const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const day = String(yesterday.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  // Derive yesterday's workflow runs from cached data instead of separate API call
+  const yesterdayRuns = useMemo(() => {
+    return selectedWorkflowRuns.filter(
+      (run) => formatDateToDay(run.run_started_at) === yesterdayKey
+    );
+  }, [selectedWorkflowRuns, yesterdayKey]);
 
   // Runs for today only (for Current day status card)
   const todayRuns = useMemo(() => {
@@ -287,6 +296,29 @@ export default function WorkflowDetailPage() {
   }, []);
 
   /**
+   * Get the last available run result (success or failure) from all historical runs
+   * Excludes today's runs to get the most recent historical run
+   * @returns 'success', 'failure', or null if no runs found
+   */
+  const getLastAvailableRunResult = useCallback((): 'success' | 'failure' | null => {
+    // Filter out today's runs and get all historical runs
+    const historicalRuns = selectedWorkflowRuns.filter(run => {
+      const runDateKey = formatDateToDay(run.run_started_at);
+      return runDateKey !== todayKey;
+    });
+    
+    if (historicalRuns.length === 0) return null;
+    
+    // Sort by run_started_at descending and get the most recent
+    const sortedRuns = historicalRuns.sort((a, b) => 
+      new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime()
+    );
+    
+    const lastRun = sortedRuns[0];
+    return lastRun.conclusion === 'success' ? 'success' : 'failure';
+  }, [selectedWorkflowRuns, todayKey]);
+
+  /**
    * Classify workflow health status by comparing today's runs with yesterday's
    * Determines if workflow is consistent, improved, regressed, still failing, or has no runs
    */
@@ -301,7 +333,17 @@ export default function WorkflowDetailPage() {
       return todayRuns.length === 0 ? 'no_runs_today' : 'consistent';
     }
     
+    // If no runs today, use the last available run result to determine health status
     if (todayRuns.length === 0) {
+      const lastAvailableResult = getLastAvailableRunResult();
+      // If the last available result was success, show consistent (was good, still good)
+      // If the last available result was failure, show still_failing (was failing, still failing)
+      // If no historical data, return no_runs_today
+      if (lastAvailableResult === 'success') {
+        return 'consistent';
+      } else if (lastAvailableResult === 'failure') {
+        return 'still_failing';
+      }
       return 'no_runs_today';
     }
     
@@ -312,44 +354,48 @@ export default function WorkflowDetailPage() {
     // Get yesterday's last run result
     const yesterdayLastResult = getLastRunResult(yesterdayRuns);
     
+    // If no yesterday data, check historical runs
+    let previousResult = yesterdayLastResult;
+    if (previousResult === null) {
+      previousResult = getLastAvailableRunResult();
+    }
+    
     if (allSuccessfulToday) {
-      if (yesterdayLastResult === 'failure') {
+      if (previousResult === 'failure') {
         return 'improved';
       } else {
         return 'consistent';
       }
     } else if (allFailedToday) {
-      if (yesterdayLastResult === 'success') {
+      if (previousResult === 'success') {
         return 'regressed';
       } else {
         return 'still_failing';
       }
     } else {
-      // Mixed results today
+      // Mixed results today - compare last run results
       const todayLastResult = getLastRunResult(todayRuns);
       
-      if (yesterdayLastResult === null) {
-        const successCount = todayRuns.filter(run => run.conclusion === 'success').length;
-        const failureCount = todayRuns.filter(run => run.conclusion === 'failure').length;
-        return successCount > failureCount ? 'improved' : 'regressed';
+      // Compare last results
+      if (previousResult === null) {
+        // No historical data at all - use today's last result
+        return todayLastResult === 'success' ? 'consistent' : 'regressed';
       }
       
-      if (yesterdayLastResult === 'failure' && todayLastResult === 'success') {
-        return 'improved';
-      } else if (yesterdayLastResult === 'success' && todayLastResult === 'failure') {
+      if (previousResult === 'success' && todayLastResult === 'success') {
+        return 'consistent';
+      } else if (previousResult === 'success' && todayLastResult === 'failure') {
         return 'regressed';
-      } else {
-        const successCount = todayRuns.filter(run => run.conclusion === 'success').length;
-        const failureCount = todayRuns.filter(run => run.conclusion === 'failure').length;
-        
-        if (yesterdayLastResult === 'success') {
-          return successCount > failureCount ? 'consistent' : 'regressed';
-        } else {
-          return successCount > failureCount ? 'improved' : 'still_failing';
-        }
+      } else if (previousResult === 'failure' && todayLastResult === 'failure') {
+        return 'still_failing';
+      } else if (previousResult === 'failure' && todayLastResult === 'success') {
+        return 'improved';
       }
+      
+      // Fallback (should not reach here)
+      return 'consistent';
     }
-  }, [todayRuns, yesterdayRuns, getLastRunResult]);
+  }, [todayRuns, yesterdayRuns, getLastRunResult, getLastAvailableRunResult]);
 
   /**
    * Get health status icon component based on workflow health classification
