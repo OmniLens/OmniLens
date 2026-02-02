@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Github, BookOpen, FileText, BookCheck, FileCheck, Globe, BarChart3, Sparkles } from "lucide-react";
+import { LayoutDashboard, LogOut, Github, BookOpen, FileText, Globe, BarChart3, Sparkles } from "lucide-react";
 
 // Internal component imports
 import {
@@ -34,7 +34,6 @@ import { RepoSwitcherMenuItem } from "@/components/RepoSwitcher";
 
 // Utility imports
 import packageJson from "../package.json";
-import { isFeatureEnabled } from "@/lib/utils";
 
 // Hook imports
 import { useSession, signOut } from "@/lib/auth-client";
@@ -95,9 +94,6 @@ export function AppSidebar() {
   const isWorkflowSummaryActive = isRepoPage && repoPageType === 'workflows' && !!repoPageSubType;
 //   const isRunnersActive = isRepoPage && repoPageType === 'runners';
 //   const isUsageActive = isRepoPage && repoPageType === 'usage';
-
-  // Feature flags
-  const isUnitTestsEnabled = isFeatureEnabled('UNIT_TESTS');
 
   // ============================================================================
   // Main Render
@@ -167,7 +163,7 @@ export function AppSidebar() {
                     {isWorkflowSummaryActive && (
                       <SidebarMenuSub>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild isActive tooltip="Summary">
+                          <SidebarMenuSubButton asChild isActive>
                             <Link href={pathname ?? ''}>
                               <Sparkles />
                               <span>Summary</span>
@@ -181,7 +177,7 @@ export function AppSidebar() {
                   {/* Workflow Summary icon - visible only when sidebar is collapsed (sub-menu is hidden in icon mode) */}
                   {isWorkflowSummaryActive ? (
                     <SidebarMenuItem className="hidden group-data-[collapsible=icon]:flex">
-                      <SidebarMenuButton asChild isActive tooltip="Summary">
+                      <SidebarMenuButton asChild isActive>
                         <Link href={pathname ?? ''}>
                           <Sparkles />
                           <span>Summary</span>

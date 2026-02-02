@@ -4,7 +4,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ChevronRight, ChevronDown, Github, CheckCircle, TrendingUp, TrendingDown, AlertTriangle, Eye } from "lucide-react";
-import { startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 
 // Internal component imports
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,33 +71,6 @@ function formatDay(dateString: string): string {
   });
 }
 
-/**
- * Check if a date falls within a given month
- * @param date - Date to check
- * @param month - Month to check against (first day of the month)
- * @returns true if date is in the same month and year
- */
-function isDateInMonth(date: Date, month: Date): boolean {
-  return isSameMonth(date, month);
-}
-
-/**
- * Get the start of a month (first day at 00:00:00)
- * @param date - Date to get month start for
- * @returns First day of the month
- */
-function getMonthStart(date: Date): Date {
-  return startOfMonth(date);
-}
-
-/**
- * Get the end of a month (last day at 23:59:59)
- * @param date - Date to get month end for
- * @returns Last day of the month
- */
-function getMonthEnd(date: Date): Date {
-  return endOfMonth(date);
-}
 
 // ============================================================================
 // Main Component
@@ -130,8 +102,7 @@ export default function WorkflowDetailPage() {
 
   // Fetch all workflows for the repository (for workflow switcher)
   const { 
-    data: workflows = [], 
-    isLoading: isLoadingWorkflows 
+    data: workflows = []
   } = useRepositoryWorkflows(repoSlug);
 
   // ============================================================================
@@ -187,16 +158,6 @@ export default function WorkflowDetailPage() {
     );
   }, [selectedWorkflowRuns, todayKey]);
 
-  // Most recent run overall (for "Open in GitHub" and "Last run" line)
-  const lastRun = useMemo(() => {
-    if (selectedWorkflowRuns.length === 0) return null;
-    const sorted = [...selectedWorkflowRuns].sort(
-      (a, b) =>
-        new Date(b.run_started_at).getTime() -
-        new Date(a.run_started_at).getTime()
-    );
-    return sorted[0] ?? null;
-  }, [selectedWorkflowRuns]);
 
   // Group workflow runs by day for the Recent Runs section (filtered by selected month)
   const runsByDay = useMemo(() => {
@@ -570,9 +531,6 @@ export default function WorkflowDetailPage() {
   const totalDurationValue = selectedWorkflowMetrics?.durationSum
     ? formatDurationSeconds(selectedWorkflowMetrics.durationSum)
     : "—";
-
-  // Daily view URL (dashboard summary with today's date)
-  const dailyViewHref = `/dashboard/${repoSlug}?date=${todayKey}`;
 
   // Full year date range for "Runs This Year" heatmap (same as workflows overview page)
   const yearDateRange = useMemo(() => {

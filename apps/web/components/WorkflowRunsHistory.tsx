@@ -69,21 +69,6 @@ function getDayOfWeek(date: Date): number {
 }
 
 /**
- * Get intensity level for a day based on run count
- * Returns 0-4 where 0 = no runs, 4 = most runs
- */
-function getIntensityLevel(count: number, maxCount: number): number {
-  if (count === 0) return 0;
-  if (maxCount === 0) return 0;
-  
-  const percentage = count / maxCount;
-  if (percentage >= 0.75) return 4;
-  if (percentage >= 0.5) return 3;
-  if (percentage >= 0.25) return 2;
-  return 1;
-}
-
-/**
  * Get workflow result for a day from its runs (most recent run wins).
  * Runs should be sorted by run_started_at descending.
  * Note: Does not include "running" state - only success/failure/none.

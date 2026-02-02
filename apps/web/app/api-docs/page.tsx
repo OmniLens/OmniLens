@@ -1,7 +1,7 @@
 'use client';
 
 // External library imports
-import { useEffect, useState } from 'react';
+import { useEffect, useState, startTransition } from 'react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import SwaggerUI to avoid SSR issues
@@ -29,8 +29,11 @@ export default function ApiDocsPage() {
   // Set mounted to true after component mounts on client
   // This ensures server and initial client render match (both false)
   // Then client updates after hydration completes, avoiding hydration mismatch
+  // Using startTransition to avoid synchronous setState in effect
   useEffect(() => {
-    setMounted(true);
+    startTransition(() => {
+      setMounted(true);
+    });
   }, []);
 
   return (

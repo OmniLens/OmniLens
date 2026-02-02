@@ -489,7 +489,13 @@ export function IdleWorkflowCard({
     ...mockRun,
     run_started_at: lastAvailableRun.run_started_at,
     updated_at: lastAvailableRun.updated_at,
-    all_runs: [lastAvailableRun]
+    all_runs: [{
+      id: mockRun.id,
+      conclusion: mockRun.conclusion,
+      status: mockRun.status,
+      html_url: mockRun.html_url,
+      run_started_at: lastAvailableRun.run_started_at
+    }]
   } : mockRun;
 
   return (
