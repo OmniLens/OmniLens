@@ -3,7 +3,7 @@
 // External library imports
 import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Calendar, Tag, Plus, Wrench, Bug, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Calendar, Tag, Plus, Wrench, Bug, AlertTriangle, ChevronDown, ChevronUp, Minus } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ type VersionType = "major" | "minor" | "patch" | "beta";
 /**
  * Type for change types in changelog entries
  */
-type ChangeType = "added" | "changed" | "fixed";
+type ChangeType = "added" | "changed" | "fixed" | "removed";
 
 /**
  * Structure for changelog entry changes
@@ -34,6 +34,7 @@ interface ChangelogChanges {
   added?: string[];
   changed?: string[];
   fixed?: string[];
+  removed?: string[];
 }
 
 /**
@@ -55,6 +56,25 @@ interface ChangelogEntry {
  * Follows Keep a Changelog format with Semantic Versioning
  */
 const changelogData: ChangelogEntry[] = [
+  {
+    version: "2.0.0",
+    date: "2026-02-15",
+    type: "major",
+    changes: {
+      added: [
+        "Changelog generator skill for Cursor agents",
+        "Guided workflow creation on the home page"
+      ],
+      removed: [
+        "Unit test framework and testing dashboard",
+        "Auto-detect API for testing frameworks"
+      ],
+      changed: [
+        "Simplified testing setup (Playwright E2E and Bun integration tests only)",
+        "Improved navigation and UI"
+      ]
+    }
+  },
   {
     version: "1.5.0",
     date: "2026-01-02",
@@ -508,6 +528,8 @@ function getChangeTypeIcon(type: ChangeType): React.ReactElement {
       return <Wrench className="h-4 w-4 text-blue-500" />;
     case "fixed":
       return <Bug className="h-4 w-4 text-orange-500" />;
+    case "removed":
+      return <Minus className="h-4 w-4 text-red-500" />;
     default:
       return <AlertTriangle className="h-4 w-4 text-gray-500" />;
   }
@@ -527,6 +549,8 @@ function getChangeTypeColor(type: ChangeType): string {
       return "text-blue-400";
     case "fixed":
       return "text-orange-400";
+    case "removed":
+      return "text-red-400";
     default:
       return "text-gray-400";
   }
@@ -546,14 +570,16 @@ export default function ChangelogPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const [isAlphaExpanded, setIsAlphaExpanded] = React.useState(false);
+  const [is2025Expanded, setIs2025Expanded] = React.useState(false);
 
   // ============================================================================
   // Local State
   // ============================================================================
 
-  // Separate changelog entries into current (1.0.0) and alpha versions
-  const currentEntries = changelogData.filter((entry) => !entry.version.includes("-alpha"));
-  const alphaEntries = changelogData.filter((entry) => entry.version.includes("-alpha"));
+  // Separate changelog entries by year: 2026 (visible), 2025 (collapsible), 2024 (alpha)
+  const entries2026 = changelogData.filter((entry) => entry.date.startsWith("2026"));
+  const entries2025 = changelogData.filter((entry) => entry.date.startsWith("2025"));
+  const alphaEntries = changelogData.filter((entry) => entry.date.startsWith("2024"));
 
   // ============================================================================
   // Render Logic - Early Returns
@@ -633,8 +659,8 @@ export default function ChangelogPage() {
 
         {/* Changelog Entries - Version cards with change details */}
         <div className="max-w-4xl mx-auto space-y-8">
-          {/* Current Release Entries (1.0.0 and above) */}
-          {currentEntries.map((entry) => (
+          {/* 2026 Release Entries - Visible by default */}
+          {entries2026.map((entry) => (
             <Card key={entry.version} className="relative">
               {/* Card Header - Version number, type badge, and date */}
               <CardHeader className="pb-4">
@@ -685,13 +711,101 @@ export default function ChangelogPage() {
             </Card>
           ))}
 
+          {/* 2025 Changelog Section - Collapsible */}
+          {entries2025.length > 0 && (
+            <div className="space-y-8">
+              {/* Collapsible 2025 Heading */}
+              <button
+                onClick={() => setIs2025Expanded(!is2025Expanded)}
+                className={`w-full flex items-center justify-between p-4 rounded-lg border transition-colors group ${is2025Expanded ? "bg-muted/40 hover:bg-muted/50" : "bg-muted/20 hover:bg-muted/30"}`}
+              >
+                <div className="flex items-center gap-3">
+                  <Tag className="h-5 w-5 text-muted-foreground" />
+                  <h2 className="text-2xl font-bold">2025</h2>
+                  <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+                    {entries2025.length} {entries2025.length === 1 ? 'version' : 'versions'}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground transition-colors">
+                  {is2025Expanded ? (
+                    <>
+                      <span className="text-sm">Hide</span>
+                      <ChevronUp className="h-5 w-5" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm">Show</span>
+                      <ChevronDown className="h-5 w-5" />
+                    </>
+                  )}
+                </div>
+              </button>
+
+              {/* 2025 Entries - Shown when expanded */}
+              {is2025Expanded && (
+                <div className="space-y-8">
+                  {entries2025.map((entry) => (
+                    <Card key={entry.version} className="relative">
+                      {/* Card Header - Version number, type badge, and date */}
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {/* Version tag icon */}
+                            <Tag className="h-5 w-5 text-muted-foreground" />
+                            {/* Version number */}
+                            <CardTitle className="text-2xl">v{entry.version}</CardTitle>
+                            {/* Version type badge (major/minor/patch) */}
+                            <Badge 
+                              variant="outline" 
+                              className={getVersionTypeColor(entry.type)}
+                            >
+                              {entry.type}
+                            </Badge>
+                          </div>
+                          {/* Release date */}
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            {entry.date}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      {/* Card Content - Change lists grouped by type */}
+                      <CardContent className="space-y-6">
+                        {Object.entries(entry.changes).map(([changeType, changes]) => (
+                          <div key={changeType} className="space-y-3">
+                            {/* Change type header with icon */}
+                            <div className="flex items-center gap-2">
+                              {getChangeTypeIcon(changeType as ChangeType)}
+                              <h3 className={`font-semibold capitalize ${getChangeTypeColor(changeType as ChangeType)}`}>
+                                {changeType}
+                              </h3>
+                            </div>
+                            {/* Change list items */}
+                            <ul className="space-y-2 ml-6 list-disc list-inside">
+                              {changes.map((change: string, changeIndex: number) => (
+                                <li key={changeIndex} className="text-sm leading-relaxed">
+                                  {change}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Alpha Changelog Section - Collapsible */}
           {alphaEntries.length > 0 && (
             <div className="space-y-8">
               {/* Collapsible Alpha Heading */}
               <button
                 onClick={() => setIsAlphaExpanded(!isAlphaExpanded)}
-                className="w-full flex items-center justify-between p-4 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors group"
+                className={`w-full flex items-center justify-between p-4 rounded-lg border transition-colors group ${isAlphaExpanded ? "bg-muted/40 hover:bg-muted/50" : "bg-muted/20 hover:bg-muted/30"}`}
               >
                 <div className="flex items-center gap-3">
                   <Tag className="h-5 w-5 text-muted-foreground" />

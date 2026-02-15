@@ -18,7 +18,6 @@
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "incremental": true,
-    "types": ["jest", "@testing-library/jest-dom"],
     "baseUrl": ".",
     "paths": {
       "@/*": [

@@ -11,7 +11,7 @@ import type { Metadata } from "next";
 export function generateMetadata(): Metadata {
   return {
     title: "OmniLens",
-    description: "Monitoring GitHub workflow runs",
+    description: "OmniLens helps you create and monitor GitHub Actions workflows. Pre-built templates for testing, building, and deploying. No YAML experience required. Get started in 60 seconds.",
     icons: {
       icon: "/omnilens.jpeg",
       shortcut: "/omnilens.jpeg",

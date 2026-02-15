@@ -128,7 +128,7 @@ export default function LoginPage() {
           </p>
           {/* Copyright notice */}
           <p className="text-sm text-muted-foreground">
-            © 2025 OmniLens. All rights reserved.
+            © {new Date().getFullYear()} OmniLens. All rights reserved.
           </p>
           </div>
         </div>

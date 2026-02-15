@@ -289,7 +289,11 @@ export default function WorkflowCard({
             {/* View button - Links to GitHub Actions run page */}
             <div className="flex items-center gap-2">
               {run.html_url && (
-                <Button variant="outline" size="sm" asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                >
                   <Link href={run.html_url} target="_blank">
                     <Eye className="h-3 w-3 mr-1" />
                     View

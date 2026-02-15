@@ -96,7 +96,7 @@ export default function LandingPage() {
 
             {/* CTA Buttons - Primary call-to-action */}
             <div className="flex flex-col gap-4 justify-center items-center">
-              <GetStartedButton />
+              <GetStartedButton variant="hero" />
             </div>
           </div>
         </div>
@@ -105,17 +105,20 @@ export default function LandingPage() {
       {/* Vercel OSS Program Badge */}
       <VercelBadge />
 
-      {/* Features Section - Unified feature cards */}
+      {/* Features Section - Core Capabilities */}
       <div className="relative px-6 md:px-12 lg:px-16 xl:px-24 py-12">
         <div className="w-full max-w-[1920px] mx-auto relative z-10">
           {/* Section Header */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
               Core Capabilities
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
               The building blocks behind workflow health visibility.
             </p>
+            <div className="flex justify-center">
+              <GetStartedButton variant="core" />
+            </div>
           </div>
 
           {/* Feature Cards - Three major product areas */}
@@ -142,6 +145,9 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* From Zero to CI/CD - Hidden while in development */}
+      {/* <WorkflowCreationSection /> */}
+
       {/* CTA Section - Final call-to-action */}
       <div className="relative px-6 md:px-12 lg:px-16 xl:px-24 py-12">
         <div className="w-full max-w-[1920px] mx-auto text-center relative z-10">
@@ -156,7 +162,7 @@ export default function LandingPage() {
           </p>
           
           {/* CTA Button */}
-          <GetStartedButton />
+          <GetStartedButton variant="core" />
         </div>
       </div>
 
@@ -165,7 +171,7 @@ export default function LandingPage() {
         <div className="w-full max-w-[1920px] mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             {/* Copyright */}
-            <p className="text-gray-400 text-sm mb-4 md:mb-0">© 2025 OmniLens. All rights reserved.</p>
+            <p className="text-gray-400 text-sm mb-4 md:mb-0">© {new Date().getFullYear()} OmniLens. All rights reserved.</p>
             {/* Legal Links */}
             <div className="flex items-center gap-6 text-sm text-gray-300">
               <Link href="/legal" className="hover:text-white transition-colors">Legal</Link>

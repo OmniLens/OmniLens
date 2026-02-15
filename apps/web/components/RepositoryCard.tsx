@@ -108,7 +108,7 @@ export default function RepositoryCard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 transition-transform duration-200 hover:scale-110 active:scale-95"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -124,7 +124,7 @@ export default function RepositoryCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 transition-transform duration-200 hover:scale-110 active:scale-95"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();

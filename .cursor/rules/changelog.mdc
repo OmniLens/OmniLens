@@ -1,0 +1,53 @@
+---
+description: Changelog maintenance policy - user-facing entries, never edit past entries
+globs: **/changelog/**/*.tsx,**/changelog/**/*.ts,**/CHANGELOG*
+alwaysApply: false
+---
+
+# Changelog Policy
+
+## User-Facing Entries Only
+
+Changelog entries are for end users. Keep them concise and avoid implementation details.
+
+**Do not include:**
+- Component names (e.g., `WorkflowCreationSection`, `AppSidebar`)
+- File or page paths (e.g., `/dashboard/[slug]/testing`)
+- Internal utilities or API endpoints (e.g., `isFeatureEnabled`, `/api/auto-detect/[slug]`)
+- Technical refactoring details (e.g., "useState lazy initializers")
+
+**Do include:**
+- User-visible features and improvements
+- Plain-language descriptions of what changed
+- Outcomes and benefits, not implementation
+
+### Example
+
+```markdown
+❌ BAD: "WorkflowCreationSection component for guided workflow creation on the home page"
+✅ GOOD: "Guided workflow creation on the home page"
+
+❌ BAD: "Updates AppSidebar, FeatureCard, GetStartedButton, RepositoryCard components"
+✅ GOOD: "Improved navigation and UI"
+```
+
+## Never Retroactively Change Entries
+
+**Do not edit or remove existing changelog entries.** Changelog entries are historical records of what was released at each version. Editing past entries:
+
+- Rewrites release history
+- Breaks version comparison and audit trails
+- Can confuse users who rely on accurate release notes
+
+### Correct Approach
+
+- **Add new entries** only for new releases
+- **Append to current/upcoming** version if you're still developing
+- **Leave past entries unchanged** even if features are later removed
+
+### Example
+
+```markdown
+❌ BAD: Removing "Testing Frameworks" from v1.5.0 after it was removed in a later refactor
+✅ GOOD: Add a new v1.6.0 entry: "Removed Testing Frameworks feature"
+```

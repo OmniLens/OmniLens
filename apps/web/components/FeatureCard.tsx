@@ -1,14 +1,8 @@
 // External library imports
-import { LucideIcon } from "lucide-react";
-
-// Type imports
-// (No external type imports used in this component)
+import type { LucideIcon } from "lucide-react";
 
 // Internal component imports
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-
-// Utility imports
-// (No utility functions used in this component)
 
 // ============================================================================
 // Type Definitions

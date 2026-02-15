@@ -1,6 +1,0 @@
-# This directory will contain Jest unit tests
-# Tests should mirror the source structure:
-# - __tests__/unit/lib/ for utility function tests
-# - __tests__/unit/components/ for component tests
-# - __tests__/unit/hooks/ for hook tests
-
