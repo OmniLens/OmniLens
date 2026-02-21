@@ -57,6 +57,21 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "2.2.0",
+    date: "2026-02-21",
+    type: "minor",
+    changes: {
+      changed: [
+        "Dashboard repository cards redesigned with simplified mockup-style layout",
+        "Theme colors updated with neutral black background",
+        "Success rate display improved with gradient bars and color-coded percentages"
+      ],
+      removed: [
+        "Remove repository functionality from dashboard"
+      ]
+    }
+  },
+  {
     version: "2.1.0",
     date: "2026-02-21",
     type: "minor",

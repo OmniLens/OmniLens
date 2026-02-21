@@ -56,6 +56,50 @@ export function formatRepoDisplayName(repoName: string): string {
     .trim();
 }
 
+/**
+ * Get the first letter of the repository name for avatar display
+ * Uses the repo part of owner/repo (e.g. "owner/core" → "C")
+ * @param displayNameOrPath - Repository display name or path (e.g. "owner/core" or "Core")
+ * @returns Single uppercase letter for avatar
+ * @example
+ * getAvatarLetter("owner/core") // Returns "C"
+ * getAvatarLetter("omnilens/core") // Returns "C"
+ */
+export function getAvatarLetter(displayNameOrPath: string): string {
+  if (!displayNameOrPath) return '?';
+  const repoPart = displayNameOrPath.split('/').pop() || displayNameOrPath;
+  const first = repoPart.charAt(0);
+  return first ? first.toUpperCase() : '?';
+}
+
+/** Palette for deterministic avatar colors (matches mockup) */
+const AVATAR_COLORS = [
+  '#00e5a0', // var(--accent)
+  '#4d9fff', // var(--accent2)
+  '#c084fc', // var(--accent3)
+  '#f59e0b',
+  '#ef4444',
+  '#6366f1',
+];
+
+/**
+ * Get a deterministic color for avatar background based on string
+ * Uses simple hash to pick from mockup palette
+ * @param str - String to hash (e.g. repo path or display name)
+ * @returns Hex color string
+ * @example
+ * getAvatarColor("owner/core") // Returns consistent color for same input
+ */
+export function getAvatarColor(str: string): string {
+  if (!str) return AVATAR_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
+}
+
 // ============================================================================
 // Time/Date Utilities
 // ============================================================================

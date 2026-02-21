@@ -3,7 +3,7 @@
 @import 'tailwindcss/utilities';
 
 :root {
-  --background: 150 100% 0.4%;
+  --background: 0 0% 0.4%;
   --foreground: 0 0% 98%;
   --card: 0 0% 3.9%;
   --card-foreground: 0 0% 98%;
@@ -101,11 +101,68 @@ body {
   line-clamp: 2;
 }
 
+/* Dashboard repository card - mockup alignment */
+.repository-card {
+  background: rgba(255, 255, 255, 0.02);
+}
 
+.repository-card .drc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.repository-card .drc-avatar {
+  flex-shrink: 0;
+  color: #000;
+}
+
+.repository-card .drc-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repository-card .drc-pub-badge {
+  color: #4d9fff;
+}
+
+.repository-card .drc-rate-row {
+  color: hsl(var(--muted-foreground));
+}
+
+.repository-card .drc-rate-val.high {
+  color: #00e5a0;
+  font-weight: 600;
+}
+
+.repository-card .drc-bar-wrap {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.repository-card .drc-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.repository-card .drc-footer {
+  color: hsl(var(--muted-foreground));
+}
+
+.repository-card .drc-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
 @layer base {
   :root {
-    --sidebar-background: 150 100% 0.4%;
+    --sidebar-background: 0 0% 0.4%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
@@ -115,7 +172,7 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --sidebar-background: 150 100% 0.4%;
+    --sidebar-background: 0 0% 0.4%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
