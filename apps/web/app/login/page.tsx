@@ -10,7 +10,6 @@ import { Github } from "lucide-react";
 // Internal component imports
 import { Button } from "@/components/ui/button";
 import { VersionIndicator } from "@/components/VersionIndicator";
-import VercelBadge from "@/components/VercelBadge";
 
 // Hook imports
 import { signIn, useSession } from "@/lib/auth-client";
@@ -106,9 +105,6 @@ export default function LoginPage() {
             {isLoading ? "Signing in..." : "Continue with GitHub"}
           </Button>
         </div>
-
-        {/* Vercel OSS Program Badge */}
-        <VercelBadge />
       </div>
       
 

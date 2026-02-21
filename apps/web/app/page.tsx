@@ -7,9 +7,12 @@ import { Radio, FolderOpen, BarChart3 } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
-import VercelBadge from "@/components/VercelBadge";
+import Countdown from "@/components/Countdown";
 import FeatureCard from "@/components/FeatureCard";
 import GetStartedButton from "@/components/GetStartedButton";
+
+/** Monday 23rd Feb 2026, 19:00 SAST (UTC+2) = 17:00 UTC — Feb 23 2025 is Sunday */
+const COUNTDOWN_TARGET = "2026-02-23T17:00:00Z";
 
 // ============================================================================
 // Main Component
@@ -69,6 +72,12 @@ export default function LandingPage() {
       <div className="relative px-6 md:px-12 lg:px-16 xl:px-24 pt-20 pb-12">
         <div className="w-full max-w-[1920px] mx-auto">
           <div className="text-center space-y-8">
+            {/* Countdown - above logo */}
+            <Countdown
+              targetDate={COUNTDOWN_TARGET}
+              label="Launching in"
+              endMessage="Now live!"
+            />
             {/* Logo - Large OmniLens brand image */}
             <div className="flex justify-center">
               <div className="h-40 w-40">
@@ -86,10 +95,10 @@ export default function LandingPage() {
 
             {/* Main Headline - Title and description */}
             <div className="space-y-4">
-              <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                OmniLens
-              </h1>
-              <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+              OmniLens
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
                 An open-source platform for visualizing and tracking GitHub Actions workflow health.
               </p>
             </div>
@@ -102,9 +111,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Vercel OSS Program Badge */}
-      <VercelBadge />
-
       {/* Features Section - Core Capabilities */}
       <div className="relative px-6 md:px-12 lg:px-16 xl:px-24 py-12">
         <div className="w-full max-w-[1920px] mx-auto relative z-10">
@@ -113,12 +119,9 @@ export default function LandingPage() {
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
               Core Capabilities
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
               The building blocks behind workflow health visibility.
             </p>
-            <div className="flex justify-center">
-              <GetStartedButton variant="core" />
-            </div>
           </div>
 
           {/* Feature Cards - Three major product areas */}
@@ -162,7 +165,7 @@ export default function LandingPage() {
           </p>
           
           {/* CTA Button */}
-          <GetStartedButton variant="core" />
+          <GetStartedButton variant="hero" />
         </div>
       </div>
 

@@ -1,0 +1,75 @@
+/* ============================================================================
+   Countdown Component — oss-update aesthetic
+   Matches hero-badge, uses landing-root vars when inside .landing-root
+   ============================================================================ */
+
+.root {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+/* oss-update style: matches new website background, subtle border */
+.inner {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 32px;
+  background: #0e0e0e;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.innerEnded {
+  padding: 16px 28px;
+}
+
+.label {
+  font-family: "Geist Mono", "Courier New", monospace;
+  font-size: 13px;
+  color: #00e5a0;
+  letter-spacing: 0.1em;
+}
+
+.grid {
+  display: flex;
+  gap: 24px;
+  align-items: flex-end;
+}
+
+.unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.value {
+  font-family: "Geist Mono", "Courier New", monospace;
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 600;
+  line-height: 1;
+  min-width: 2ch;
+  text-align: center;
+  background: linear-gradient(135deg, #00e5a0, #4d9fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.unitLabel {
+  font-family: "Geist Mono", "Courier New", monospace;
+  font-size: 11px;
+  color: #888;
+  letter-spacing: 0.08em;
+}
+
+.endMessage {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 24px;
+  font-style: italic;
+  color: #00e5a0;
+}

@@ -57,6 +57,23 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "2.1.0",
+    date: "2026-02-21",
+    type: "minor",
+    changes: {
+      added: [
+        "Launch countdown timer on landing page",
+        "Geist Mono and Instrument Serif fonts for improved typography"
+      ],
+      changed: [
+        "Reorganized landing page layout with Get Started button in hero section"
+      ],
+      removed: [
+        "Vercel OSS Program badge from login and landing pages"
+      ]
+    }
+  },
+  {
     version: "2.0.0",
     date: "2026-02-15",
     type: "major",
