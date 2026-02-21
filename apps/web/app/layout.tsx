@@ -10,8 +10,8 @@ import type { Metadata } from "next";
 
 export function generateMetadata(): Metadata {
   return {
-    title: "OmniLens",
-    description: "OmniLens helps you create and monitor GitHub Actions workflows. Pre-built templates for testing, building, and deploying. No YAML experience required. Get started in 60 seconds.",
+    title: "OmniLens — GitHub Actions Workflow Health",
+    description: "An open-source platform for visualizing and tracking GitHub Actions workflow health.",
     icons: {
       icon: "/omnilens.jpeg",
       shortcut: "/omnilens.jpeg",
@@ -22,7 +22,7 @@ export function generateMetadata(): Metadata {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" style={{ scrollBehavior: "smooth" }}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

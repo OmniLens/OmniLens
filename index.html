@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniLens — GitHub Actions Workflow Health</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=GeistMono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #070707;
+  --surface: #0e0e0e;
+  --surface2: #131313;
+  --surface3: #181818;
+  --border: rgba(255,255,255,0.06);
+  --border-hover: rgba(255,255,255,0.14);
+  --text: #e2e2e2;
+  --muted: #555;
+  --muted2: #888;
+  --accent: #00e5a0;
+  --accent2: #4d9fff;
+  --accent3: #c084fc;
+  --mono: 'GeistMono', 'Courier New', monospace;
+  --serif: 'Instrument Serif', Georgia, serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ── GRID OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── NOISE ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  height: 60px;
+  background: rgba(7,7,7,0.7);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.nav-logo-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-logo-mark svg,
+.nav-logo-mark img { position: relative; z-index: 1; }
+
+.nav-logo-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+}
+
+.nav-links a {
+  font-size: 14px;
+  color: var(--muted2);
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-sm-ghost {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted2);
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 8px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+
+.btn-sm-ghost:hover { color: var(--text); border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
+
+.btn-sm-primary {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  background: var(--accent);
+  border: none;
+  padding: 8px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+
+.btn-sm-primary:hover { background: #00ff99; box-shadow: 0 0 20px rgba(0,229,160,0.3); }
+
+/* ── HERO ── */
+.hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  overflow: hidden;
+}
+
+/* Radial glow behind hero */
+.hero-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(0,229,160,0.06) 0%, rgba(77,159,255,0.04) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--accent);
+  background: rgba(0,229,160,0.06);
+  border: 1px solid rgba(0,229,160,0.2);
+  padding: 6px 14px;
+  border-radius: 100px;
+  margin-bottom: 32px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: fade-up 0.6s ease both;
+}
+
+.hero-badge .badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-dot 2s infinite;
+}
+
+.hero-title {
+  font-family: var(--serif);
+  font-size: clamp(42px, 7vw, 84px);
+  font-weight: 400;
+  color: #fff;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+  animation: fade-up 0.6s ease 0.1s both;
+}
+
+.hero-title em {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: 17px;
+  color: var(--muted2);
+  max-width: 500px;
+  line-height: 1.8;
+  margin-bottom: 40px;
+  animation: fade-up 0.6s ease 0.2s both;
+  font-weight: 300;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  animation: fade-up 0.6s ease 0.3s both;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-lg-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #000;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 15px 30px;
+  border-radius: 10px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-lg-primary:hover {
+  background: #00ff99;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0,229,160,0.3);
+}
+
+.btn-lg-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--muted2);
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 15px 30px;
+  border-radius: 10px;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-lg-ghost:hover {
+  color: var(--text);
+  border-color: var(--border-hover);
+  background: rgba(255,255,255,0.03);
+}
+
+.hero-vercel {
+  margin-top: 48px;
+  animation: fade-up 0.6s ease 0.4s both;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.hero-vercel:hover { opacity: 1; }
+.hero-vercel img { height: 22px; }
+
+/* hero dashboard visual */
+.hero-dashboard {
+  position: relative;
+  width: min(860px, 100%);
+  margin: 56px auto 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  overflow: hidden;
+  animation: fade-up 0.7s ease 0.5s both;
+  box-shadow: 0 40px 120px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+}
+.dash-titlebar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.dash-titlebar-left { display: flex; align-items: center; gap: 8px; }
+.dash-wdot { width: 10px; height: 10px; border-radius: 50%; }
+.dash-wdot.r { background: #3a1515; border: 1px solid #5a2020; }
+.dash-wdot.y { background: #3a2e15; border: 1px solid #5a4820; }
+.dash-wdot.g { background: #153a20; border: 1px solid #205a30; }
+.dash-titlebar-url {
+  font-size: 11px; color: var(--muted); letter-spacing: 0.04em;
+  padding: 3px 14px; background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border); border-radius: 5px;
+}
+.dash-titlebar-badge {
+  display: flex; align-items: center; gap: 5px; font-size: 10px;
+  color: var(--accent); background: rgba(0,229,160,0.07);
+  border: 1px solid rgba(0,229,160,0.15); padding: 3px 10px; border-radius: 100px;
+}
+.live-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--accent); animation: pulse-dot 1.5s infinite;
+}
+.dash-chrome { display: flex; height: 320px; }
+.dash-sidebar {
+  width: 44px; border-right: 1px solid var(--border);
+  background: #080808; display: flex; flex-direction: column;
+  align-items: center; padding: 14px 0; gap: 14px; flex-shrink: 0;
+}
+.dash-sidebar-icon {
+  width: 24px; height: 24px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; color: var(--muted);
+}
+.dash-sidebar-icon.active { background: rgba(0,229,160,0.1); color: var(--accent); }
+.dash-main { flex: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+.dash-page-header { display: flex; align-items: center; justify-content: space-between; }
+.dash-page-title { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -0.01em; }
+.dash-add-btn {
+  display: flex; align-items: center; gap: 5px; font-size: 10px;
+  font-family: var(--mono); color: #000; background: var(--accent);
+  border: none; padding: 5px 12px; border-radius: 6px; font-weight: 600; cursor: default;
+}
+.dash-repo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; flex: 1; }
+.dash-repo-card {
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  opacity: 0; animation: card-in 0.4s ease forwards;
+  transition: border-color 0.2s, background 0.2s; position: relative; overflow: hidden;
+}
+.dash-repo-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 1px; opacity: 0; transition: opacity 0.3s;
+}
+.dash-repo-card:nth-child(1)::after { background: linear-gradient(90deg, var(--accent), transparent); }
+.dash-repo-card:nth-child(2)::after { background: linear-gradient(90deg, var(--accent2), transparent); }
+.dash-repo-card:nth-child(3)::after { background: linear-gradient(90deg, var(--accent3), transparent); }
+.dash-repo-card:nth-child(4)::after { background: linear-gradient(90deg, #f59e0b, transparent); }
+.dash-repo-card:nth-child(5)::after { background: linear-gradient(90deg, #ef4444, transparent); }
+.dash-repo-card:nth-child(6)::after { background: linear-gradient(90deg, var(--accent), transparent); }
+.dash-repo-card:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
+.dash-repo-card:hover::after { opacity: 1; }
+.dash-repo-card:nth-child(1) { animation-delay: 0.15s; }
+.dash-repo-card:nth-child(2) { animation-delay: 0.25s; }
+.dash-repo-card:nth-child(3) { animation-delay: 0.35s; }
+.dash-repo-card:nth-child(4) { animation-delay: 0.45s; }
+.dash-repo-card:nth-child(5) { animation-delay: 0.55s; }
+.dash-repo-card:nth-child(6) { animation-delay: 0.65s; }
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.drc-head { display: flex; align-items: center; gap: 8px; }
+.drc-avatar {
+  width: 20px; height: 20px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; flex-shrink: 0; color: #000;
+}
+.drc-name { font-size: 11px; font-weight: 600; color: #ddd; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drc-pub-badge {
+  display: flex; align-items: center; gap: 3px; font-size: 9px;
+  color: var(--accent2); background: rgba(77,159,255,0.08);
+  border: 1px solid rgba(77,159,255,0.15); padding: 1px 7px; border-radius: 100px; flex-shrink: 0;
+}
+.drc-pub-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent2); }
+.drc-rate-row { display: flex; align-items: center; justify-content: space-between; font-size: 9px; color: var(--muted); }
+.drc-rate-val.high { color: var(--accent); font-weight: 600; }
+.drc-rate-val.low  { color: var(--muted); font-weight: 600; }
+.drc-bar-wrap { height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+.drc-bar { height: 100%; border-radius: 2px; width: 0%; transition: width 1.3s cubic-bezier(0.16,1,0.3,1); }
+.drc-bar.full  { background: linear-gradient(90deg, var(--accent), #00ff99); }
+.drc-bar.hi    { background: linear-gradient(90deg, var(--accent), #00ff99); }
+.drc-bar.med   { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
+.drc-bar.empty { background: rgba(255,255,255,0.06); }
+.drc-footer { display: flex; align-items: center; gap: 10px; font-size: 9px; color: var(--muted); }
+.drc-meta-item { display: flex; align-items: center; gap: 3px; }
+
+/* old terminal – unused */
+.hero-terminal {
+  position: relative;
+  width: min(680px, 100%);
+  margin: 56px auto 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+  animation: fade-up 0.7s ease 0.5s both;
+  box-shadow: 0 40px 120px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.t-dot { width: 10px; height: 10px; border-radius: 50%; }
+.t-dot.r { background: #ef4444; }
+.t-dot.y { background: #f59e0b; }
+.t-dot.g { background: #22c55e; }
+
+.terminal-title {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.terminal-body {
+  padding: 20px 22px;
+  font-size: 14px;
+  line-height: 2;
+  text-align: left;
+}
+
+.t-line {
+  display: flex;
+  gap: 10px;
+  opacity: 0;
+  animation: fade-in-line 0.3s ease forwards;
+}
+
+.t-line:nth-child(1)  { animation-delay: 0.8s; }
+.t-line:nth-child(2)  { animation-delay: 1.0s; }
+.t-line:nth-child(3)  { animation-delay: 1.2s; }
+.t-line:nth-child(4)  { animation-delay: 1.4s; }
+.t-line:nth-child(5)  { animation-delay: 1.6s; }
+.t-line:nth-child(6)  { animation-delay: 1.8s; }
+
+.t-prompt { color: var(--accent); }
+.t-cmd    { color: #fff; }
+.t-ok     { color: var(--accent); }
+.t-err    { color: #ef4444; }
+.t-info   { color: var(--accent2); }
+.t-dim    { color: var(--muted); }
+
+/* ── SECTION SHARED ── */
+.section {
+  position: relative;
+  z-index: 1;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 100px 24px;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
+.eyebrow::before, .eyebrow::after {
+  content: '';
+  display: block;
+  height: 1px;
+  width: 36px;
+  background: var(--accent);
+  opacity: 0.35;
+}
+
+.section-title {
+  font-family: var(--serif);
+  font-size: clamp(30px, 4.5vw, 52px);
+  font-weight: 400;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 16px;
+  letter-spacing: -0.01em;
+}
+
+.section-title em { font-style: italic; color: var(--accent); }
+
+.section-sub {
+  font-size: 15px;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+/* ── DIVIDER ── */
+.divider {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border) 20%, var(--border) 80%, transparent);
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+/* ── CAPABILITY CARDS ── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.card {
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.3s;
+  cursor: default;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(500px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(0,229,160,0.05), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card:hover::before { opacity: 1; }
+.card:hover { background: var(--surface2); }
+
+.card-glow {
+  height: 1px;
+  width: 0%;
+  transition: width 0.5s ease;
+}
+
+.card:hover .card-glow { width: 100%; }
+
+.card:nth-child(1) .card-glow { background: linear-gradient(90deg, var(--accent), transparent); }
+.card:nth-child(2) .card-glow { background: linear-gradient(90deg, var(--accent2), transparent); }
+.card:nth-child(3) .card-glow { background: linear-gradient(90deg, var(--accent3), transparent); }
+
+.card-mock {
+  height: 210px;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: #090909;
+}
+
+.card-body {
+  padding: 26px 28px 30px;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-num { font-size: 11px; color: var(--muted); letter-spacing: 0.15em; }
+
+.card-title { font-size: 17px; font-weight: 600; color: #fff; letter-spacing: -0.01em; line-height: 1.3; }
+
+.card-desc { font-size: 14px; color: #777; line-height: 1.75; font-weight: 300; }
+
+.card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* mock shared pieces */
+.mock-wrap { padding: 14px 16px; display: flex; flex-direction: column; gap: 0; }
+
+.mock-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mock-topbar-label { font-size: 9px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+
+.mock-pill {
+  font-size: 9px;
+  padding: 2px 10px;
+  border-radius: 100px;
+  border: 1px solid;
+}
+
+.mock-pill.green { color: var(--accent); background: rgba(0,229,160,0.07); border-color: rgba(0,229,160,0.15); }
+.mock-pill.blue  { color: var(--accent2); background: rgba(77,159,255,0.07); border-color: rgba(77,159,255,0.15); }
+.mock-pill.purple{ color: var(--accent3); background: rgba(192,132,252,0.07); border-color: rgba(192,132,252,0.15); }
+
+/* MOCK 1: repos */
+.repo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 5px;
+  opacity: 0;
+  transform: translateY(5px);
+  animation: row-in 0.4s ease forwards;
+}
+
+.repo-row:nth-child(1) { animation-delay: 0.05s; }
+.repo-row:nth-child(2) { animation-delay: 0.15s; }
+.repo-row:nth-child(3) { animation-delay: 0.25s; }
+.repo-row:nth-child(4) { animation-delay: 0.35s; }
+
+.repo-icon-sq {
+  width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.repo-name { font-size: 10px; color: #ccc; flex: 1; font-weight: 500; }
+
+.status-chip {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 9px; color: var(--muted);
+}
+
+.sdot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.sdot.g { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
+.sdot.y { background: #f59e0b; box-shadow: 0 0 5px #f59e0b; }
+.sdot.r { background: #ef4444; box-shadow: 0 0 5px #ef4444; }
+
+@keyframes row-in {
+  to { opacity: 1; transform: none; }
+}
+
+/* MOCK 2: signal log */
+.sig-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 9px;
+  line-height: 2;
+  border-bottom: 1px solid rgba(255,255,255,0.025);
+  opacity: 0;
+  animation: fade-in-line 0.25s ease forwards;
+}
+
+.sig-line:nth-child(1) { animation-delay: 0.05s; }
+.sig-line:nth-child(2) { animation-delay: 0.2s; }
+.sig-line:nth-child(3) { animation-delay: 0.35s; }
+.sig-line:nth-child(4) { animation-delay: 0.5s; }
+.sig-line:nth-child(5) { animation-delay: 0.65s; }
+.sig-line:nth-child(6) { animation-delay: 0.8s; }
+.sig-line:nth-child(7) { animation-delay: 0.95s; }
+.sig-line:nth-child(8) { animation-delay: 1.1s; }
+
+.sig-ts { color: #2e2e2e; flex-shrink: 0; width: 54px; }
+.sig-type { flex-shrink: 0; width: 48px; font-weight: 600; }
+.sig-pass { color: var(--accent); }
+.sig-fail { color: #ef4444; }
+.sig-skip { color: #f59e0b; }
+.sig-info { color: var(--accent2); }
+.sig-msg  { color: #444; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cursor-blink {
+  display: inline-block;
+  width: 5px; height: 9px;
+  background: var(--accent2);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+}
+
+/* MOCK 3: metrics */
+.metric-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+
+.metric-label { font-size: 9px; color: var(--muted); width: 70px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.metric-bar-wrap { flex: 1; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+
+.metric-bar-fill { height: 100%; border-radius: 2px; width: 0%; transition: width 1.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.metric-bar-fill.g { background: linear-gradient(90deg, var(--accent), #00ff99); }
+.metric-bar-fill.b { background: linear-gradient(90deg, var(--accent2), #88cfff); }
+.metric-bar-fill.p { background: linear-gradient(90deg, var(--accent3), #e879f9); }
+.metric-bar-fill.a { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
+
+.metric-val { font-size: 10px; color: #fff; width: 38px; text-align: right; flex-shrink: 0; font-weight: 500; }
+
+.spark-wrap { margin-top: 6px; border-top: 1px solid var(--border); padding-top: 10px; }
+.spark-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px; }
+
+.spark-svg { width: 100%; height: 38px; overflow: visible; }
+
+.spark-path {
+  fill: none; stroke: var(--accent3); stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 1000; stroke-dashoffset: 1000;
+  animation: draw-line 1.8s ease forwards 0.5s;
+}
+
+.spark-area { fill: url(#sGrad); opacity: 0; animation: fade-fill 0.4s ease forwards 2.1s; }
+
+/* ── STATS STRIP ── */
+.stats-strip {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.stats-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.stat-item {
+  padding: 36px 32px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-item:last-child { border-right: none; }
+
+.stat-item::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.stat-item:nth-child(1)::before { background: linear-gradient(90deg, var(--accent), transparent); }
+.stat-item:nth-child(2)::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+.stat-item:nth-child(3)::before { background: linear-gradient(90deg, var(--accent3), transparent); }
+.stat-item:nth-child(4)::before { background: linear-gradient(90deg, #f59e0b, transparent); }
+
+.stat-item:hover::before { opacity: 1; }
+
+.stat-val {
+  font-family: var(--serif);
+  font-size: 40px;
+  color: #fff;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.stat-label { font-size: 13px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+
+.stat-delta {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── CTA SECTION ── */
+.cta-section {
+  position: relative;
+  z-index: 1;
+  padding: 120px 24px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.cta-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(0,229,160,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.cta-inner {
+  position: relative;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.cta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted2);
+  border: 1px solid var(--border);
+  padding: 5px 14px;
+  border-radius: 100px;
+  margin-bottom: 28px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cta-title {
+  font-family: var(--serif);
+  font-size: clamp(30px, 5vw, 54px);
+  font-weight: 400;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  letter-spacing: -0.015em;
+}
+
+.cta-title em { font-style: italic; color: var(--accent); }
+
+.cta-sub {
+  font-size: 16px;
+  color: var(--muted2);
+  line-height: 1.8;
+  margin-bottom: 40px;
+  font-weight: 300;
+}
+
+.cta-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* ── FOOTER ── */
+footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.footer-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-copy {
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  list-style: none;
+}
+
+.footer-links a {
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover { color: var(--text); }
+
+/* ── ANIMATIONS ── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes fade-in-line {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@keyframes draw-line {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fade-fill {
+  to { opacity: 1; }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 860px) {
+  nav { padding: 0 20px; }
+  .cards { grid-template-columns: 1fr; }
+  .stats-inner { grid-template-columns: repeat(2, 1fr); }
+  .stat-item:nth-child(2) { border-right: none; }
+  .stat-item:nth-child(3) { border-right: 1px solid var(--border); }
+}
+
+@media (max-width: 540px) {
+  .stats-inner { grid-template-columns: 1fr; }
+  .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+  .nav-links { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════
+     NAV
+══════════════════════════════ -->
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-mark">
+      <img src="/omnilens_optimized.jpeg" alt="OmniLens" width="28" height="28" style="object-fit:cover;border-radius:7px">
+    </div>
+    <span class="nav-logo-name">OmniLens</span>
+  </a>
+
+  <ul class="nav-links">
+    <li><a href="/blog">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M2 6h6M2 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Blog
+    </a></li>
+    <li><a href="https://github.com/omnilens/OmniLens" target="_blank">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      GitHub
+    </a></li>
+  </ul>
+
+  <div class="nav-actions">
+    <a href="/login" class="btn-sm-ghost">Sign In</a>
+    <a href="/login" class="btn-sm-primary">Get Started</a>
+  </div>
+</nav>
+
+
+<!-- ══════════════════════════════
+     HERO
+══════════════════════════════ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+
+  <h1 class="hero-title">
+    Workflow health,<br><em>finally visible.</em>
+  </h1>
+
+  <p class="hero-sub">
+    An open-source platform for visualizing and tracking GitHub Actions workflow health — in real time.
+  </p>
+
+  <div class="hero-actions">
+    <a href="/login" class="btn-lg-primary">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 7L7 12.5M1.5 7H12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Get Started — it's free
+    </a>
+    <a href="https://github.com/omnilens/OmniLens" class="btn-lg-ghost" target="_blank">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      View on GitHub
+    </a>
+  </div>
+
+  <!-- dashboard preview -->
+  <div class="hero-dashboard">
+    <div class="dash-titlebar">
+      <div class="dash-titlebar-left">
+        <span class="dash-wdot r"></span>
+        <span class="dash-wdot y"></span>
+        <span class="dash-wdot g"></span>
+        <span class="dash-titlebar-url">omnilens.xyz/dashboard</span>
+      </div>
+      <div style="width:1px;"></div>
+    </div>
+    <div class="dash-chrome">
+      <!-- sidebar -->
+      <div class="dash-sidebar">
+        <div class="dash-sidebar-icon active">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2.5" fill="currentColor"/><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 2"/></svg>
+        </div>
+        <div class="dash-sidebar-icon">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="4" rx="1" fill="currentColor" opacity="0.5"/><rect x="8" y="2" width="4" height="4" rx="1" fill="currentColor" opacity="0.5"/><rect x="2" y="8" width="4" height="4" rx="1" fill="currentColor" opacity="0.5"/><rect x="8" y="8" width="4" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+        </div>
+        <div class="dash-sidebar-icon">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M2 7h7M2 10h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/></svg>
+        </div>
+      </div>
+      <!-- main content -->
+      <div class="dash-main">
+        <div class="dash-page-header">
+          <span class="dash-page-title">Repositories</span>
+          <div class="dash-add-btn">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Add Repo
+          </div>
+        </div>
+        <div class="dash-repo-grid">
+
+          <div class="dash-repo-card">
+            <div class="drc-head">
+              <div class="drc-avatar" style="background:var(--accent);">O</div>
+              <span class="drc-name">omnilens/core</span>
+              <span class="drc-pub-badge"><span class="drc-pub-dot"></span>Public</span>
+            </div>
+            <div class="drc-rate-row">
+              <span>Daily Success Rate</span>
+              <span class="drc-rate-val high">98.4%</span>
+            </div>
+            <div class="drc-bar-wrap"><div class="drc-bar full" data-w="98"></div></div>
+            <div class="drc-footer">
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 8V3.5L4.5 1 8 3.5V8H5.5V5.5H3.5V8H1Z" stroke="currentColor" stroke-width="0.8"/></svg>
+                312 workflows
+              </span>
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="3.5" stroke="currentColor" stroke-width="0.8"/><path d="M3 4.5l1 1 2-2" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                8 checks
+              </span>
+            </div>
+          </div>
+
+          <div class="dash-repo-card">
+            <div class="drc-head">
+              <div class="drc-avatar" style="background:var(--accent2);">A</div>
+              <span class="drc-name">org/api-gateway</span>
+              <span class="drc-pub-badge"><span class="drc-pub-dot"></span>Public</span>
+            </div>
+            <div class="drc-rate-row">
+              <span>Daily Success Rate</span>
+              <span class="drc-rate-val high">96.1%</span>
+            </div>
+            <div class="drc-bar-wrap"><div class="drc-bar full" data-w="96"></div></div>
+            <div class="drc-footer">
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 8V3.5L4.5 1 8 3.5V8H5.5V5.5H3.5V8H1Z" stroke="currentColor" stroke-width="0.8"/></svg>
+                528 workflows
+              </span>
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="3.5" stroke="currentColor" stroke-width="0.8"/><path d="M3 4.5l1 1 2-2" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                12 checks
+              </span>
+            </div>
+          </div>
+
+          <div class="dash-repo-card">
+            <div class="drc-head">
+              <div class="drc-avatar" style="background:var(--accent3);">F</div>
+              <span class="drc-name">org/frontend</span>
+              <span class="drc-pub-badge"><span class="drc-pub-dot"></span>Public</span>
+            </div>
+            <div class="drc-rate-row">
+              <span>Daily Success Rate</span>
+              <span class="drc-rate-val high">91.2%</span>
+            </div>
+            <div class="drc-bar-wrap"><div class="drc-bar hi" data-w="91"></div></div>
+            <div class="drc-footer">
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 8V3.5L4.5 1 8 3.5V8H5.5V5.5H3.5V8H1Z" stroke="currentColor" stroke-width="0.8"/></svg>
+                204 workflows
+              </span>
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="3.5" stroke="currentColor" stroke-width="0.8"/><path d="M3 4.5l1 1 2-2" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                6 checks
+              </span>
+            </div>
+          </div>
+
+          <div class="dash-repo-card">
+            <div class="drc-head">
+              <div class="drc-avatar" style="background:#f59e0b;">D</div>
+              <span class="drc-name">org/data-pipeline</span>
+              <span class="drc-pub-badge"><span class="drc-pub-dot"></span>Public</span>
+            </div>
+            <div class="drc-rate-row">
+              <span>Daily Success Rate</span>
+              <span class="drc-rate-val" style="color:#f59e0b;font-weight:600;">67.1%</span>
+            </div>
+            <div class="drc-bar-wrap"><div class="drc-bar med" data-w="67"></div></div>
+            <div class="drc-footer">
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 8V3.5L4.5 1 8 3.5V8H5.5V5.5H3.5V8H1Z" stroke="currentColor" stroke-width="0.8"/></svg>
+                89 workflows
+              </span>
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="3.5" stroke="currentColor" stroke-width="0.8"/><path d="M3 4.5l1 1 2-2" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                3 checks
+              </span>
+            </div>
+          </div>
+
+          <div class="dash-repo-card">
+            <div class="drc-head">
+              <div class="drc-avatar" style="background:#ef4444;">D</div>
+              <span class="drc-name">org/deploy-infra</span>
+              <span class="drc-pub-badge"><span class="drc-pub-dot"></span>Public</span>
+            </div>
+            <div class="drc-rate-row">
+              <span>Daily Success Rate</span>
+              <span class="drc-rate-val" style="color:#ef4444;font-weight:600;">41.8%</span>
+            </div>
+            <div class="drc-bar-wrap"><div class="drc-bar" data-w="42" style="background:linear-gradient(90deg,#ef4444,#f87171)"></div></div>
+            <div class="drc-footer">
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 8V3.5L4.5 1 8 3.5V8H5.5V5.5H3.5V8H1Z" stroke="currentColor" stroke-width="0.8"/></svg>
+                61 workflows
+              </span>
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="3.5" stroke="currentColor" stroke-width="0.8"/><path d="M3 4.5l1 1 2-2" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                2 checks
+              </span>
+            </div>
+          </div>
+
+          <div class="dash-repo-card">
+            <div class="drc-head">
+              <div class="drc-avatar" style="background:#6366f1;">A</div>
+              <span class="drc-name">org/auth-service</span>
+              <span class="drc-pub-badge"><span class="drc-pub-dot"></span>Public</span>
+            </div>
+            <div class="drc-rate-row">
+              <span>Daily Success Rate</span>
+              <span class="drc-rate-val high">99.1%</span>
+            </div>
+            <div class="drc-bar-wrap"><div class="drc-bar full" data-w="99"></div></div>
+            <div class="drc-footer">
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 8V3.5L4.5 1 8 3.5V8H5.5V5.5H3.5V8H1Z" stroke="currentColor" stroke-width="0.8"/></svg>
+                653 workflows
+              </span>
+              <span class="drc-meta-item">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="3.5" stroke="currentColor" stroke-width="0.8"/><path d="M3 4.5l1 1 2-2" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                9 checks
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════
+     CORE CAPABILITIES
+══════════════════════════════ -->
+<section class="section">
+  <div class="section-header">
+    <div class="eyebrow">Core Capabilities</div>
+    <h2 class="section-title">The building blocks behind<br><em>workflow health visibility.</em></h2>
+    <p class="section-sub">// three primitives. one unified view.</p>
+  </div>
+
+  <div class="cards">
+
+    <!-- CARD 1 -->
+    <div class="card" onmousemove="trackMouse(event, this)">
+      <div class="card-glow"></div>
+      <div class="card-mock">
+        <div class="mock-wrap">
+          <div class="mock-topbar">
+            <span class="mock-topbar-label">Repositories</span>
+            <span class="mock-pill green">4 connected</span>
+          </div>
+          <div class="repo-row">
+            <div class="repo-icon-sq" style="background:rgba(0,229,160,0.1)">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="#00e5a0" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </div>
+            <span class="repo-name">omnilens/core</span>
+            <span class="status-chip"><span class="sdot g"></span>healthy</span>
+          </div>
+          <div class="repo-row">
+            <div class="repo-icon-sq" style="background:rgba(77,159,255,0.1)">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="#4d9fff" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </div>
+            <span class="repo-name">org/api-gateway</span>
+            <span class="status-chip"><span class="sdot g"></span>healthy</span>
+          </div>
+          <div class="repo-row">
+            <div class="repo-icon-sq" style="background:rgba(245,158,11,0.1)">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="#f59e0b" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </div>
+            <span class="repo-name">org/data-pipeline</span>
+            <span class="status-chip"><span class="sdot y"></span>degraded</span>
+          </div>
+          <div class="repo-row">
+            <div class="repo-icon-sq" style="background:rgba(239,68,68,0.1)">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="#ef4444" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </div>
+            <span class="repo-name">org/deploy-infra</span>
+            <span class="status-chip"><span class="sdot r"></span>failing</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <span class="card-num">01 —</span>
+        <div class="card-title">Repository Management</div>
+        <div class="card-desc">Add and manage repositories from a central dashboard.</div>
+        <div class="card-tag">
+          <span class="sdot g" style="animation:pulse-dot 2s infinite"></span>
+          Central dashboard
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="card" onmousemove="trackMouse(event, this)">
+      <div class="card-glow"></div>
+      <div class="card-mock">
+        <div class="mock-wrap">
+          <div class="mock-topbar">
+            <span class="mock-topbar-label">Live stream</span>
+            <span class="mock-pill blue">ingesting</span>
+          </div>
+          <div class="sig-line"><span class="sig-ts">14:22:01</span><span class="sig-type sig-pass">PASS</span><span class="sig-msg">build / ubuntu-latest → success</span></div>
+          <div class="sig-line"><span class="sig-ts">14:22:03</span><span class="sig-type sig-info">CHECK</span><span class="sig-msg">lint / node20 → completed</span></div>
+          <div class="sig-line"><span class="sig-ts">14:22:07</span><span class="sig-type sig-pass">PASS</span><span class="sig-msg">test / matrix[3.11] → 214 passed</span></div>
+          <div class="sig-line"><span class="sig-ts">14:22:09</span><span class="sig-type sig-fail">FAIL</span><span class="sig-msg">deploy / prod → timeout 30s</span></div>
+          <div class="sig-line"><span class="sig-ts">14:22:12</span><span class="sig-type sig-skip">SKIP</span><span class="sig-msg">e2e / staging → skipped</span></div>
+          <div class="sig-line"><span class="sig-ts">14:22:14</span><span class="sig-type sig-pass">PASS</span><span class="sig-msg">security / codeql → 0 alerts</span></div>
+          <div class="sig-line"><span class="sig-ts">14:22:18</span><span class="sig-type sig-info">CHECK</span><span class="sig-msg">release / changelog → pending</span></div>
+          <div class="sig-line"><span class="sig-ts">14:22:21</span><span class="sig-type sig-pass">PASS</span><span class="sig-msg">build / windows-latest →<span class="cursor-blink"></span></span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <span class="card-num">02 —</span>
+        <div class="card-title">Signal Ingestion</div>
+        <div class="card-desc">Ingest workflow signals from tests, checks, and jobs. Collect comprehensive data from all your GitHub Actions workflows.</div>
+        <div class="card-tag">
+          <span class="sdot" style="background:var(--accent2);box-shadow:0 0 5px var(--accent2);animation:pulse-dot 2s infinite"></span>
+          Real-time events
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 3 -->
+    <div class="card" onmousemove="trackMouse(event, this)" id="metrics-card">
+      <div class="card-glow"></div>
+      <div class="card-mock">
+        <div class="mock-wrap">
+          <div class="mock-topbar">
+            <span class="mock-topbar-label">Health overview</span>
+            <span class="mock-pill purple">last 7d</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Success</span>
+            <div class="metric-bar-wrap"><div class="metric-bar-fill g" data-width="94"></div></div>
+            <span class="metric-val">94.2%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Run count</span>
+            <div class="metric-bar-wrap"><div class="metric-bar-fill b" data-width="73"></div></div>
+            <span class="metric-val">1,847</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Avg runtime</span>
+            <div class="metric-bar-wrap"><div class="metric-bar-fill p" data-width="58"></div></div>
+            <span class="metric-val">3m 41s</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Stability</span>
+            <div class="metric-bar-wrap"><div class="metric-bar-fill a" data-width="81"></div></div>
+            <span class="metric-val">81%</span>
+          </div>
+          <div class="spark-wrap">
+            <div class="spark-label">Success trend</div>
+            <svg class="spark-svg" viewBox="0 0 260 38" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#c084fc" stop-opacity="0.2"/>
+                  <stop offset="100%" stop-color="#c084fc" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path class="spark-area" d="M0,28 L26,25 L52,30 L78,18 L104,20 L130,15 L156,22 L182,10 L208,6 L234,8 L260,4 L260,38 L0,38 Z"/>
+              <path class="spark-path" d="M0,28 L26,25 L52,30 L78,18 L104,20 L130,15 L156,22 L182,10 L208,6 L234,8 L260,4"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <span class="card-num">03 —</span>
+        <div class="card-title">Metrics & State Visualization</div>
+        <div class="card-desc">Track workflow health using success rates, run counts, runtimes, and stability trends.</div>
+        <div class="card-tag">
+          <span class="sdot" style="background:var(--accent3);box-shadow:0 0 5px var(--accent3);animation:pulse-dot 2s infinite"></span>
+          Live analytics
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════
+     CTA
+══════════════════════════════ -->
+<div class="divider"></div>
+
+<div class="cta-section">
+  <div class="cta-glow"></div>
+  <div class="cta-inner">
+    <div class="cta-badge">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="3" fill="#00e5a0"/></svg>
+      Free & open source
+    </div>
+    <h2 class="cta-title">Start monitoring<br>your workflows <em>today.</em></h2>
+    <p class="cta-sub">Connect your GitHub account and get full visibility into workflow health across every repository — in under two minutes.</p>
+    <div class="cta-actions">
+      <a href="/login" class="btn-lg-primary">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 7L7 12.5M1.5 7H12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Get Started Free
+      </a>
+      <a href="https://github.com/omnilens/OmniLens" class="btn-lg-ghost" target="_blank">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        Star on GitHub
+      </a>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     FOOTER
+══════════════════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo-mark">
+        <img src="/omnilens_optimized.jpeg" alt="OmniLens" width="28" height="28" style="object-fit:cover;border-radius:7px">
+      </div>
+      <span class="footer-copy">© 2026 OmniLens. All rights reserved.</span>
+    </div>
+
+    <ul class="footer-links">
+      <li><a href="/legal">Legal</a></li>
+      <li><a href="/legal/privacy">Privacy</a></li>
+      <li><a href="/legal/terms">Terms</a></li>
+      <li><a href="https://github.com/omnilens/OmniLens" target="_blank">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+
+<script>
+  function trackMouse(e, el) {
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
+    el.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%');
+  }
+
+  // Animate dashboard repo bars on load
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.drc-bar[data-w]').forEach(bar => {
+        bar.style.width = bar.dataset.w + '%';
+      });
+    }, 600);
+  });
+
+  // Animate metric bars on scroll into view
+  const metricsCard = document.getElementById('metrics-card');
+  let fired = false;
+
+  const obs = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !fired) {
+      fired = true;
+      setTimeout(() => {
+        document.querySelectorAll('.metric-bar-fill').forEach(bar => {
+          bar.style.width = bar.dataset.width + '%';
+        });
+      }, 300);
+    }
+  }, { threshold: 0.3 });
+
+  obs.observe(metricsCard);
+</script>
+
+</body>
+</html>
