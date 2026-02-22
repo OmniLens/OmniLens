@@ -75,15 +75,6 @@ function shortenTrigger(event: string): string {
   }
 }
 
-/**
- * Extract the GitHub repo base URL from a run's html_url
- * e.g. "https://github.com/owner/repo/actions/runs/123" → "https://github.com/owner/repo"
- */
-function extractRepoUrl(htmlUrl: string): string {
-  const match = htmlUrl.match(/^(https:\/\/github\.com\/[^/]+\/[^/]+)/);
-  return match ? match[1] : "";
-}
-
 // ============================================================================
 // Sub-Components
 // ============================================================================

@@ -124,10 +124,10 @@ export default function DailyMetrics({
 
   // Compute proportional bar widths from total workflow count
   const totalWorkflows = consistentCount + improvedCount + regressedCount + stillFailingCount;
-  const pct = (n: number) =>
-    totalWorkflows > 0 ? Math.round((n / totalWorkflows) * 100) : 0;
 
   useEffect(() => {
+    const pct = (n: number) =>
+      totalWorkflows > 0 ? Math.round((n / totalWorkflows) * 100) : 0;
     const timer = setTimeout(() => {
       if (consistentBarRef.current)
         consistentBarRef.current.style.width = `${pct(consistentCount)}%`;
@@ -139,7 +139,7 @@ export default function DailyMetrics({
         stillFailingBarRef.current.style.width = `${pct(stillFailingCount)}%`;
     }, 380);
     return () => clearTimeout(timer);
-  }, [consistentCount, improvedCount, regressedCount, stillFailingCount]);
+  }, [consistentCount, improvedCount, regressedCount, stillFailingCount, totalWorkflows]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
