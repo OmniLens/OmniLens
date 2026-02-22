@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { RepoSwitcherMenuItem, WorkflowSwitcherMenuItem } from "@/components/RepoSwitcher";
 
 // Utility imports
-import { getAvatarLetter, getAvatarColor } from "@/lib/utils";
+import { getAvatarLetter, getAvatarColor, formatRepoDisplayName } from "@/lib/utils";
 import packageJson from "../package.json";
 
 // Hook imports
@@ -164,7 +164,11 @@ export function AppSidebar() {
                             >
                               {getAvatarLetter(repoAvatarKey)}
                             </div>
-                            <span className="truncate">{repoSlug.replace(/-/g, '/')}</span>
+                            <span className="truncate">
+                              {currentRepo
+                                ? formatRepoDisplayName(currentRepo.displayName)
+                                : repoSlug.replace(/-/g, '/')}
+                            </span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
