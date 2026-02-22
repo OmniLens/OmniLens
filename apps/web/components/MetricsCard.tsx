@@ -165,10 +165,10 @@ export default function MetricsCard({
         <span className="text-sm font-normal text-muted-foreground normal-case">Metrics</span>
       </div>
 
-      <div className="metric-rows flex flex-col gap-2">
+      <div className="metric-rows flex flex-col gap-3">
         {/* Success */}
         <div className="metric-row flex items-center gap-2">
-          <span className="metric-label w-[80px] flex-shrink-0 text-sm text-muted-foreground">
+          <span className="metric-label w-[90px] flex-shrink-0 whitespace-nowrap text-sm text-muted-foreground">
             Success
           </span>
           <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
@@ -178,14 +178,14 @@ export default function MetricsCard({
               style={{ width: 0 }}
             />
           </div>
-          <span className="metric-val w-10 text-right text-sm text-foreground">
+          <span className="metric-val w-14 flex-shrink-0 text-right text-sm text-foreground whitespace-nowrap">
             {runCount > 0 ? `${Math.round(successRate)}%` : "—"}
           </span>
         </div>
 
         {/* Run count */}
         <div className="metric-row flex items-center gap-2">
-          <span className="metric-label w-[80px] flex-shrink-0 text-sm text-muted-foreground">
+          <span className="metric-label w-[90px] flex-shrink-0 whitespace-nowrap text-sm text-muted-foreground">
             Run count
           </span>
           <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
@@ -195,14 +195,14 @@ export default function MetricsCard({
               style={{ width: 0 }}
             />
           </div>
-          <span className="metric-val w-10 text-right text-sm text-foreground">
+          <span className="metric-val w-14 flex-shrink-0 text-right text-sm text-foreground whitespace-nowrap">
             {runCount}
           </span>
         </div>
 
         {/* Avg runtime */}
         <div className="metric-row flex items-center gap-2">
-          <span className="metric-label w-[80px] flex-shrink-0 text-sm text-muted-foreground">
+          <span className="metric-label w-[90px] flex-shrink-0 whitespace-nowrap text-sm text-muted-foreground">
             Avg runtime
           </span>
           <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
@@ -212,14 +212,14 @@ export default function MetricsCard({
               style={{ width: 0 }}
             />
           </div>
-          <span className="metric-val w-10 text-right text-sm text-foreground">
+          <span className="metric-val w-14 flex-shrink-0 text-right text-sm text-foreground whitespace-nowrap">
             {runCount > 0 ? formatDuration(avgRuntimeSeconds) : "—"}
           </span>
         </div>
 
         {/* Stability */}
         <div className="metric-row flex items-center gap-2">
-          <span className="metric-label w-[80px] flex-shrink-0 text-sm text-muted-foreground">
+          <span className="metric-label w-[90px] flex-shrink-0 whitespace-nowrap text-sm text-muted-foreground">
             Stability
           </span>
           <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
@@ -229,7 +229,7 @@ export default function MetricsCard({
               style={{ width: 0 }}
             />
           </div>
-          <span className="metric-val w-10 text-right text-sm text-foreground">
+          <span className="metric-val w-14 flex-shrink-0 text-right text-sm text-foreground whitespace-nowrap">
             {Math.round(stability)}%
           </span>
         </div>

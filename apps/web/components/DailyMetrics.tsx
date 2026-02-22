@@ -1,11 +1,40 @@
+"use client";
+
 // External library imports
-import { CheckCircle, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Activity, CheckCircle, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell } from 'recharts';
 
 // Internal component imports
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer } from '@/components/ui/chart';
 import MetricsCard from '@/components/MetricsCard';
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Build SVG polyline path from data values (0-100)
+ * @param data - array of 0-100 values
+ * @param width - SVG viewBox width
+ * @param height - SVG viewBox height
+ */
+function buildSparklinePath(
+  data: number[],
+  width: number,
+  height: number
+): { linePath: string; areaPath: string } {
+  if (data.length === 0) return { linePath: "", areaPath: "" };
+  const stepX = data.length > 1 ? width / (data.length - 1) : 0;
+  const coords = data.map((v, i) => ({
+    x: i * stepX,
+    y: height - (v / 100) * height,
+  }));
+  const linePath = coords.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+  const areaPath = `${linePath} L${width},${height} L0,${height} Z`;
+  return { linePath, areaPath };
+}
 
 // ============================================================================
 // Type Definitions
@@ -166,6 +195,38 @@ export default function DailyMetrics({
   stability,
   successTrendData,
 }: DailyMetricsProps) {
+  const consistentBarRef = useRef<HTMLDivElement>(null);
+  const improvedBarRef = useRef<HTMLDivElement>(null);
+  const regressedBarRef = useRef<HTMLDivElement>(null);
+  const stillFailingBarRef = useRef<HTMLDivElement>(null);
+
+  // Failure trend is the inverse of the success trend
+  const failureTrendData = successTrendData.map((v) => 100 - v);
+  const hasFailureTrend = failureTrendData.some((v) => v > 0);
+  const { linePath: failLinePath, areaPath: failAreaPath } = buildSparklinePath(
+    failureTrendData.length > 0 ? failureTrendData : Array(24).fill(0),
+    260,
+    36
+  );
+
+  // Compute proportional bar widths from total workflow count
+  const totalWorkflows = consistentCount + improvedCount + regressedCount + stillFailingCount;
+  const pct = (n: number) =>
+    totalWorkflows > 0 ? Math.round((n / totalWorkflows) * 100) : 0;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (consistentBarRef.current)
+        consistentBarRef.current.style.width = `${pct(consistentCount)}%`;
+      if (improvedBarRef.current)
+        improvedBarRef.current.style.width = `${pct(improvedCount)}%`;
+      if (regressedBarRef.current)
+        regressedBarRef.current.style.width = `${pct(regressedCount)}%`;
+      if (stillFailingBarRef.current)
+        stillFailingBarRef.current.style.width = `${pct(stillFailingCount)}%`;
+    }, 380);
+    return () => clearTimeout(timer);
+  }, [consistentCount, improvedCount, regressedCount, stillFailingCount]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -190,51 +251,116 @@ export default function DailyMetrics({
         successTrendData={successTrendData}
       />
 
-      {/* Card 3: Workflow Health - Health status breakdown */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-xl">Workflow Health</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Consistent Workflows - Stable, passing workflows */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="text-sm">Consistent</span>
-              </div>
-              <span className="text-sm font-medium">{consistentCount}</span>
+      {/* Card 3: Health - Health status breakdown (same style as Metrics card) */}
+      <div className="stat-card metrics-card">
+        {/* Header */}
+        <div className="sc-title flex items-center gap-2.5">
+          <Activity className="h-[18px] w-[18px] flex-shrink-0 text-muted-foreground" />
+          <span className="text-sm font-normal text-muted-foreground normal-case">Health</span>
+        </div>
+
+        {/* Metric rows — label (icon + text), proportional bar, count */}
+        <div className="metric-rows flex flex-col gap-3">
+          {/* Consistent */}
+          <div className="metric-row flex items-center gap-2">
+            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">
+              <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+              Consistent
+            </span>
+            <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
+              <div
+                ref={consistentBarRef}
+                className="metric-bar-fill h-full rounded-sm bg-gradient-to-r from-[#00e5a0] to-[#00ff99] transition-[width] duration-700 ease-out"
+                style={{ width: 0 }}
+              />
             </div>
-            
-            {/* Improved Workflows - Workflows that got better */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="h-4 w-4 text-blue-500" />
-                <span className="text-sm">Improved</span>
-              </div>
-              <span className="text-sm font-medium">{improvedCount}</span>
-            </div>
-            
-            {/* Regressed Workflows - Workflows that got worse */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <TrendingDown className="h-4 w-4 text-orange-500" />
-                <span className="text-sm">Regressed</span>
-              </div>
-              <span className="text-sm font-medium">{regressedCount}</span>
-            </div>
-            
-            {/* Still Failing Workflows - Continuously failing workflows */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-4 w-4 text-red-500" />
-                <span className="text-sm">Still failing</span>
-              </div>
-              <span className="text-sm font-medium">{stillFailingCount}</span>
-            </div>
+            <span className="metric-val w-10 text-right text-sm text-foreground">{consistentCount}</span>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Improved */}
+          <div className="metric-row flex items-center gap-2">
+            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">
+              <TrendingUp className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+              Improved
+            </span>
+            <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
+              <div
+                ref={improvedBarRef}
+                className="metric-bar-fill h-full rounded-sm bg-gradient-to-r from-[#4d9fff] to-[#88cfff] transition-[width] duration-700 ease-out"
+                style={{ width: 0 }}
+              />
+            </div>
+            <span className="metric-val w-10 text-right text-sm text-foreground">{improvedCount}</span>
+          </div>
+
+          {/* Regressed */}
+          <div className="metric-row flex items-center gap-2">
+            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">
+              <TrendingDown className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
+              Regressed
+            </span>
+            <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
+              <div
+                ref={regressedBarRef}
+                className="metric-bar-fill h-full rounded-sm bg-gradient-to-r from-[#f59e0b] to-[#fcd34d] transition-[width] duration-700 ease-out"
+                style={{ width: 0 }}
+              />
+            </div>
+            <span className="metric-val w-10 text-right text-sm text-foreground">{regressedCount}</span>
+          </div>
+
+          {/* Still failing */}
+          <div className="metric-row flex items-center gap-2">
+            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">
+              <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+              Still failing
+            </span>
+            <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
+              <div
+                ref={stillFailingBarRef}
+                className="metric-bar-fill h-full rounded-sm bg-gradient-to-r from-[#ef4444] to-[#f87171] transition-[width] duration-700 ease-out"
+                style={{ width: 0 }}
+              />
+            </div>
+            <span className="metric-val w-10 text-right text-sm text-foreground">{stillFailingCount}</span>
+          </div>
+        </div>
+
+        {/* Failure trend sparkline */}
+        <div className="spark-wrap border-t border-border pt-2.5 mt-0.5">
+          <div className="spark-label text-sm text-muted-foreground mb-1.5">
+            Failure trend
+          </div>
+          {hasFailureTrend && failLinePath ? (
+            <svg
+              className="spark-svg w-full h-9 overflow-visible"
+              viewBox="0 0 260 36"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="healthFailGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ef4444" stopOpacity="0.22" />
+                  <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d={failAreaPath} fill="url(#healthFailGrad)" />
+              <path
+                className="fill-none stroke-[#ef4444] stroke-[1.5] stroke-linecap-round stroke-linejoin-round"
+                d={failLinePath}
+                style={{
+                  strokeDasharray: 1000,
+                  strokeDashoffset: 1000,
+                  animation: "draw-line 1.8s ease-out 0.5s forwards",
+                }}
+              />
+            </svg>
+          ) : (
+            <div className="h-9 flex items-center justify-center text-sm text-muted-foreground">
+              No trend data
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
