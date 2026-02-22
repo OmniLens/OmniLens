@@ -554,9 +554,9 @@ function ActivityTimeline({
                     style={{ height: barPx }}
                   />
                 </div>
-                {/* Hour label — every 6 hours */}
-                <span className="text-xs text-muted-foreground/40 tabular-nums mt-1 leading-none flex-shrink-0">
-                  {stat.hour % 6 === 0 ? String(stat.hour).padStart(2, "0") : ""}
+                {/* Hour label — every 6 hours; always rendered to keep consistent height */}
+                <span className={`text-xs tabular-nums mt-1 leading-none flex-shrink-0 ${stat.hour % 6 === 0 ? "text-muted-foreground/40" : "invisible"}`}>
+                  {String(stat.hour).padStart(2, "0")}
                 </span>
               </div>
             );
