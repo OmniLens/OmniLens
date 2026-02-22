@@ -57,6 +57,25 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "3.0.0",
+    date: "2026-02-22",
+    type: "major",
+    changes: {
+      added: [
+        "New workflow row layout and styling"
+      ],
+      changed: [
+        "Sidebar cleanup and simplification",
+        "Dashboard and workflow dashboard redesign",
+        "Workflow dashboard updates and UI refinements",
+        "General UI improvements and cleanup"
+      ],
+      removed: [
+        "Legacy UI replaced with updated design"
+      ]
+    }
+  },
+  {
     version: "2.2.0",
     date: "2026-02-21",
     type: "minor",

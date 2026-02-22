@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-02-22
+
+### Added
+- New workflow row layout and styling
+
+### Changed
+- Sidebar cleanup and simplification
+- Dashboard and workflow dashboard redesign
+- Workflow dashboard updates and UI refinements
+- General UI improvements and cleanup
+
+### Removed
+- Legacy UI replaced with updated design
+
 ## [2.2.0] - 2026-02-21
 
 ### Changed
