@@ -103,7 +103,7 @@ function FeedRow({ run, index }: { run: WorkflowRun; index: number }) {
 
   return (
     <div
-      className="flex items-center gap-3 py-2.5 border-b border-white/[0.03] last:border-0 font-mono text-xs animate-in fade-in-0 slide-in-from-bottom-1"
+      className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.03] last:border-0 font-mono text-sm animate-in fade-in-0 slide-in-from-bottom-1 hover:bg-white/[0.04] transition-colors"
       style={{
         animationDelay: `${index * 0.08}s`,
         animationFillMode: "forwards",
@@ -114,7 +114,7 @@ function FeedRow({ run, index }: { run: WorkflowRun; index: number }) {
       <span className="text-muted-foreground/50 w-12 flex-shrink-0 tabular-nums">{time}</span>
 
       {/* Type label */}
-      <span className={`font-bold w-8 flex-shrink-0 tracking-wide ${labelColor}`}>{label}</span>
+      <span className={`font-bold w-10 flex-shrink-0 tracking-wide ${labelColor}`}>{label}</span>
 
       {/* Run number */}
       <span className="text-muted-foreground/40 w-10 flex-shrink-0 tabular-nums">#{run.run_number}</span>
@@ -135,14 +135,16 @@ function FeedRow({ run, index }: { run: WorkflowRun; index: number }) {
       </span>
 
       {/* GitHub link */}
-      {run.html_url && (
+      {run.html_url ? (
         <Link
           href={run.html_url}
           target="_blank"
-          className="text-muted-foreground/25 hover:text-muted-foreground/70 transition-colors flex-shrink-0"
+          className="text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors flex-shrink-0 p-1 rounded hover:bg-white/5"
         >
-          <ExternalLink className="h-3 w-3" />
+          <ExternalLink className="h-4 w-4" />
         </Link>
+      ) : (
+        <span className="w-6 flex-shrink-0" />
       )}
     </div>
   );
@@ -178,25 +180,25 @@ function LiveFeed({
       {/* Feed header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+          <span className="text-sm font-normal text-muted-foreground">
             Live Feed
           </span>
           <span className="text-[10px] text-muted-foreground/30 font-mono">—</span>
-          <span className="text-[10px] text-muted-foreground/40 font-mono">
+          <span className="text-xs text-muted-foreground/40">
             {isLoading ? "…" : `${runs.length} runs`}
           </span>
         </div>
         {isIngesting ? (
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-[#00e5a0] animate-pulse" />
-            <span className="text-[10px] font-mono text-[#00e5a0]/80 uppercase tracking-widest">
+            <span className="text-xs text-[#00e5a0]/80">
               ingesting
             </span>
           </div>
         ) : (
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-[#4d9fff]/50" />
-            <span className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-widest">
+            <span className="text-xs text-muted-foreground/50">
               live
             </span>
           </div>
@@ -205,13 +207,13 @@ function LiveFeed({
 
       {/* Column headers */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-white/[0.04] flex-shrink-0">
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider w-12 flex-shrink-0">time</span>
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider w-8 flex-shrink-0">type</span>
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider w-10 flex-shrink-0">run</span>
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider flex-1">branch</span>
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider w-14 flex-shrink-0 text-right">trigger</span>
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider w-20 flex-shrink-0 text-right">duration</span>
-        <span className="w-3 flex-shrink-0" />
+        <span className="text-xs text-muted-foreground/40 w-12 flex-shrink-0">time</span>
+        <span className="text-xs text-muted-foreground/40 w-10 flex-shrink-0">type</span>
+        <span className="text-xs text-muted-foreground/40 w-10 flex-shrink-0">run</span>
+        <span className="text-xs text-muted-foreground/40 flex-1">branch</span>
+        <span className="text-xs text-muted-foreground/40 w-14 flex-shrink-0 text-right">trigger</span>
+        <span className="text-xs text-muted-foreground/40 w-20 flex-shrink-0 text-right">duration</span>
+        <span className="w-6 flex-shrink-0" />
       </div>
 
       {/* Feed body — three distinct states so overflow never shows on loading/empty */}
@@ -227,7 +229,7 @@ function LiveFeed({
           <span className="text-sm text-muted-foreground/50 font-mono">— no runs recorded —</span>
         </div>
       ) : (
-        <div className="overflow-y-auto max-h-[480px] px-4 [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
+        <div className="overflow-y-auto max-h-[480px] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
           {sorted.map((run, i) => (
             <FeedRow key={run.id} run={run} index={i} />
           ))}
@@ -263,7 +265,7 @@ function MetricRow({
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs text-muted-foreground font-mono w-24 flex-shrink-0">{label}</span>
+      <span className="text-sm text-muted-foreground w-28 flex-shrink-0">{label}</span>
       <div className="flex-1 h-[3px] rounded-full bg-white/5 overflow-hidden">
         <div
           ref={barRef}
@@ -271,7 +273,7 @@ function MetricRow({
           style={{ width: 0 }}
         />
       </div>
-      <span className="text-xs text-foreground font-mono w-14 text-right flex-shrink-0 tabular-nums">
+      <span className="text-sm text-foreground w-14 text-right flex-shrink-0 tabular-nums">
         {value}
       </span>
     </div>
@@ -329,7 +331,7 @@ function StatsPanel({ runs }: { runs: WorkflowRun[] }) {
     <div className="rounded-lg border border-border bg-card flex flex-col">
       {/* Panel header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+        <span className="text-sm font-normal text-muted-foreground">
           Metrics
         </span>
       </div>
@@ -340,7 +342,7 @@ function StatsPanel({ runs }: { runs: WorkflowRun[] }) {
           <p className="text-5xl font-bold tabular-nums tracking-tight">
             {runs.length === 0 ? "—" : `${successRate}%`}
           </p>
-          <p className="text-[10px] text-muted-foreground font-mono mt-1.5 uppercase tracking-widest">
+          <p className="text-sm text-muted-foreground/70 mt-2">
             pass rate
           </p>
         </div>
@@ -375,7 +377,7 @@ function StatsPanel({ runs }: { runs: WorkflowRun[] }) {
 
         {/* Total count footer */}
         <div className="pt-4 border-t border-border flex items-center justify-between">
-          <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">
+          <span className="text-sm text-muted-foreground">
             Total runs
           </span>
           <span className="text-sm font-semibold font-mono tabular-nums">{runs.length}</span>
@@ -410,18 +412,18 @@ function BranchBreakdown({ runs }: { runs: WorkflowRun[] }) {
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
         <GitBranch className="h-3.5 w-3.5 text-muted-foreground/60" />
-        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+        <span className="text-sm font-normal text-muted-foreground">
           Branch Breakdown
         </span>
       </div>
 
       {/* Column labels */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-white/[0.04]">
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider flex-1">branch</span>
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider w-10 text-center">runs</span>
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider w-10 text-center">pass</span>
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider w-10 text-center">fail</span>
-        <span className="text-[9px] text-muted-foreground/30 font-mono uppercase tracking-wider w-28 text-right">pass rate</span>
+        <span className="text-xs text-muted-foreground/40 flex-1">branch</span>
+        <span className="text-xs text-muted-foreground/40 w-10 text-center">runs</span>
+        <span className="text-xs text-muted-foreground/40 w-10 text-center">pass</span>
+        <span className="text-xs text-muted-foreground/40 w-10 text-center">fail</span>
+        <span className="text-xs text-muted-foreground/40 w-28 text-right">pass rate</span>
       </div>
 
       {/* Branch rows */}
@@ -433,10 +435,10 @@ function BranchBreakdown({ runs }: { runs: WorkflowRun[] }) {
               key={b.name}
               className="flex items-center gap-4 py-2.5 border-b border-white/[0.025] last:border-0"
             >
-              <span className="text-sm font-mono text-foreground/80 flex-1 truncate">{b.name}</span>
-              <span className="text-sm font-mono text-muted-foreground/60 w-10 text-center tabular-nums">{b.total}</span>
-              <span className="text-sm font-mono text-[#00e5a0] w-10 text-center tabular-nums">{b.passed}</span>
-              <span className="text-sm font-mono text-red-500 w-10 text-center tabular-nums">{b.failed}</span>
+              <span className="text-sm text-foreground/80 flex-1 truncate">{b.name}</span>
+              <span className="text-sm text-muted-foreground/60 w-10 text-center tabular-nums">{b.total}</span>
+              <span className="text-sm text-[#00e5a0] w-10 text-center tabular-nums">{b.passed}</span>
+              <span className="text-sm text-red-500 w-10 text-center tabular-nums">{b.failed}</span>
               <div className="w-28 flex items-center gap-2">
                 <div className="flex-1 h-[2px] rounded-full bg-white/5 overflow-hidden">
                   <div
@@ -444,7 +446,7 @@ function BranchBreakdown({ runs }: { runs: WorkflowRun[] }) {
                     style={{ width: `${rate}%` }}
                   />
                 </div>
-                <span className="text-xs font-mono text-muted-foreground/50 w-8 text-right tabular-nums">
+                <span className="text-sm text-muted-foreground/60 w-10 text-right tabular-nums">
                   {rate}%
                 </span>
               </div>
@@ -619,7 +621,7 @@ export default function WorkflowDetailPage() {
         </div>
 
         {/* ── Main grid: Live Feed (left) + Metrics (right) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
           <LiveFeed runs={runs} isIngesting={isIngesting} isLoading={isLoadingRuns} />
           <StatsPanel runs={runs} />
         </div>

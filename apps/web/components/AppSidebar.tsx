@@ -214,33 +214,8 @@ export function AppSidebar() {
                   align="end"
                   sideOffset={4}
                 >
-                  <DropdownMenuLabel className="p-0 font-normal">
-                    <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                      {session.user?.image ? (
-                        <Image
-                          src={session.user.image}
-                          alt={session.user.name || 'User'}
-                          width={32}
-                          height={32}
-                          className="h-8 w-8 rounded-full border border-sidebar-border"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                          <span className="text-xs font-medium">
-                            {(session.user?.name || session.user?.email || 'U')[0].toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-semibold">{session.user?.name || 'User'}</span>
-                        {session.user?.email && (
-                          <span className="truncate text-xs text-sidebar-foreground/70">
-                            {session.user.email}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                  <DropdownMenuLabel className="px-2 py-1.5 text-sm font-semibold">
+                    {session.user?.name || 'User'}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
