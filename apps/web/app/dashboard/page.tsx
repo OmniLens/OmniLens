@@ -164,6 +164,14 @@ export default function DashboardHomePage() {
   const [addError, setAddError] = React.useState<string | null>(null);
   const [currentStep, setCurrentStep] = React.useState<'idle' | 'validating' | 'adding' | 'getting-data'>('idle');
 
+  // UI state for delete repository modal
+  const [repoToDelete, setRepoToDelete] = React.useState<{
+    slug: string;
+    displayName: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [deletingRepoSlug, setDeletingRepoSlug] = React.useState<string | null>(null);
+
   // ============================================================================
   // Effects
   // ============================================================================
@@ -174,6 +182,18 @@ export default function DashboardHomePage() {
       router.push('/login');
     }
   }, [session, isPending, router]);
+
+  // Clear delete modal and deleting state when repository is no longer in the list
+  React.useEffect(() => {
+    if (repoToDelete && dashboardData?.repositories) {
+      const repoExists = dashboardData.repositories.some(repo => repo.slug === repoToDelete.slug);
+      if (!repoExists) {
+        setRepoToDelete(null);
+        setIsDeleting(false);
+        setDeletingRepoSlug(null);
+      }
+    }
+  }, [dashboardData, repoToDelete]);
 
   // ============================================================================
   // Computed Values
@@ -196,6 +216,39 @@ export default function DashboardHomePage() {
   // ============================================================================
   // Mutations (TanStack Query)
   // ============================================================================
+
+  // Delete repository mutation - handles deletion and cache invalidation
+  const deleteRepoMutation = useMutation({
+    mutationFn: async (slug: string) => {
+      const response = await fetch(`/api/repo/${encodeURIComponent(slug)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error || 'Failed to delete repository');
+      }
+
+      return response.json();
+    },
+    onMutate: (slug) => {
+      setIsDeleting(true);
+      setDeletingRepoSlug(slug);
+    },
+    onSuccess: (_data, slug) => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      queryClient.invalidateQueries({ queryKey: ['repository-workflows', slug] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-runs', slug] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-overview', slug] });
+      queryClient.invalidateQueries({ queryKey: ['yesterday-workflow-runs', slug] });
+    },
+    onError: () => {
+      setIsDeleting(false);
+      setDeletingRepoSlug(null);
+    },
+  });
 
   // Add repository mutation - handles validation, addition, and optimistic updates
   const addRepoMutation = useMutation({
@@ -340,6 +393,22 @@ export default function DashboardHomePage() {
     setShowAddModal(true);
   };
 
+  /**
+   * Open delete confirmation modal for a repository
+   */
+  const handleRequestDeleteRepo = (slug: string, displayName: string) => {
+    setRepoToDelete({ slug, displayName });
+  };
+
+  /**
+   * Close delete modal and clear deleting state
+   */
+  const closeDeleteModal = () => {
+    setRepoToDelete(null);
+    setIsDeleting(false);
+    setDeletingRepoSlug(null);
+  };
+
 
   // ============================================================================
   // Render Logic - Early Returns
@@ -450,12 +519,46 @@ export default function DashboardHomePage() {
                   errorMessage={item.errorMessage}
                   hasWorkflows={item.hasWorkflows}
                   metrics={item.metrics}
+                  onRequestDelete={() => handleRequestDeleteRepo(item.slug!, item.displayName)}
                 />
               </Link>
             ))}
           </div>
         )}
         </div>
+
+      {/* Delete Repository Modal - Confirmation dialog for removing repositories */}
+      <Modal
+        isOpen={!!repoToDelete}
+        onClose={closeDeleteModal}
+        title="Remove repository"
+        footer={
+          <ModalFooter>
+            <Button variant="outline" size="sm" onClick={closeDeleteModal}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (!repoToDelete) return;
+                deleteRepoMutation.mutate(repoToDelete.slug);
+              }}
+              disabled={deleteRepoMutation.isPending || (isDeleting && deletingRepoSlug === repoToDelete?.slug)}
+            >
+              {deleteRepoMutation.isPending || (isDeleting && deletingRepoSlug === repoToDelete?.slug) ? 'Deleting…' : 'Remove'}
+            </Button>
+          </ModalFooter>
+        }
+      >
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to remove
+            {" "}
+            <span className="font-medium text-foreground">{formatRepoDisplayName(repoToDelete?.displayName || '')}</span>?
+          </p>
+        </div>
+      </Modal>
 
       {/* Add Repository Modal - Form with progress indicator for adding repositories */}
       <Modal

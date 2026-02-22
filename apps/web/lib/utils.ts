@@ -82,9 +82,14 @@ const AVATAR_COLORS = [
   '#6366f1',
 ];
 
+/** Per-repo color overrides — keyed by full repo path (owner/repo) */
+const AVATAR_COLOR_OVERRIDES: Record<string, string> = {
+  'Hiccup-za/peak': '#f97316', // orange — distinct from the hash-assigned purple
+};
+
 /**
  * Get a deterministic color for avatar background based on string
- * Uses simple hash to pick from mockup palette
+ * Uses simple hash to pick from mockup palette, with per-repo overrides
  * @param str - String to hash (e.g. repo path or display name)
  * @returns Hex color string
  * @example
@@ -92,6 +97,7 @@ const AVATAR_COLORS = [
  */
 export function getAvatarColor(str: string): string {
   if (!str) return AVATAR_COLORS[0];
+  if (AVATAR_COLOR_OVERRIDES[str]) return AVATAR_COLOR_OVERRIDES[str];
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -115,7 +121,7 @@ export function getWorkflowDotClass(health: WorkflowHealth): string {
     case "improved":      return "bg-[#4d9fff]";
     case "regressed":     return "bg-amber-500";
     case "still_failing": return "bg-red-500";
-    case "idle":          return "bg-white/20";
+    case "idle":          return "bg-muted-foreground/40";
   }
 }
 

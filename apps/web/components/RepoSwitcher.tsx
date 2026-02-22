@@ -18,6 +18,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -26,7 +27,7 @@ import { formatRepoDisplayName, getAvatarLetter, getAvatarColor } from "@/lib/ut
 
 // Hook imports
 import { useRepositories } from "@/lib/hooks/use-repositories";
-import { useRepositoryWorkflows } from "@/lib/hooks/use-repository-dashboard";
+import { useRepositoryWorkflows, useWorkflowRuns } from "@/lib/hooks/use-repository-dashboard";
 
 // ============================================================================
 // Type Definitions
@@ -373,11 +374,25 @@ export function WorkflowSwitcherMenuItem({ currentWorkflowId, repoSlug }: Workfl
   // Computed Values
   // ============================================================================
 
+  // Fetch today's runs to classify which workflows are active vs idle
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: todayRuns = [] } = useWorkflowRuns(repoSlug, today);
+
   const currentWorkflow = workflows.find((w) => w.id === currentWorkflowId);
-  const otherWorkflows = workflows
-    .filter((w) => w.id !== currentWorkflowId)
-    .sort((a, b) => a.name.localeCompare(b.name));
   const hasMultipleWorkflows = workflows.length > 1;
+
+  // Build a set of workflow IDs that had at least one run today
+  const workflowIdsWithRunsToday = new Set(todayRuns.map((r) => r.workflow_id));
+
+  // Workflows that ran today = "active" (green dot), sorted alphabetically, excluding current
+  const activeWorkflows = workflows
+    .filter((w) => w.id !== currentWorkflowId && workflowIdsWithRunsToday.has(w.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Workflows with no runs today = "idle" (grey dot), sorted alphabetically, excluding current
+  const idleWorkflows = workflows
+    .filter((w) => w.id !== currentWorkflowId && !workflowIdsWithRunsToday.has(w.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // ============================================================================
   // Event Handlers
@@ -432,13 +447,29 @@ export function WorkflowSwitcherMenuItem({ currentWorkflowId, repoSlug }: Workfl
             <DropdownMenuLabel className="text-xs text-sidebar-foreground/70">
               Workflows
             </DropdownMenuLabel>
-            {otherWorkflows.map((w) => (
+            {/* Active workflows — green dot, sorted alphabetically */}
+            {activeWorkflows.map((w) => (
               <DropdownMenuItem
                 key={w.id}
                 onClick={() => handleWorkflowSelect(w.id)}
                 className="cursor-pointer"
               >
-                <Workflow className="h-4 w-4 mr-2 flex-shrink-0 text-sidebar-foreground/50" />
+                <div className="h-1.5 w-1.5 rounded-full bg-[#00e5a0] flex-shrink-0 mr-2" />
+                <span className="truncate">{w.name}</span>
+              </DropdownMenuItem>
+            ))}
+            {/* Separator between active and idle groups when both exist */}
+            {activeWorkflows.length > 0 && idleWorkflows.length > 0 && (
+              <DropdownMenuSeparator />
+            )}
+            {/* Idle workflows (no runs today) — grey dot, sorted alphabetically */}
+            {idleWorkflows.map((w) => (
+              <DropdownMenuItem
+                key={w.id}
+                onClick={() => handleWorkflowSelect(w.id)}
+                className="cursor-pointer"
+              >
+                <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50 flex-shrink-0 mr-2" />
                 <span className="truncate">{w.name}</span>
               </DropdownMenuItem>
             ))}

@@ -1,8 +1,9 @@
 // External library imports
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Trash2 } from "lucide-react";
 
 // Internal component imports
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
 
 // Utility imports
@@ -32,6 +33,8 @@ export interface RepositoryCardProps {
     inProgressRuns: number;
     successRate: number;
   } | null;
+  /** Optional callback when delete button is clicked - opens confirmation modal */
+  onRequestDelete?: () => void;
 }
 
 // ============================================================================
@@ -44,7 +47,7 @@ export interface RepositoryCardProps {
  * Supports error states and workflow metrics
  */
 export default function RepositoryCard({
-  repoSlug: _,
+  repoSlug: _repoSlug,
   repoPath,
   displayName,
   visibility,
@@ -52,6 +55,7 @@ export default function RepositoryCard({
   errorMessage,
   hasWorkflows,
   metrics,
+  onRequestDelete,
 }: RepositoryCardProps) {
   const avatarLetter = getAvatarLetter(repoPath || displayName);
   const avatarColor = getAvatarColor(repoPath || displayName);
@@ -63,7 +67,7 @@ export default function RepositoryCard({
         ? 'border-red-500 bg-card hover:border-red-400'
         : 'border-border bg-card hover:border-border/80 hover:shadow-md'
     }`}>
-      {/* Card Header - Avatar, name, public badge (mockup style) */}
+      {/* Card Header - Avatar, name, public badge, delete button (mockup style) */}
       <CardHeader className="pb-3">
         <div className="drc-head flex items-center gap-2">
           {/* Avatar - Colored square with letter (no GitHub image) */}
@@ -86,6 +90,22 @@ export default function RepositoryCard({
           )}
           {/* Error indicator */}
           {hasError && <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />}
+          {/* Delete button - opens confirmation modal to remove repo from dashboard */}
+          {onRequestDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              aria-label="Remove repository from dashboard"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRequestDelete();
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </CardHeader>
       {/* Card Content - Error message, metrics, or empty state */}
