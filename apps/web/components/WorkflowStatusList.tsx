@@ -1,3 +1,6 @@
+// External library imports
+import Link from "next/link";
+
 // ============================================================================
 // Type Definitions
 // ============================================================================
@@ -27,6 +30,8 @@ export interface WorkflowStatusItem {
  */
 interface WorkflowStatusListProps {
   workflows: WorkflowStatusItem[];
+  /** Repository slug — used to build the link to each workflow's detail page */
+  slug: string;
 }
 
 // ============================================================================
@@ -61,14 +66,18 @@ function getHealthConfig(status: WorkflowDisplayHealth): {
 
 /**
  * A single card row in the workflow status list.
+ * Rendered as a Next.js Link so clicking navigates to the workflow detail page.
  * Each workflow gets its own rounded bordered card, matching the repo list mockup style.
  * Workflow name sits on the left; a colored dot + plain muted label sits on the right.
  */
-function WorkflowStatusRow({ workflow }: { workflow: WorkflowStatusItem }) {
+function WorkflowStatusRow({ workflow, slug }: { workflow: WorkflowStatusItem; slug: string }) {
   const { dotClass, label } = getHealthConfig(workflow.healthStatus);
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 rounded-lg border border-border bg-card hover:bg-muted/50 hover:border-muted-foreground/30 transition-all cursor-default">
+    <Link
+      href={`/dashboard/${slug}/workflow/${workflow.id}`}
+      className="flex items-center justify-between px-4 py-3 rounded-lg border border-border bg-card hover:bg-muted/50 hover:border-muted-foreground/30 transition-all"
+    >
       {/* Workflow name */}
       <span className="text-sm font-semibold truncate pr-4">{workflow.name}</span>
 
@@ -77,7 +86,7 @@ function WorkflowStatusRow({ workflow }: { workflow: WorkflowStatusItem }) {
         <div className={`h-2 w-2 rounded-full shrink-0 ${dotClass}`} />
         <span className="text-sm text-muted-foreground">{label}</span>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -92,13 +101,14 @@ function WorkflowStatusRow({ workflow }: { workflow: WorkflowStatusItem }) {
  */
 export default function WorkflowStatusList({
   workflows,
+  slug,
 }: WorkflowStatusListProps) {
   if (workflows.length === 0) return null;
 
   return (
     <div className="space-y-2">
       {workflows.map((workflow) => (
-        <WorkflowStatusRow key={workflow.id} workflow={workflow} />
+        <WorkflowStatusRow key={workflow.id} workflow={workflow} slug={slug} />
       ))}
     </div>
   );

@@ -495,7 +495,7 @@ export default function DashboardPage() {
 
         {/* Workflow Status List - Compact at-a-glance list of all workflows and their health */}
         {workflows.length > 0 && (
-          <WorkflowStatusList workflows={allWorkflowStatuses} />
+          <WorkflowStatusList workflows={allWorkflowStatuses} slug={repoSlug} />
         )}
 
         {/* Workflows Section - Displays individual workflow cards */}
