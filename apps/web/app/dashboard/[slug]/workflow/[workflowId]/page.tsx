@@ -93,7 +93,7 @@ function FeedRow({ run, index }: { run: WorkflowRun; index: number }) {
 
   const dur =
     isActive
-      ? "running..."
+      ? "..."
       : run.run_started_at && run.updated_at
       ? duration(run.run_started_at, run.updated_at)
       : "—";
@@ -332,12 +332,6 @@ function StatsPanel({ runs }: { runs: WorkflowRun[] }) {
         <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
           Metrics
         </span>
-        <div className="flex items-center gap-1.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-[#c084fc]/60" />
-          <span className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-widest">
-            today
-          </span>
-        </div>
       </div>
 
       <div className="px-4 py-5 flex flex-col gap-5">
@@ -524,15 +518,6 @@ export default function WorkflowDetailPage() {
     [runs]
   );
 
-  /** GitHub link for the workflow file (derived from first run's html_url) */
-  const githubWorkflowUrl = useMemo(() => {
-    const firstRunWithUrl = runs.find((r) => r.html_url);
-    if (!firstRunWithUrl || !workflow) return null;
-    const repoBase = extractRepoUrl(firstRunWithUrl.html_url);
-    if (!repoBase) return null;
-    const fileName = workflow.path.split("/").pop();
-    return `${repoBase}/actions/workflows/${encodeURIComponent(fileName ?? "")}`;
-  }, [runs, workflow]);
 
   const handleDateChange = useCallback(
     (date: Date | undefined) => {
@@ -591,11 +576,6 @@ export default function WorkflowDetailPage() {
               <h1 className="text-xl sm:text-2xl font-bold truncate">
                 {workflow?.name ?? `Workflow #${workflowId}`}
               </h1>
-              {workflow?.path && (
-                <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">
-                  {workflow.path}
-                </p>
-              )}
             </div>
 
             {/* Live ingestion badge */}
@@ -611,14 +591,6 @@ export default function WorkflowDetailPage() {
 
           {/* Controls */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {githubWorkflowUrl && (
-              <Button variant="outline" size="sm" asChild>
-                <Link href={githubWorkflowUrl} target="_blank">
-                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                  GitHub
-                </Link>
-              </Button>
-            )}
             <Button
               variant="outline"
               size="sm"

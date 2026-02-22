@@ -207,7 +207,7 @@ function FeedRow({
   const time = run.run_started_at ? formatRunTime(run.run_started_at) : "--:--";
   const dur =
     isActive
-      ? "running..."
+      ? "..."
       : run.run_started_at && run.updated_at
       ? duration(run.run_started_at, run.updated_at)
       : "—";
@@ -232,7 +232,7 @@ function FeedRow({
       {/* Workflow name — links to workflow detail */}
       <Link
         href={`/dashboard/${slug}/workflow/${workflowId}`}
-        className="text-foreground/60 hover:text-foreground/90 transition-colors truncate w-36 flex-shrink-0"
+        className="text-foreground/60 hover:text-foreground/90 transition-colors truncate w-64 flex-shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
         {workflowName}
@@ -324,7 +324,7 @@ function SignalFeed({
       <div className="flex items-center gap-3 px-4 py-1.5 border-b border-white/[0.035] flex-shrink-0">
         <span className="text-[8px] text-muted-foreground/25 font-mono uppercase tracking-wider w-11 flex-shrink-0">time</span>
         <span className="text-[8px] text-muted-foreground/25 font-mono uppercase tracking-wider w-7 flex-shrink-0">type</span>
-        <span className="text-[8px] text-muted-foreground/25 font-mono uppercase tracking-wider w-36 flex-shrink-0">workflow</span>
+        <span className="text-[8px] text-muted-foreground/25 font-mono uppercase tracking-wider w-64 flex-shrink-0">workflow</span>
         <span className="text-[8px] text-muted-foreground/25 font-mono uppercase tracking-wider flex-1">branch</span>
         <span className="text-[8px] text-muted-foreground/25 font-mono uppercase tracking-wider w-12 flex-shrink-0 text-right">trigger</span>
         <span className="text-[8px] text-muted-foreground/25 font-mono uppercase tracking-wider w-16 flex-shrink-0 text-right">dur</span>
@@ -345,7 +345,7 @@ function SignalFeed({
         </div>
       ) : (
         <div className="overflow-y-auto max-h-[520px] px-4 [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
-          {sorted.map((run, i) => (
+          {sorted.slice(0, 20).map((run, i) => (
             <FeedRow
               key={run.id}
               run={run}
@@ -453,7 +453,7 @@ function WorkflowSidebar({
             <span className="text-xs text-muted-foreground/40 font-mono">no workflows</span>
           </div>
         ) : (
-          sorted.map((w) => (
+          sorted.slice(0, 20).map((w) => (
             <SidebarWorkflowRow
               key={w.id}
               workflow={w}
@@ -519,7 +519,6 @@ function ActivityTimeline({
   }, [runs, overviewHourData]);
 
   const maxRuns = Math.max(...hourStats.map((s) => s.total), 1);
-  const peakHour = hourStats.find((s) => s.total === maxRuns && s.total > 0)?.hour ?? -1;
 
   return (
     <div className="rounded-lg border border-border bg-card">
@@ -542,7 +541,7 @@ function ActivityTimeline({
       </div>
 
       {/* Histogram — bars grow from bottom using px heights driven by mounted state */}
-      <div className="px-4 pt-8 pb-3">
+      <div className="px-4 pt-4 pb-3">
         <div className="flex items-end gap-px" style={{ height: TIMELINE_BAR_HEIGHT + 14 }}>
           {hourStats.map((stat) => {
             const barPx = mounted && stat.total > 0
@@ -561,11 +560,6 @@ function ActivityTimeline({
               <div key={stat.hour} className="flex flex-col items-center flex-1" style={{ height: TIMELINE_BAR_HEIGHT + 14 }}>
                 {/* Peak label */}
                 <div className="flex-1 flex flex-col justify-end relative w-full">
-                  {stat.hour === peakHour && (
-                    <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[8px] font-mono text-muted-foreground/40 whitespace-nowrap">
-                      peak
-                    </span>
-                  )}
                   <div
                     className={`w-full rounded-[2px] ${barColor} transition-[height] duration-700 ease-out`}
                     style={{ height: barPx }}
@@ -814,7 +808,7 @@ export default function RepoDashboardV2() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
             {/* Repo slug */}
-            <h1 className="text-xl sm:text-2xl font-bold font-mono truncate">{slug}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold truncate">Workflows</h1>
 
             {/* Overall repo health pill */}
             <div
@@ -855,44 +849,64 @@ export default function RepoDashboardV2() {
           </div>
         </div>
 
-        {/* ── Stat Strip ── */}
-        <div className="rounded-lg border border-border bg-card flex overflow-x-auto">
-          <StatBox
-            label="Pass rate"
-            value={completedRuns > 0 ? `${successRate}%` : "—"}
-            valueClass={
-              successRate >= 80
-                ? "text-[#00e5a0]"
-                : successRate >= 50
-                ? "text-amber-400"
-                : completedRuns > 0
-                ? "text-red-500"
-                : "text-muted-foreground/50"
-            }
-          />
-          <StatBox label="Passed" value={passedRuns} valueClass="text-[#00e5a0]" />
-          <StatBox label="Failed" value={failedRuns} valueClass={failedRuns > 0 ? "text-red-500" : "text-muted-foreground/50"} />
-          <StatBox label="Total runs" value={workflowRuns.length} />
-          <StatBox
-            label="Avg runtime"
-            value={avgRuntimeSec > 0 ? formatDuration(avgRuntimeSec) : "—"}
-            valueClass="text-[#c084fc]"
-          />
-          <StatBox
-            label="Workflows"
-            value={workflows.length}
-            valueClass="text-[#4d9fff]"
-          />
-          <StatBox
-            label="Failing"
-            value={healthCounts.stillFailing + healthCounts.regressed}
-            valueClass={
-              healthCounts.stillFailing + healthCounts.regressed > 0
-                ? "text-red-500"
-                : "text-muted-foreground/50"
-            }
-            border={false}
-          />
+        {/* ── Stat Strip + Activity Timeline (same row) ── */}
+        <div className="flex gap-5 items-stretch">
+          {/* Stat strip — compact fixed stats */}
+          <div className="rounded-lg border border-border bg-card flex flex-col flex-shrink-0">
+            {/* Header row — mirrors ActivityTimeline's header */}
+            <div className="flex items-center px-4 py-3 border-b border-border flex-shrink-0">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+                Overview
+              </span>
+            </div>
+            {/* Stat boxes */}
+            <div className="flex overflow-x-auto flex-1 items-stretch">
+            <StatBox
+              label="Pass rate"
+              value={completedRuns > 0 ? `${successRate}%` : "—"}
+              valueClass={
+                successRate >= 80
+                  ? "text-[#00e5a0]"
+                  : successRate >= 50
+                  ? "text-amber-400"
+                  : completedRuns > 0
+                  ? "text-red-500"
+                  : "text-muted-foreground/50"
+              }
+            />
+            <StatBox label="Passed" value={passedRuns} valueClass="text-[#00e5a0]" />
+            <StatBox label="Failed" value={failedRuns} valueClass={failedRuns > 0 ? "text-red-500" : "text-muted-foreground/50"} />
+            <StatBox label="Total runs" value={workflowRuns.length} />
+            <StatBox
+              label="Avg runtime"
+              value={avgRuntimeSec > 0 ? formatDuration(avgRuntimeSec) : "—"}
+              valueClass="text-[#c084fc]"
+            />
+            <StatBox
+              label="Workflows"
+              value={workflows.length}
+              valueClass="text-[#4d9fff]"
+            />
+            <StatBox
+              label="Failing"
+              value={healthCounts.stillFailing + healthCounts.regressed}
+              valueClass={
+                healthCounts.stillFailing + healthCounts.regressed > 0
+                  ? "text-red-500"
+                  : "text-muted-foreground/50"
+              }
+              border={false}
+            />
+            </div>
+          </div>
+
+          {/* Activity timeline — fills remaining horizontal space */}
+          <div className="flex-1 min-w-0">
+            <ActivityTimeline
+              runs={workflowRuns}
+              overviewHourData={overviewData?.runsByHour ?? []}
+            />
+          </div>
         </div>
 
         {/* ── Main Grid: Feed (left) + Sidebar (right) ── */}
@@ -911,14 +925,6 @@ export default function RepoDashboardV2() {
             slug={slug}
           />
         </div>
-
-        {/* ── Activity Timeline ── */}
-        {!isLoadingRuns && (
-          <ActivityTimeline
-            runs={workflowRuns}
-            overviewHourData={overviewData?.runsByHour ?? []}
-          />
-        )}
 
       </div>
     </div>
