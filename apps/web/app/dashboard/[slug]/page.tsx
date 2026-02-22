@@ -253,6 +253,30 @@ export default function DashboardPage() {
   }, [workflows, classifyWorkflowHealth]);
 
   /**
+   * Derive success trend data from runsByHour for sparkline
+   * Array of 24 values (hours 0-23), each 0-100 success rate
+   */
+  const successTrendData = useMemo(() => {
+    const runsByHour = overviewData?.runsByHour || [];
+    const trend = Array(24).fill(0);
+    runsByHour.forEach(({ hour, passed, total }) => {
+      if (hour >= 0 && hour < 24 && total > 0) {
+        trend[hour] = Math.round((passed / total) * 100);
+      }
+    });
+    return trend;
+  }, [overviewData?.runsByHour]);
+
+  /**
+   * Stability derived from workflow health: consistentCount / totalWorkflows * 100
+   */
+  const stability = useMemo(() => {
+    const total = workflows.length;
+    if (total === 0) return 0;
+    return Math.round((workflowHealthMetrics.consistentCount / total) * 100);
+  }, [workflows.length, workflowHealthMetrics.consistentCount]);
+
+  /**
    * Separate workflows into idle and non-idle groups
    * Idle workflows have no runs for the selected date
    */
@@ -355,8 +379,9 @@ export default function DashboardPage() {
         {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
         <GitHubStatusBanner className="mb-6" />
         
-        {/* Header Section - Date controls */}
-        <div className="flex items-center justify-end">
+        {/* Header Section - Workflows heading and date controls */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl sm:text-2xl font-bold">Workflows</h2>
           {/* Date controls - Today button, date picker, and refresh */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Today button - Quick jump to today's date */}
@@ -423,18 +448,33 @@ export default function DashboardPage() {
             passedRuns={overviewData.passedRuns || 0}
             failedRuns={overviewData.failedRuns || 0}
             completedRuns={overviewData.completedRuns || 0}
-            totalRuntime={overviewData.totalRuntime || 0}
-            didntRunCount={overviewData.didntRunCount || 0}
-            activeWorkflows={workflows.length}
             consistentCount={workflowHealthMetrics.consistentCount}
             improvedCount={workflowHealthMetrics.improvedCount}
             regressedCount={workflowHealthMetrics.regressedCount}
             stillFailingCount={workflowHealthMetrics.stillFailingCount}
-            runsByHour={overviewData.runsByHour || []}
+            successRate={
+              (overviewData.completedRuns || 0) > 0
+                ? Math.round(
+                    ((overviewData.passedRuns || 0) /
+                      (overviewData.completedRuns || 0)) *
+                      100
+                  )
+                : 0
+            }
+            avgRuntimeSeconds={
+              (overviewData.completedRuns || 0) > 0
+                ? Math.floor(
+                    (overviewData.totalRuntime || 0) /
+                      (overviewData.completedRuns || 0)
+                  )
+                : 0
+            }
+            stability={stability}
+            successTrendData={successTrendData}
           />
         )}
 
-        {/* Workflows Grid Section - Displays individual workflow cards */}
+        {/* Workflows Section - Displays individual workflow cards */}
         <div className="space-y-8">
           {workflows.length === 0 ? (
             // Empty state - No workflows found

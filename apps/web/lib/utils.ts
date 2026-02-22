@@ -105,6 +105,29 @@ export function getAvatarColor(str: string): string {
 // ============================================================================
 
 /**
+ * Format duration from seconds to human-readable format
+ * Converts total seconds to hours, minutes, and seconds display
+ * @param seconds - Total duration in seconds
+ * @returns Formatted duration string (e.g., "2h 30m", "45m 30s", "30s")
+ * @example
+ * formatDuration(90) // Returns "1m 30s"
+ * formatDuration(3661) // Returns "1h 1m"
+ */
+export function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${secs}s`;
+  } else {
+    return `${secs}s`;
+  }
+}
+
+/**
  * Calculate the duration between two timestamps and format as human-readable string
  * Returns format like "2h 30m 15s", "45m 30s", or "30s"
  * Uses absolute value to handle cases where end < start (data inconsistencies or clock skew)

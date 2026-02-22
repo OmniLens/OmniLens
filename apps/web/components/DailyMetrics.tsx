@@ -1,10 +1,11 @@
 // External library imports
-import { CheckCircle, Clock, XCircle, TrendingUp, TrendingDown, AlertTriangle, Workflow } from 'lucide-react';
-import { Bar, BarChart, PieChart, Pie, Cell, XAxis } from 'recharts';
+import { CheckCircle, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { PieChart, Pie, Cell } from 'recharts';
 
 // Internal component imports
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer } from '@/components/ui/chart';
+import MetricsCard from '@/components/MetricsCard';
 
 // ============================================================================
 // Type Definitions
@@ -17,38 +18,18 @@ interface DailyMetricsProps {
   passedRuns: number;
   failedRuns: number;
   completedRuns: number;
-  totalRuntime: number;
-  didntRunCount: number;
-  activeWorkflows: number;
   consistentCount: number;
   improvedCount: number;
   regressedCount: number;
   stillFailingCount: number;
-  runsByHour?: Array<{ hour: number; passed: number; failed: number; total: number }>;
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Format duration from seconds to human-readable format
- * Converts total seconds to hours, minutes, and seconds display
- * @param seconds - Total duration in seconds
- * @returns Formatted duration string (e.g., "2h 30m", "45m 30s", "30s")
- */
-function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  } else {
-    return `${secs}s`;
-  }
+  /** Success rate 0-100 (passed/completed) */
+  successRate: number;
+  /** Average runtime in seconds for MetricsCard */
+  avgRuntimeSeconds: number;
+  /** Stability 0-100 from workflow health */
+  stability: number;
+  /** Success rate per hour 0-23 for sparkline */
+  successTrendData: number[];
 }
 
 // ============================================================================
@@ -176,18 +157,18 @@ export default function DailyMetrics({
   passedRuns,
   failedRuns,
   completedRuns,
-  totalRuntime,
-  didntRunCount,
-  activeWorkflows,
   consistentCount,
   improvedCount,
   regressedCount,
   stillFailingCount,
-  runsByHour
+  successRate,
+  avgRuntimeSeconds,
+  stability,
+  successTrendData,
 }: DailyMetricsProps) {
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {/* Card 1: Pass/Fail Rate - Pie chart showing success rate */}
       <Card className="w-full">
         <CardHeader>
@@ -200,48 +181,14 @@ export default function DailyMetrics({
         </CardContent>
       </Card>
 
-      {/* Card 2: Overview - General workflow statistics */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-xl">Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Active Workflows Count */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Workflow className="h-4 w-4 text-blue-500" />
-                <span className="text-sm">Workflows</span>
-              </div>
-              <span className="text-sm font-medium">{activeWorkflows}</span>
-            </div>
-            {/* Completed Runs Count */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="text-sm">Completed</span>
-              </div>
-              <span className="text-sm font-medium">{completedRuns}</span>
-            </div>
-            {/* Didn't Run Count */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <XCircle className="h-4 w-4 text-red-500" />
-                <span className="text-sm">Didn&apos;t run</span>
-              </div>
-              <span className="text-sm font-medium">{didntRunCount}</span>
-            </div>
-            {/* Total Runtime - Formatted duration */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock className="h-4 w-4 text-purple-500" />
-                <span className="text-sm">Total Runtime</span>
-              </div>
-              <span className="text-sm font-medium">{formatDuration(totalRuntime)}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Card 2: Metrics - Success, run count, avg runtime, stability, success trend */}
+      <MetricsCard
+        successRate={successRate}
+        runCount={completedRuns}
+        avgRuntimeSeconds={avgRuntimeSeconds}
+        stability={stability}
+        successTrendData={successTrendData}
+      />
 
       {/* Card 3: Workflow Health - Health status breakdown */}
       <Card className="w-full">
@@ -286,69 +233,6 @@ export default function DailyMetrics({
               <span className="text-sm font-medium">{stillFailingCount}</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Card 4: Runs by Hour - Bar chart showing hourly run distribution */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-xl">Runs by hour</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Empty State - No runs data */}
-          {!runsByHour || runsByHour.length === 0 || runsByHour.every(hour => hour.total === 0) ? (
-            <div className="flex items-center justify-center h-36">
-              <div className="text-center">
-                <div className="text-sm font-medium text-muted-foreground">No Data</div>
-                <div className="text-xs text-muted-foreground">No runs today</div>
-              </div>
-            </div>
-          ) : (
-            /* Bar Chart - Stacked bars showing passed/failed runs per hour */
-            <ChartContainer
-              config={{
-                passed: {
-                  label: "Passed",
-                  color: "hsl(var(--chart-1))",
-                },
-                failed: {
-                  label: "Failed", 
-                  color: "hsl(var(--chart-2))",
-                },
-              }}
-              className="h-36 aspect-none"
-            >
-              <BarChart data={runsByHour.filter(hour => hour.total > 0)} margin={{ left: 0, right: 12, top: 5, bottom: 5 }}>
-                {/* X-Axis - Hour labels */}
-                <XAxis 
-                  dataKey="hour" 
-                  tickFormatter={(hour) => `${hour}:00`}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12 }}
-                />
-                {/* Passed Runs Bar - Bottom stack */}
-                <Bar 
-                  dataKey="passed" 
-                  stackId="runs"
-                  fill="var(--color-passed)" 
-                  radius={[0, 0, 0, 0]}
-                />
-                {/* Failed Runs Bar - Top stack */}
-                <Bar 
-                  dataKey="failed" 
-                  stackId="runs"
-                  fill="var(--color-failed)" 
-                  radius={[2, 2, 0, 0]}
-                />
-                {/* Tooltip - Shows run details on hover */}
-                <ChartTooltip 
-                  content={<ChartTooltipContent labelFormatter={() => `Runs`} />}
-                  cursor={false}
-                />
-              </BarChart>
-            </ChartContainer>
-          )}
         </CardContent>
       </Card>
     </div>

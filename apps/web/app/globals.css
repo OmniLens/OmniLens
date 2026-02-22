@@ -72,6 +72,10 @@ body {
   }
 }
 
+@keyframes draw-line {
+  to { stroke-dashoffset: 0; }
+}
+
 .animate-shake {
   animation: shake 0.5s ease-in-out;
 }
@@ -158,6 +162,92 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* Stat cards - mockup style for dashboard metrics */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1024px) {
+  .stat-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .stat-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  position: relative;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.stat-card:hover {
+  border-color: rgba(255, 255, 255, 0.13);
+}
+
+.stat-card.group:hover::before {
+  opacity: 1;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.stat-card:nth-child(1)::before {
+  background: linear-gradient(90deg, #00e5a0, transparent 60%);
+}
+
+.stat-card:nth-child(2)::before {
+  background: linear-gradient(90deg, #4d9fff, transparent 60%);
+}
+
+.stat-card:nth-child(3)::before {
+  background: linear-gradient(90deg, #c084fc, transparent 60%);
+}
+
+.stat-card:nth-child(4)::before {
+  background: linear-gradient(90deg, #f59e0b, transparent 60%);
+}
+
+/* Metrics card - no hover effect */
+.stat-card.metrics-card:hover {
+  border-color: hsl(var(--border));
+}
+
+.stat-card.metrics-card:hover::before {
+  opacity: 0;
+}
+
+.stat-card .sc-title {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 @layer base {
