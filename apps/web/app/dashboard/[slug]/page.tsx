@@ -100,6 +100,17 @@ function getWorkflowHealthLabel(health: WorkflowHealth): string {
   }
 }
 
+/** Text color class for a workflow health status label */
+function getWorkflowTextClass(health: WorkflowHealth): string {
+  switch (health) {
+    case "consistent":    return "text-[#00e5a0]";
+    case "improved":      return "text-[#4d9fff]";
+    case "regressed":     return "text-amber-500";
+    case "still_failing": return "text-red-500";
+    case "idle":          return "text-muted-foreground/60";
+  }
+}
+
 /**
  * Compute the overall repo health from workflow health counts.
  * Only considers workflows that actually ran today — idle workflows
@@ -380,6 +391,7 @@ function SidebarWorkflowRow({
 }) {
   const dotClass = getWorkflowDotClass(health);
   const healthLabel = getWorkflowHealthLabel(health);
+  const textClass = getWorkflowTextClass(health);
 
   return (
     <Link
@@ -402,7 +414,7 @@ function SidebarWorkflowRow({
       )}
 
       {/* Status label */}
-      <span className="text-sm text-muted-foreground/60 flex-shrink-0 w-20 text-right">
+      <span className={`text-sm flex-shrink-0 w-20 text-right ${textClass}`}>
         {healthLabel}
       </span>
     </Link>

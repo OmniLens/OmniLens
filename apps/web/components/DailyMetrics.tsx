@@ -176,8 +176,8 @@ export default function DailyMetrics({
         <div className="metric-rows flex flex-col gap-3">
           {/* Consistent */}
           <div className="metric-row flex items-center gap-2">
-            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">
-              <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-green-500">
+              <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" />
               Consistent
             </span>
             <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
@@ -192,8 +192,8 @@ export default function DailyMetrics({
 
           {/* Improved */}
           <div className="metric-row flex items-center gap-2">
-            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">
-              <TrendingUp className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-blue-500">
+              <TrendingUp className="h-3.5 w-3.5 flex-shrink-0" />
               Improved
             </span>
             <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
@@ -208,8 +208,8 @@ export default function DailyMetrics({
 
           {/* Regressed */}
           <div className="metric-row flex items-center gap-2">
-            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">
-              <TrendingDown className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
+            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-orange-500">
+              <TrendingDown className="h-3.5 w-3.5 flex-shrink-0" />
               Regressed
             </span>
             <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
@@ -224,8 +224,8 @@ export default function DailyMetrics({
 
           {/* Still failing */}
           <div className="metric-row flex items-center gap-2">
-            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground">
-              <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+            <span className="metric-label w-[110px] flex-shrink-0 flex items-center gap-1.5 whitespace-nowrap text-sm text-red-500">
+              <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
               Still failing
             </span>
             <div className="metric-bar-wrap flex-1 h-[3px] rounded-sm bg-white/5 overflow-hidden">
