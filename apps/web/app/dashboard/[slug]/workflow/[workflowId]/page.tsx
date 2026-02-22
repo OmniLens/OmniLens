@@ -20,7 +20,14 @@ import {
 } from "@/lib/hooks/use-repository-dashboard";
 
 // Utility imports
-import { duration, formatRunTime } from "@/lib/utils";
+import {
+  duration,
+  formatRunTime,
+  getWorkflowDotClass,
+  getWorkflowHealthLabel,
+  getWorkflowPillClass,
+  type WorkflowHealth,
+} from "@/lib/utils";
 
 // ============================================================================
 // Type Definitions
@@ -520,6 +527,17 @@ export default function WorkflowDetailPage() {
     [runs]
   );
 
+  /** Classify workflow health from today's completed runs */
+  const workflowHealth = useMemo((): WorkflowHealth => {
+    const completed = runs.filter((r) => r.status === "completed");
+    if (completed.length === 0) return "idle";
+    const passed = completed.filter((r) => r.conclusion === "success").length;
+    const failed = completed.filter((r) => r.conclusion === "failure").length;
+    if (passed === completed.length) return "consistent";
+    if (failed === completed.length) return "still_failing";
+    return passed >= failed ? "improved" : "regressed";
+  }, [runs]);
+
 
   const handleDateChange = useCallback(
     (date: Date | undefined) => {
@@ -563,13 +581,12 @@ export default function WorkflowDetailPage() {
             {/* Back to repo dashboard */}
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               asChild
-              className="flex-shrink-0 -ml-2 text-muted-foreground hover:text-foreground"
+              className="flex-shrink-0 h-8 w-8 text-muted-foreground hover:text-foreground"
             >
               <Link href={`/dashboard/${slug}`}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back
+                <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
 
@@ -579,6 +596,16 @@ export default function WorkflowDetailPage() {
                 {workflow?.name ?? `Workflow #${workflowId}`}
               </h1>
             </div>
+
+            {/* Workflow health badge */}
+            {!isLoadingRuns && (
+              <div
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono uppercase tracking-widest flex-shrink-0 ${getWorkflowPillClass(workflowHealth)}`}
+              >
+                <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${getWorkflowDotClass(workflowHealth)}`} />
+                {getWorkflowHealthLabel(workflowHealth)}
+              </div>
+            )}
 
             {/* Live ingestion badge */}
             {isIngesting && (

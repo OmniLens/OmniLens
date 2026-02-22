@@ -4,7 +4,7 @@
 import React, { useMemo, useEffect, useCallback, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { RefreshCw, ExternalLink } from "lucide-react";
+import { ArrowLeft, RefreshCw, ExternalLink } from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,15 @@ import {
 } from "@/lib/hooks/use-repository-dashboard";
 
 // Utility imports
-import { duration, formatRunTime, formatDuration } from "@/lib/utils";
+import {
+  duration,
+  formatRunTime,
+  formatDuration,
+  getWorkflowDotClass,
+  getWorkflowHealthLabel,
+  getWorkflowTextClass,
+  type WorkflowHealth,
+} from "@/lib/utils";
 
 // ============================================================================
 // Type Definitions
@@ -32,7 +40,6 @@ import { duration, formatRunTime, formatDuration } from "@/lib/utils";
 
 type RunLabel = "PASS" | "FAIL" | "RUN" | "SKIP";
 type RepoHealth = "healthy" | "degraded" | "failing" | "idle";
-type WorkflowHealth = "consistent" | "improved" | "regressed" | "still_failing" | "idle";
 
 interface HourStat {
   hour: number;
@@ -78,38 +85,6 @@ function mapToWorkflowHealth(
   return status === "no_runs_today" ? "idle" : status;
 }
 
-/** Dot color for a workflow health status */
-function getWorkflowDotClass(health: WorkflowHealth): string {
-  switch (health) {
-    case "consistent":    return "bg-[#00e5a0]";
-    case "improved":      return "bg-[#4d9fff]";
-    case "regressed":     return "bg-amber-500";
-    case "still_failing": return "bg-red-500";
-    case "idle":          return "bg-white/20";
-  }
-}
-
-/** Label text for a workflow health status */
-function getWorkflowHealthLabel(health: WorkflowHealth): string {
-  switch (health) {
-    case "consistent":    return "consistent";
-    case "improved":      return "improved";
-    case "regressed":     return "regressed";
-    case "still_failing": return "failing";
-    case "idle":          return "idle";
-  }
-}
-
-/** Text color class for a workflow health status label */
-function getWorkflowTextClass(health: WorkflowHealth): string {
-  switch (health) {
-    case "consistent":    return "text-[#00e5a0]";
-    case "improved":      return "text-[#4d9fff]";
-    case "regressed":     return "text-amber-500";
-    case "still_failing": return "text-red-500";
-    case "idle":          return "text-muted-foreground/60";
-  }
-}
 
 /**
  * Compute the overall repo health from workflow health counts.
@@ -816,6 +791,18 @@ export default function DashboardPage() {
         {/* ── Header ── */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
+            {/* Back to repositories */}
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+              className="flex-shrink-0 h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <Link href="/dashboard">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+
             {/* Repo slug */}
             <h1 className="text-xl sm:text-2xl font-bold truncate">Workflows</h1>
 

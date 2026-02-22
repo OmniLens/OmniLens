@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Github, BookOpen, FileText, Globe } from "lucide-react";
+import { LayoutGrid, LogOut, Github, BookOpen, FileText, Globe } from "lucide-react";
 
 // Internal component imports
 import {
@@ -27,12 +27,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { RepoSwitcherMenuItem } from "@/components/RepoSwitcher";
+import { RepoSwitcherMenuItem, WorkflowSwitcherMenuItem } from "@/components/RepoSwitcher";
 
 // Utility imports
+import { getAvatarLetter, getAvatarColor } from "@/lib/utils";
 import packageJson from "../package.json";
+
 // Hook imports
 import { useSession, signOut } from "@/lib/auth-client";
+import { useRepositories } from "@/lib/hooks/use-repositories";
 
 // ============================================================================
 // Type Definitions
@@ -52,6 +55,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+  const { data: repositories = [] } = useRepositories();
 
   // ============================================================================
   // Event Handlers
@@ -74,13 +78,18 @@ export function AppSidebar() {
   // Computed Values
   // ============================================================================
 
-  // Determine if we're on a repo-specific page
-  const isRepoPage = pathname?.startsWith('/dashboard/') && pathname !== '/dashboard';
-  const repoSlug = isRepoPage ? pathname.split('/').slice(2)[0] : null;
-  const repoPageType = isRepoPage ? pathname.split('/').slice(3)[0] || 'summary' : null;
-
-  // Active state logic
-  const isSummaryActive = isRepoPage && (!repoPageType || repoPageType === 'summary');
+  // Determine current route context from path segments
+  const pathParts = pathname?.split('/') ?? [];
+  const isRepositoriesPage = pathname === '/dashboard';
+  const isRepoPage = pathParts[1] === 'dashboard' && !!pathParts[2];
+  const repoSlug = isRepoPage ? pathParts[2] : null;
+  const isWorkflowPage = isRepoPage && pathParts[3] === 'workflow' && !!pathParts[4];
+  const workflowId = isWorkflowPage ? parseInt(pathParts[4], 10) : null;
+  // currentPageType is used by RepoSwitcherMenuItem to preserve page on repo switch
+  const repoPageType = isRepoPage ? pathParts[3] || 'summary' : null;
+  // Resolve current repo for avatar display
+  const currentRepo = repoSlug ? repositories.find((r) => r.slug === repoSlug) : null;
+  const repoAvatarKey = currentRepo?.repoPath || currentRepo?.displayName || repoSlug || '';
 
   // ============================================================================
   // Main Render
@@ -121,55 +130,54 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Repo Switcher - Only shown on repo pages */}
-              {isRepoPage && repoSlug ? (
-                <RepoSwitcherMenuItem currentRepoSlug={repoSlug} currentPageType={repoPageType || 'summary'} />
-              ) : null}
+              {/* Repositories — always visible, links to the main repos listing */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isRepositoriesPage} tooltip="Repositories">
+                  <Link href="/dashboard">
+                    <LayoutGrid />
+                    <span>Repositories</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
 
-              {/* Repo-specific navigation - Only shown on repo pages */}
-              {isRepoPage && repoSlug ? (
+              {/* Repo context — shown on any repo page */}
+              {isRepoPage && repoSlug && (
                 <>
-                  {/* Summary - Links to /dashboard/[slug] */}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isSummaryActive} tooltip="Summary">
-                      <Link href={`/dashboard/${repoSlug}`}>
-                        <LayoutDashboard />
-                        <span>Summary</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  {/* Repo Dashboard: switcher with dropdown to change repo */}
+                  {!isWorkflowPage && (
+                    <RepoSwitcherMenuItem
+                      currentRepoSlug={repoSlug}
+                      currentPageType={repoPageType || 'summary'}
+                    />
+                  )}
 
-                  {/* Workflows - Links to /dashboard/[slug]/workflows */}
-                  {/* <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isWorkflowsActive} tooltip="Workflows">
-                      <Link href={`/dashboard/${repoSlug}/workflows`}>
-                        <BarChart3 />
-                        <span>Workflows</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem> */}
+                  {/* Workflow Dashboard: static repo link (no switching) + workflow switcher */}
+                  {isWorkflowPage && workflowId && (
+                    <>
+                      {/* Repo item — links back to repo dashboard, no switcher */}
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild tooltip="Repository Dashboard">
+                          <Link href={`/dashboard/${repoSlug}`}>
+                            <div
+                              className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-[9px] font-bold text-black"
+                              style={{ background: getAvatarColor(repoAvatarKey) }}
+                            >
+                              {getAvatarLetter(repoAvatarKey)}
+                            </div>
+                            <span className="truncate">{repoSlug.replace(/-/g, '/')}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
 
-                  {/* Runners - Links to /dashboard/[slug]/runners */}
-                  {/* <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isRunnersActive} tooltip="Runners">
-                      <Link href={`/dashboard/${repoSlug}/runners`}>
-                        <Zap />
-                        <span>Runners</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem> */}
-
-                  {/* Usage - Links to /dashboard/[slug]/usage */}
-                  {/* <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isUsageActive} tooltip="Usage">
-                      <Link href={`/dashboard/${repoSlug}/usage`}>
-                        <TrendingUp />
-                        <span>Usage</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem> */}
+                      {/* Workflow switcher — switch between workflows in this repo */}
+                      <WorkflowSwitcherMenuItem
+                        currentWorkflowId={workflowId}
+                        repoSlug={repoSlug}
+                      />
+                    </>
+                  )}
                 </>
-              ) : null}
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

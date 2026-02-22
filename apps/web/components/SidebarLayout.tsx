@@ -8,9 +8,6 @@ import { usePathname } from "next/navigation";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 
-// Utility imports
-import { formatRepoDisplayName } from "@/lib/utils";
-
 // Hook imports
 import { useSession } from "@/lib/auth-client";
 
@@ -70,10 +67,6 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   const isBlogPage = pathname?.startsWith('/blog');
   const shouldShowSidebar = session && !isPending && !noSidebarRoutes.includes(pathname || '') && !isBlogPage;
 
-  // Determine if we're on a repo page and extract repo slug
-  const isRepoPage = pathname?.startsWith('/dashboard/') && pathname !== '/dashboard';
-  const repoSlug = isRepoPage ? pathname.split('/').slice(2)[0] : null;
-
   // Compute desired sidebar state based on current pathname
   const isDashboardPage = pathname === '/dashboard';
   const desiredSidebarState = isDashboardPage 
@@ -117,14 +110,6 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-4 border-b px-4">
           <SidebarTrigger className="-ml-1" />
-          {/* Repo name - Only shown on repo pages */}
-          {isRepoPage && repoSlug && (
-            <div className="flex items-center min-w-0">
-              <h1 className="text-lg font-semibold truncate">
-                {formatRepoDisplayName(repoSlug.replace(/-/g, '/'))}
-              </h1>
-            </div>
-          )}
         </header>
         <div className="flex flex-1 flex-col">
           {children}

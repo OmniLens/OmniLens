@@ -101,6 +101,64 @@ export function getAvatarColor(str: string): string {
 }
 
 // ============================================================================
+// Workflow Health Utilities
+// ============================================================================
+
+export type WorkflowHealth = "consistent" | "improved" | "regressed" | "still_failing" | "idle";
+
+/**
+ * Dot indicator color class for a workflow health status
+ */
+export function getWorkflowDotClass(health: WorkflowHealth): string {
+  switch (health) {
+    case "consistent":    return "bg-[#00e5a0]";
+    case "improved":      return "bg-[#4d9fff]";
+    case "regressed":     return "bg-amber-500";
+    case "still_failing": return "bg-red-500";
+    case "idle":          return "bg-white/20";
+  }
+}
+
+/**
+ * Display label for a workflow health status
+ */
+export function getWorkflowHealthLabel(health: WorkflowHealth): string {
+  switch (health) {
+    case "consistent":    return "consistent";
+    case "improved":      return "improved";
+    case "regressed":     return "regressed";
+    case "still_failing": return "failing";
+    case "idle":          return "idle";
+  }
+}
+
+/**
+ * Text color class for a workflow health status
+ */
+export function getWorkflowTextClass(health: WorkflowHealth): string {
+  switch (health) {
+    case "consistent":    return "text-[#00e5a0]";
+    case "improved":      return "text-[#4d9fff]";
+    case "regressed":     return "text-amber-500";
+    case "still_failing": return "text-red-500";
+    case "idle":          return "text-muted-foreground/60";
+  }
+}
+
+/**
+ * Pill border + background class for a workflow health status
+ */
+export function getWorkflowPillClass(health: WorkflowHealth): string {
+  switch (health) {
+    case "consistent":    return "border-[#00e5a0]/20 bg-[#00e5a0]/5 text-[#00e5a0]/80";
+    case "improved":      return "border-[#4d9fff]/20 bg-[#4d9fff]/5 text-[#4d9fff]/80";
+    case "regressed":     return "border-amber-500/20 bg-amber-500/5 text-amber-400/80";
+    case "still_failing": return "border-red-500/20 bg-red-500/5 text-red-400/80";
+    case "idle":          return "border-white/10 bg-white/5 text-white/40";
+  }
+}
+
+// ============================================================================
 // Time/Date Utilities
 // ============================================================================
 
