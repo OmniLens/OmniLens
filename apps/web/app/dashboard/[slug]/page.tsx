@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import WorkflowCard, { IdleWorkflowCard } from "@/components/WorkflowCard";
 import DailyMetrics from "@/components/DailyMetrics";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
+import WorkflowStatusList from "@/components/WorkflowStatusList";
+import type { WorkflowStatusItem } from "@/components/WorkflowStatusList";
 
 // Hook imports
 import { useSession } from "@/lib/auth-client";
@@ -277,6 +279,23 @@ export default function DashboardPage() {
   }, [workflows.length, workflowHealthMetrics.consistentCount]);
 
   /**
+   * Build the flat list of all workflows with their display health status
+   * Used to render the compact WorkflowStatusList above the card sections
+   */
+  const allWorkflowStatuses = useMemo((): WorkflowStatusItem[] => {
+    return workflows.map((workflow) => {
+      const internalStatus = classifyWorkflowHealth(workflow.id);
+      const displayHealth =
+        internalStatus === "no_runs_today" ? "idle" : internalStatus;
+      return {
+        id: workflow.id,
+        name: workflow.name,
+        healthStatus: displayHealth,
+      };
+    });
+  }, [workflows, classifyWorkflowHealth]);
+
+  /**
    * Separate workflows into idle and non-idle groups
    * Idle workflows have no runs for the selected date
    */
@@ -472,6 +491,11 @@ export default function DashboardPage() {
             stability={stability}
             successTrendData={successTrendData}
           />
+        )}
+
+        {/* Workflow Status List - Compact at-a-glance list of all workflows and their health */}
+        {workflows.length > 0 && (
+          <WorkflowStatusList workflows={allWorkflowStatuses} />
         )}
 
         {/* Workflows Section - Displays individual workflow cards */}
