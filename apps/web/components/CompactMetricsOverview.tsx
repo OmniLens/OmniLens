@@ -1,5 +1,5 @@
 // External library imports
-import { CheckCircle, Loader, Workflow } from "lucide-react";
+import { Loader, Play, Workflow } from "lucide-react";
 
 // ============================================================================
 // Type Definitions
@@ -90,20 +90,22 @@ export default function CompactMetricsOverview({
         </div>
       </div>
 
-      {/* Footer - X workflows + X runs, preserve check logic */}
+      {/* Footer - X workflows + X runs + optional running badge */}
       <div className="drc-footer flex items-center gap-2 text-sm text-muted-foreground">
         <span className="drc-meta-item flex items-center gap-1.5">
           <Workflow className="h-4 w-4 flex-shrink-0" />
           {totalWorkflows} workflows
         </span>
         <span className="drc-meta-item flex items-center gap-1.5">
-          {inProgressRuns > 0 ? (
-            <Loader className="h-4 w-4 flex-shrink-0 animate-spin text-blue-500" />
-          ) : (
-            <CheckCircle className="h-4 w-4 flex-shrink-0" />
-          )}
+          <Play className="h-4 w-4 flex-shrink-0" />
           {totalRuns} runs
         </span>
+        {inProgressRuns > 0 && (
+          <span className="drc-meta-item flex items-center gap-1.5 text-blue-400">
+            <Loader className="h-4 w-4 flex-shrink-0 animate-spin" />
+            {inProgressRuns} running
+          </span>
+        )}
       </div>
     </div>
   );
