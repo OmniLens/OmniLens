@@ -15,7 +15,6 @@ import {
 // Internal component imports
 import { Button } from "@/components/ui/button";
 import { Modal, ModalFooter } from "@/components/ui/modal";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 import RepositoryCardSkeleton from "@/components/RepositoryCardSkeleton";
 import RepositoryCard from "@/components/RepositoryCard";
@@ -57,28 +56,17 @@ function findInsertIndex(repositories: Repository[], newRepoDisplayName: string)
 
 /**
  * NoRepositoriesCard component
- * Empty state card shown when user has no repositories
- * Uses the same Card styling as RepositoryCard for consistency
+ * Empty state shown when user has no repositories
  */
 function NoRepositoriesCard() {
   return (
-    <Card className="relative h-full flex flex-col border-border bg-card">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <Package className="h-6 w-6 text-muted-foreground" />
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col items-center justify-center text-center">
-        <h3 className="text-lg font-semibold mb-2">No repositories yet</h3>
-        <p className="text-sm text-muted-foreground">
-          Add a GitHub repository to get started
-        </p>
-      </CardContent>
-    </Card>
+    <div className="rounded-lg border border-border bg-card flex flex-col items-center justify-center gap-3 py-16 px-8">
+      <Package className="h-5 w-5 text-[#00e5a0]" />
+      <span className="text-sm font-semibold text-foreground">No repositories yet</span>
+      <p className="text-sm text-muted-foreground text-center max-w-[200px]">
+        Add a GitHub repository to get started
+      </p>
+    </div>
   );
 }
 
