@@ -403,6 +403,13 @@ export default function DashboardPage() {
           <h2 className="text-xl sm:text-2xl font-bold">Workflows</h2>
           {/* Date controls - Today button, date picker, and refresh */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* V2 toggle */}
+            <a
+              href={`/dashboard/${repoSlug}/v2`}
+              className="text-[10px] font-mono text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors px-2 py-1 rounded border border-border hover:border-muted-foreground/20 flex-shrink-0"
+            >
+              v2 →
+            </a>
             {/* Today button - Quick jump to today's date */}
             <Button
               variant="outline"

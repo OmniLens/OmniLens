@@ -103,7 +103,7 @@ function FeedRow({ run, index }: { run: WorkflowRun; index: number }) {
 
   return (
     <div
-      className="flex items-center gap-3 py-2.5 border-b border-white/[0.03] last:border-0 font-mono text-xs opacity-0 animate-in fade-in-0 slide-in-from-bottom-1"
+      className="flex items-center gap-3 py-2.5 border-b border-white/[0.03] last:border-0 font-mono text-xs animate-in fade-in-0 slide-in-from-bottom-1"
       style={{
         animationDelay: `${index * 0.08}s`,
         animationFillMode: "forwards",
@@ -152,8 +152,18 @@ function FeedRow({ run, index }: { run: WorkflowRun; index: number }) {
  * Terminal-style live feed panel.
  * Shows all workflow runs for the selected date in reverse chronological order,
  * with a pulsing "ingesting" indicator when a run is active.
+ * Distinct loading / empty / data states prevent the scrollbar from appearing
+ * when there is no content, and distinguish "loading" from "no runs".
  */
-function LiveFeed({ runs, isIngesting }: { runs: WorkflowRun[]; isIngesting: boolean }) {
+function LiveFeed({
+  runs,
+  isIngesting,
+  isLoading,
+}: {
+  runs: WorkflowRun[];
+  isIngesting: boolean;
+  isLoading: boolean;
+}) {
   const sorted = useMemo(
     () =>
       [...runs].sort(
@@ -167,9 +177,15 @@ function LiveFeed({ runs, isIngesting }: { runs: WorkflowRun[]; isIngesting: boo
     <div className="rounded-lg border border-border bg-card flex flex-col">
       {/* Feed header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
-          Live Feed
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+            Live Feed
+          </span>
+          <span className="text-[10px] text-muted-foreground/30 font-mono">—</span>
+          <span className="text-[10px] text-muted-foreground/40 font-mono">
+            {isLoading ? "…" : `${runs.length} runs`}
+          </span>
+        </div>
         {isIngesting ? (
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-[#00e5a0] animate-pulse" />
@@ -198,26 +214,25 @@ function LiveFeed({ runs, isIngesting }: { runs: WorkflowRun[]; isIngesting: boo
         <span className="w-3 flex-shrink-0" />
       </div>
 
-      {/* Feed body */}
-      <div className="overflow-y-auto px-4 min-h-[200px] max-h-[480px]">
-        {sorted.length === 0 ? (
-          <div className="flex items-center justify-center py-16">
-            <span className="text-sm text-muted-foreground/50 font-mono">— no runs recorded —</span>
+      {/* Feed body — three distinct states so overflow never shows on loading/empty */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16 px-4">
+          <div className="flex items-center gap-2">
+            <div className="h-3.5 w-3.5 rounded-full border-2 border-[#4d9fff]/30 border-t-[#4d9fff] animate-spin" />
+            <span className="text-xs text-muted-foreground/40 font-mono">loading runs...</span>
           </div>
-        ) : (
-          <>
-            {sorted.map((run, i) => (
-              <FeedRow key={run.id} run={run} index={i} />
-            ))}
-
-            {/* Blinking cursor — the terminal's heartbeat */}
-            <div className="py-3 font-mono text-xs text-[#4d9fff]/40 flex items-center gap-1.5">
-              <span>›</span>
-              <span className="inline-block w-1.5 h-3.5 bg-[#4d9fff]/40 animate-blink align-middle" />
-            </div>
-          </>
-        )}
-      </div>
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className="flex items-center justify-center py-16 px-4">
+          <span className="text-sm text-muted-foreground/50 font-mono">— no runs recorded —</span>
+        </div>
+      ) : (
+        <div className="overflow-y-auto max-h-[480px] px-4 [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
+          {sorted.map((run, i) => (
+            <FeedRow key={run.id} run={run} index={i} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -633,7 +648,7 @@ export default function WorkflowDetailPage() {
 
         {/* ── Main grid: Live Feed (left) + Metrics (right) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-          <LiveFeed runs={runs} isIngesting={isIngesting} />
+          <LiveFeed runs={runs} isIngesting={isIngesting} isLoading={isLoadingRuns} />
           <StatsPanel runs={runs} />
         </div>
 
