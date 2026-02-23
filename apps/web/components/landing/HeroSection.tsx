@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRightIcon, GitHubIcon } from "./icons";
+import { GitHubIcon } from "./icons";
 import { HeroDashboard } from "./HeroDashboard";
 
 export function HeroSection() {
@@ -22,8 +22,7 @@ export function HeroSection() {
 
       <div className="hero-actions">
         <Link href="/login" className="btn-lg-primary">
-          <ArrowRightIcon width={14} height={14} />
-          Get Started — it&apos;s free
+          Get Started
         </Link>
         <a
           href="https://github.com/omnilens/OmniLens"

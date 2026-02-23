@@ -9,9 +9,22 @@ import { SidebarLayout } from "@/components/SidebarLayout";
 import type { Metadata } from "next";
 
 export function generateMetadata(): Metadata {
+  const title = "OmniLens — GitHub Actions Workflow Health";
+  const description =
+    "An open-source platform for visualizing and tracking GitHub Actions workflow health.";
   return {
-    title: "OmniLens — GitHub Actions Workflow Health",
-    description: "An open-source platform for visualizing and tracking GitHub Actions workflow health.",
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
     icons: {
       icon: "/omnilens.jpeg",
       shortcut: "/omnilens.jpeg",

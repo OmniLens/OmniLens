@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRightIcon, GitHubIcon, GreenDotIcon } from "./icons";
+import { GitHubIcon, GreenDotIcon } from "./icons";
 
 export function CTASection() {
   return (
@@ -10,7 +10,7 @@ export function CTASection() {
       <div className="cta-inner">
         <div className="cta-badge">
           <GreenDotIcon width={10} height={10} />
-          Free & open source
+          Open source
         </div>
         <h2 className="cta-title">
           Start monitoring
@@ -23,8 +23,7 @@ export function CTASection() {
         </p>
         <div className="cta-actions">
           <Link href="/login" className="btn-lg-primary">
-            <ArrowRightIcon width={14} height={14} />
-            Get Started Free
+            Get Started
           </Link>
           <a
             href="https://github.com/omnilens/OmniLens"

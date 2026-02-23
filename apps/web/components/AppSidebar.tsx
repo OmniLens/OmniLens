@@ -231,7 +231,7 @@ export function AppSidebar() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/blog" className="flex items-center cursor-pointer">
+                    <Link href="/blog" target="_blank" rel="noopener noreferrer" className="flex items-center cursor-pointer">
                       <BookOpen className="h-4 w-4 mr-2" />
                       Blog
                     </Link>

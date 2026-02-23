@@ -128,7 +128,7 @@ export default function Header() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/blog" className="flex items-center">
+                  <Link href="/blog" target="_blank" rel="noopener noreferrer" className="flex items-center">
                     <BookOpen className="h-4 w-4 mr-2" />
                     Blog
                   </Link>

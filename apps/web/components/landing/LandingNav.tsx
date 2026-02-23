@@ -27,7 +27,7 @@ export function LandingNav({ hideAuthButtons = false }: LandingNavProps) {
 
       <ul className="nav-links">
         <li>
-          <Link href="/blog">
+          <Link href="/blog" target="_blank" rel="noopener noreferrer">
             <BlogIcon />
             Blog
           </Link>
