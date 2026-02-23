@@ -56,9 +56,140 @@ export function formatRepoDisplayName(repoName: string): string {
     .trim();
 }
 
+/**
+ * Get the first letter of the repository name for avatar display
+ * Uses the repo part of owner/repo (e.g. "owner/core" → "C")
+ * @param displayNameOrPath - Repository display name or path (e.g. "owner/core" or "Core")
+ * @returns Single uppercase letter for avatar
+ * @example
+ * getAvatarLetter("owner/core") // Returns "C"
+ * getAvatarLetter("omnilens/core") // Returns "C"
+ */
+export function getAvatarLetter(displayNameOrPath: string): string {
+  if (!displayNameOrPath) return '?';
+  const repoPart = displayNameOrPath.split('/').pop() || displayNameOrPath;
+  const first = repoPart.charAt(0);
+  return first ? first.toUpperCase() : '?';
+}
+
+/** Palette for deterministic avatar colors (matches mockup) */
+const AVATAR_COLORS = [
+  '#00e5a0', // var(--accent)
+  '#4d9fff', // var(--accent2)
+  '#c084fc', // var(--accent3)
+  '#f59e0b',
+  '#ef4444',
+  '#6366f1',
+];
+
+/** Per-repo color overrides — keyed by full repo path (owner/repo) */
+const AVATAR_COLOR_OVERRIDES: Record<string, string> = {
+  'Hiccup-za/peak': '#f97316', // orange — distinct from the hash-assigned purple
+};
+
+/**
+ * Get a deterministic color for avatar background based on string
+ * Uses simple hash to pick from mockup palette, with per-repo overrides
+ * @param str - String to hash (e.g. repo path or display name)
+ * @returns Hex color string
+ * @example
+ * getAvatarColor("owner/core") // Returns consistent color for same input
+ */
+export function getAvatarColor(str: string): string {
+  if (!str) return AVATAR_COLORS[0];
+  if (AVATAR_COLOR_OVERRIDES[str]) return AVATAR_COLOR_OVERRIDES[str];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
+}
+
+// ============================================================================
+// Workflow Health Utilities
+// ============================================================================
+
+export type WorkflowHealth = "consistent" | "improved" | "regressed" | "still_failing" | "idle";
+
+/**
+ * Dot indicator color class for a workflow health status
+ */
+export function getWorkflowDotClass(health: WorkflowHealth): string {
+  switch (health) {
+    case "consistent":    return "bg-[#00e5a0]";
+    case "improved":      return "bg-[#4d9fff]";
+    case "regressed":     return "bg-amber-500";
+    case "still_failing": return "bg-red-500";
+    case "idle":          return "bg-muted-foreground/40";
+  }
+}
+
+/**
+ * Display label for a workflow health status
+ */
+export function getWorkflowHealthLabel(health: WorkflowHealth): string {
+  switch (health) {
+    case "consistent":    return "consistent";
+    case "improved":      return "improved";
+    case "regressed":     return "regressed";
+    case "still_failing": return "failing";
+    case "idle":          return "idle";
+  }
+}
+
+/**
+ * Text color class for a workflow health status
+ */
+export function getWorkflowTextClass(health: WorkflowHealth): string {
+  switch (health) {
+    case "consistent":    return "text-[#00e5a0]";
+    case "improved":      return "text-[#4d9fff]";
+    case "regressed":     return "text-amber-500";
+    case "still_failing": return "text-red-500";
+    case "idle":          return "text-muted-foreground/60";
+  }
+}
+
+/**
+ * Pill border + background class for a workflow health status
+ */
+export function getWorkflowPillClass(health: WorkflowHealth): string {
+  switch (health) {
+    case "consistent":    return "border-[#00e5a0]/20 bg-[#00e5a0]/5 text-[#00e5a0]/80";
+    case "improved":      return "border-[#4d9fff]/20 bg-[#4d9fff]/5 text-[#4d9fff]/80";
+    case "regressed":     return "border-amber-500/20 bg-amber-500/5 text-amber-400/80";
+    case "still_failing": return "border-red-500/20 bg-red-500/5 text-red-400/80";
+    case "idle":          return "border-white/10 bg-white/5 text-white/40";
+  }
+}
+
 // ============================================================================
 // Time/Date Utilities
 // ============================================================================
+
+/**
+ * Format duration from seconds to human-readable format
+ * Converts total seconds to hours, minutes, and seconds display
+ * @param seconds - Total duration in seconds
+ * @returns Formatted duration string (e.g., "2h 30m", "45m 30s", "30s")
+ * @example
+ * formatDuration(90) // Returns "1m 30s"
+ * formatDuration(3661) // Returns "1h 1m"
+ */
+export function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${secs}s`;
+  } else {
+    return `${secs}s`;
+  }
+}
 
 /**
  * Calculate the duration between two timestamps and format as human-readable string

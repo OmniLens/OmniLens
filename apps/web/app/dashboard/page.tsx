@@ -15,7 +15,6 @@ import {
 // Internal component imports
 import { Button } from "@/components/ui/button";
 import { Modal, ModalFooter } from "@/components/ui/modal";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 import RepositoryCardSkeleton from "@/components/RepositoryCardSkeleton";
 import RepositoryCard from "@/components/RepositoryCard";
@@ -57,28 +56,17 @@ function findInsertIndex(repositories: Repository[], newRepoDisplayName: string)
 
 /**
  * NoRepositoriesCard component
- * Empty state card shown when user has no repositories
- * Uses the same Card styling as RepositoryCard for consistency
+ * Empty state shown when user has no repositories
  */
 function NoRepositoriesCard() {
   return (
-    <Card className="relative h-full flex flex-col border-border bg-card">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <Package className="h-6 w-6 text-muted-foreground" />
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col items-center justify-center text-center">
-        <h3 className="text-lg font-semibold mb-2">No repositories yet</h3>
-        <p className="text-sm text-muted-foreground">
-          Add a GitHub repository to get started
-        </p>
-      </CardContent>
-    </Card>
+    <div className="rounded-lg border border-border bg-card flex flex-col items-center justify-center gap-3 py-16 px-8">
+      <Package className="h-5 w-5 text-[#00e5a0]" />
+      <span className="text-sm font-semibold text-foreground">No repositories yet</span>
+      <p className="text-sm text-muted-foreground text-center max-w-[200px]">
+        Add a GitHub repository to get started
+      </p>
+    </div>
   );
 }
 
@@ -122,8 +110,6 @@ type DisplayItem = {
     inProgressRuns: number;
     successRate: number;
   } | null;
-  isUserRepo?: boolean;
-  onRequestDelete?: () => void;
 };
 
 
@@ -165,6 +151,8 @@ export default function DashboardHomePage() {
   const [newRepoUrl, setNewRepoUrl] = React.useState("");
   const [addError, setAddError] = React.useState<string | null>(null);
   const [currentStep, setCurrentStep] = React.useState<'idle' | 'validating' | 'adding' | 'getting-data'>('idle');
+
+  // UI state for delete repository modal
   const [repoToDelete, setRepoToDelete] = React.useState<{
     slug: string;
     displayName: string;
@@ -216,6 +204,39 @@ export default function DashboardHomePage() {
   // ============================================================================
   // Mutations (TanStack Query)
   // ============================================================================
+
+  // Delete repository mutation - handles deletion and cache invalidation
+  const deleteRepoMutation = useMutation({
+    mutationFn: async (slug: string) => {
+      const response = await fetch(`/api/repo/${encodeURIComponent(slug)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error || 'Failed to delete repository');
+      }
+
+      return response.json();
+    },
+    onMutate: (slug) => {
+      setIsDeleting(true);
+      setDeletingRepoSlug(slug);
+    },
+    onSuccess: (_data, slug) => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      queryClient.invalidateQueries({ queryKey: ['repository-workflows', slug] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-runs', slug] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-overview', slug] });
+      queryClient.invalidateQueries({ queryKey: ['yesterday-workflow-runs', slug] });
+    },
+    onError: () => {
+      setIsDeleting(false);
+      setDeletingRepoSlug(null);
+    },
+  });
 
   // Add repository mutation - handles validation, addition, and optimistic updates
   const addRepoMutation = useMutation({
@@ -293,44 +314,6 @@ export default function DashboardHomePage() {
     },
   });
 
-  // Delete repository mutation - handles deletion and cache invalidation
-  const deleteRepoMutation = useMutation({
-    mutationFn: async (slug: string) => {
-      const response = await fetch(`/api/repo/${slug}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete repository');
-      }
-    },
-    onMutate: (slug) => {
-      // Set deleting state and track which repo is being deleted
-      setIsDeleting(true);
-      setDeletingRepoSlug(slug);
-    },
-    onSuccess: (data, slug) => {
-      // Invalidate the batch dashboard query and any related queries
-      queryClient.invalidateQueries({ queryKey: ['dashboard-repositories-batch'] });
-      queryClient.invalidateQueries({ queryKey: ['repositories'] });
-      queryClient.invalidateQueries({ queryKey: ['repository-workflows', slug] });
-      queryClient.invalidateQueries({ queryKey: ['workflow-runs', slug] });
-      queryClient.invalidateQueries({ queryKey: ['workflow-overview', slug] });
-      queryClient.invalidateQueries({ queryKey: ['yesterday-workflow-runs', slug] });
-      // Keep deleting state until UI updates and removes the card
-    },
-    onSettled: () => {
-      // Don't clear deleting state here - it will be cleared by useEffect when card is removed
-    },
-    onError: (error) => {
-      console.error('Delete error:', error);
-      // Clear deleting state on error
-      setIsDeleting(false);
-      setDeletingRepoSlug(null);
-    },
-  });
-
   // ============================================================================
   // Event Handlers
   // ============================================================================
@@ -396,6 +379,22 @@ export default function DashboardHomePage() {
    */
   const handleAddRepoClick = () => {
     setShowAddModal(true);
+  };
+
+  /**
+   * Open delete confirmation modal for a repository
+   */
+  const handleRequestDeleteRepo = (slug: string, displayName: string) => {
+    setRepoToDelete({ slug, displayName });
+  };
+
+  /**
+   * Close delete modal and clear deleting state
+   */
+  const closeDeleteModal = () => {
+    setRepoToDelete(null);
+    setIsDeleting(false);
+    setDeletingRepoSlug(null);
   };
 
 
@@ -508,8 +507,7 @@ export default function DashboardHomePage() {
                   errorMessage={item.errorMessage}
                   hasWorkflows={item.hasWorkflows}
                   metrics={item.metrics}
-                  isUserRepo={true}
-                  onRequestDelete={() => setRepoToDelete({ slug: item.slug!, displayName: item.displayName })}
+                  onRequestDelete={() => handleRequestDeleteRepo(item.slug!, item.displayName)}
                 />
               </Link>
             ))}
@@ -517,22 +515,16 @@ export default function DashboardHomePage() {
         )}
         </div>
 
-        {/* Delete Repository Modal - Confirmation dialog for removing repositories */}
+      {/* Delete Repository Modal - Confirmation dialog for removing repositories */}
       <Modal
         isOpen={!!repoToDelete}
-        onClose={() => {
-          setRepoToDelete(null);
-          setIsDeleting(false);
-          setDeletingRepoSlug(null);
-        }}
+        onClose={closeDeleteModal}
         title="Remove repository"
         footer={
           <ModalFooter>
-            <Button variant="outline" size="sm" onClick={() => {
-              setRepoToDelete(null);
-              setIsDeleting(false);
-              setDeletingRepoSlug(null);
-            }}>Cancel</Button>
+            <Button variant="outline" size="sm" onClick={closeDeleteModal}>
+              Cancel
+            </Button>
             <Button
               variant="destructive"
               size="sm"

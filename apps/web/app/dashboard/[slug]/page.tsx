@@ -1,349 +1,782 @@
 "use client";
 
 // External library imports
-import React, { useMemo, useCallback, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { RefreshCw, MoonStar, Zap } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import React, { useMemo, useEffect, useCallback, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, RefreshCw, ExternalLink } from "lucide-react";
 
 // Internal component imports
-import { DatePicker } from "@/components/DatePicker";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import WorkflowCard, { IdleWorkflowCard } from "@/components/WorkflowCard";
-import DailyMetrics from "@/components/DailyMetrics";
+import { DatePicker } from "@/components/DatePicker";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
 
 // Hook imports
 import { useSession } from "@/lib/auth-client";
-import { 
-  useDateState, 
-  useRepositoryWorkflows, 
-  useWorkflowRuns, 
+import {
+  useDateState,
+  useRepositoryWorkflows,
+  useWorkflowRuns,
   useWorkflowOverview,
   useYesterdayWorkflowRuns,
-  type WorkflowRun
+  type WorkflowRun,
+  type Workflow,
 } from "@/lib/hooks/use-repository-dashboard";
+
+// Utility imports
+import {
+  duration,
+  formatRunTime,
+  formatDuration,
+  getWorkflowDotClass,
+  getWorkflowHealthLabel,
+  getWorkflowTextClass,
+  type WorkflowHealth,
+} from "@/lib/utils";
 
 // ============================================================================
 // Type Definitions
 // ============================================================================
+
+type RunLabel = "PASS" | "FAIL" | "RUN" | "SKIP";
+type RepoHealth = "healthy" | "degraded" | "failing" | "idle";
+
+interface HourStat {
+  hour: number;
+  total: number;
+  passed: number;
+  failed: number;
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+function getRunLabel(run: WorkflowRun): RunLabel {
+  if (run.status === "in_progress" || run.status === "queued") return "RUN";
+  if (run.conclusion === "success") return "PASS";
+  if (run.conclusion === "cancelled" || run.conclusion === "skipped") return "SKIP";
+  return "FAIL";
+}
+
+function getLabelColor(label: RunLabel): string {
+  switch (label) {
+    case "PASS": return "text-[#00e5a0]";
+    case "FAIL": return "text-red-500";
+    case "RUN":  return "text-[#4d9fff]";
+    case "SKIP": return "text-amber-400";
+  }
+}
+
+function shortenTrigger(event: string): string {
+  switch (event) {
+    case "pull_request":      return "PR";
+    case "schedule":          return "cron";
+    case "workflow_dispatch": return "manual";
+    case "push":              return "push";
+    default:                  return event;
+  }
+}
+
+/** Map internal health status to a simplified display health for workflow rows */
+function mapToWorkflowHealth(
+  status: "consistent" | "improved" | "regressed" | "still_failing" | "no_runs_today"
+): WorkflowHealth {
+  return status === "no_runs_today" ? "idle" : status;
+}
+
+
+/**
+ * Compute the overall repo health from workflow health counts.
+ * Only considers workflows that actually ran today — idle workflows
+ * do not contribute to or penalise the repo health score.
+ */
+function computeRepoHealth(
+  consistent: number,
+  improved: number,
+  regressed: number,
+  stillFailing: number,
+  _idle: number
+): RepoHealth {
+  const activeTotal = consistent + improved + regressed + stillFailing;
+  if (activeTotal === 0) return "idle";
+  const healthy = consistent + improved;
+  if (healthy / activeTotal >= 0.7) return "healthy";
+  if (stillFailing / activeTotal >= 0.4) return "failing";
+  return "degraded";
+}
+
+function getRepoHealthConfig(health: RepoHealth): {
+  dotClass: string;
+  label: string;
+  pillClass: string;
+} {
+  switch (health) {
+    case "healthy":
+      return {
+        dotClass: "bg-[#00e5a0] animate-pulse",
+        label: "healthy",
+        pillClass: "border-[#00e5a0]/20 bg-[#00e5a0]/5 text-[#00e5a0]/80",
+      };
+    case "degraded":
+      return {
+        dotClass: "bg-amber-500",
+        label: "degraded",
+        pillClass: "border-amber-500/20 bg-amber-500/5 text-amber-400/80",
+      };
+    case "failing":
+      return {
+        dotClass: "bg-red-500 animate-pulse",
+        label: "failing",
+        pillClass: "border-red-500/20 bg-red-500/5 text-red-400/80",
+      };
+    case "idle":
+      return {
+        dotClass: "bg-white/30",
+        label: "idle",
+        pillClass: "border-white/10 bg-white/5 text-white/40",
+      };
+  }
+}
+
+// ============================================================================
+// Sub-Components
+// ============================================================================
+
+/**
+ * A single stat in the top strip.
+ * Compact: label above, big number below.
+ */
+function StatBox({
+  label,
+  value,
+  valueClass = "text-foreground",
+  border = true,
+}: {
+  label: string;
+  value: string | number;
+  valueClass?: string;
+  border?: boolean;
+}) {
+  return (
+    <div className={`flex flex-col gap-1 px-5 py-4 ${border ? "border-r border-border" : ""} last:border-0`}>
+      <span className="text-sm text-muted-foreground whitespace-nowrap">
+        {label}
+      </span>
+      <span className={`text-xl font-bold tabular-nums font-mono ${valueClass}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * A single row in the cross-workflow signal feed.
+ * Shows: time · type · workflow name · branch · trigger · duration · GitHub link
+ */
+function FeedRow({
+  run,
+  workflowName,
+  workflowId,
+  slug,
+  index,
+}: {
+  run: WorkflowRun;
+  workflowName: string;
+  workflowId: number;
+  slug: string;
+  index: number;
+}) {
+  const label = getRunLabel(run);
+  const labelColor = getLabelColor(label);
+  const isActive = label === "RUN";
+  const time = run.run_started_at ? formatRunTime(run.run_started_at) : "--:--";
+  const dur =
+    isActive
+      ? "..."
+      : run.run_started_at && run.updated_at
+      ? duration(run.run_started_at, run.updated_at)
+      : "—";
+  const branch  = run.head_branch || "—";
+  const trigger = shortenTrigger(run.event || "");
+
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.025] last:border-0 font-mono text-sm animate-in fade-in-0 slide-in-from-bottom-1 hover:bg-white/[0.04] transition-colors"
+      style={{
+        animationDelay: `${index * 0.06}s`,
+        animationFillMode: "forwards",
+        animationDuration: "0.18s",
+      }}
+    >
+      {/* Timestamp */}
+      <span className="text-muted-foreground/40 w-11 flex-shrink-0 tabular-nums">{time}</span>
+
+      {/* Type */}
+      <span className={`font-bold w-10 flex-shrink-0 ${labelColor}`}>{label}</span>
+
+      {/* Workflow name — links to workflow detail */}
+      <Link
+        href={`/dashboard/${slug}/workflow/${workflowId}`}
+        className="text-foreground/60 hover:text-foreground/90 transition-colors truncate w-64 flex-shrink-0"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {workflowName}
+      </Link>
+
+      {/* Branch */}
+      <span className="text-foreground/50 truncate flex-1 min-w-0">{branch}</span>
+
+      {/* Trigger */}
+      <span className="text-muted-foreground/30 w-14 flex-shrink-0 text-right">{trigger}</span>
+
+      {/* Duration */}
+      <span
+        className={`w-20 flex-shrink-0 text-right tabular-nums ${
+          isActive ? "text-[#4d9fff]/60 animate-pulse" : "text-muted-foreground/35"
+        }`}
+      >
+        {dur}
+      </span>
+
+      {/* GitHub link */}
+      {run.html_url ? (
+        <Link
+          href={run.html_url}
+          target="_blank"
+          className="text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors flex-shrink-0 p-1 rounded hover:bg-white/5"
+        >
+          <ExternalLink className="h-4 w-4" />
+        </Link>
+      ) : (
+        <span className="w-6 flex-shrink-0" />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Cross-workflow signal feed — the hero panel of V2.
+ * Shows every workflow run for the day in reverse-chron order,
+ * with the workflow name as a column so users see the full picture at once.
+ */
+function SignalFeed({
+  runs,
+  workflowMap,
+  slug,
+  isIngesting,
+  isLoading,
+}: {
+  runs: WorkflowRun[];
+  workflowMap: Map<number, string>;
+  slug: string;
+  isIngesting: boolean;
+  isLoading: boolean;
+}) {
+  const sorted = useMemo(
+    () =>
+      [...runs].sort(
+        (a, b) =>
+          new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime()
+      ),
+    [runs]
+  );
+
+  return (
+    <div className="rounded-lg border border-border bg-card flex flex-col">
+      {/* Feed header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-normal text-muted-foreground">
+            Signal Feed
+          </span>
+          <span className="text-[10px] text-muted-foreground/30 font-mono">—</span>
+          <span className="text-xs text-muted-foreground/40">
+            {isLoading ? "…" : `${runs.length} events`}
+          </span>
+        </div>
+        {isIngesting ? (
+          <div className="flex items-center gap-1.5">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#00e5a0] animate-pulse" />
+            <span className="text-xs text-[#00e5a0]/70">ingesting</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#4d9fff]/40" />
+            <span className="text-xs text-muted-foreground/40">live</span>
+          </div>
+        )}
+      </div>
+
+      {/* Column labels */}
+      <div className="flex items-center gap-3 px-4 py-1.5 border-b border-white/[0.035] flex-shrink-0">
+        <span className="text-xs text-muted-foreground/40 w-11 flex-shrink-0">time</span>
+        <span className="text-xs text-muted-foreground/40 w-10 flex-shrink-0">type</span>
+        <span className="text-xs text-muted-foreground/40 w-64 flex-shrink-0">workflow</span>
+        <span className="text-xs text-muted-foreground/40 flex-1">branch</span>
+        <span className="text-xs text-muted-foreground/40 w-14 flex-shrink-0 text-right">trigger</span>
+        <span className="text-xs text-muted-foreground/40 w-20 flex-shrink-0 text-right">duration</span>
+        <span className="w-6 flex-shrink-0" />
+      </div>
+
+      {/* Feed body — three distinct states so overflow never shows on empty/loading */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16 px-4">
+          <div className="flex items-center gap-2">
+            <div className="h-3.5 w-3.5 rounded-full border-2 border-[#4d9fff]/30 border-t-[#4d9fff] animate-spin" />
+            <span className="text-xs text-muted-foreground/40 font-mono">loading runs...</span>
+          </div>
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className="flex items-center justify-center py-16 px-4">
+          <span className="text-sm text-muted-foreground/40 font-mono">— no signal —</span>
+        </div>
+      ) : (
+        <div className="overflow-y-auto max-h-[520px] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
+          {sorted.slice(0, 20).map((run, i) => (
+            <FeedRow
+              key={run.id}
+              run={run}
+              workflowName={workflowMap.get(run.workflow_id) ?? `#${run.workflow_id}`}
+              workflowId={run.workflow_id}
+              slug={slug}
+              index={i}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Single workflow row in the sidebar.
+ * Health dot + name (links to workflow detail) + status label.
+ */
+function SidebarWorkflowRow({
+  workflow,
+  health,
+  slug,
+  runCount,
+}: {
+  workflow: Workflow;
+  health: WorkflowHealth;
+  slug: string;
+  runCount: number;
+}) {
+  const dotClass = getWorkflowDotClass(health);
+  const healthLabel = getWorkflowHealthLabel(health);
+  const textClass = getWorkflowTextClass(health);
+
+  return (
+    <Link
+      href={`/dashboard/${slug}/workflow/${workflow.id}`}
+      className="flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.025] last:border-0 hover:bg-white/[0.02] transition-colors group"
+    >
+      {/* Health dot */}
+      <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${dotClass}`} />
+
+      {/* Workflow name */}
+      <span className="text-sm font-semibold flex-1 truncate group-hover:text-foreground transition-colors text-foreground/80">
+        {workflow.name}
+      </span>
+
+      {/* Run count badge */}
+      {runCount > 0 && (
+        <span className="text-xs text-muted-foreground/40 flex-shrink-0 tabular-nums">
+          {runCount}
+        </span>
+      )}
+
+      {/* Status label */}
+      <span className={`text-sm flex-shrink-0 w-20 text-right ${textClass}`}>
+        {healthLabel}
+      </span>
+    </Link>
+  );
+}
+
+/**
+ * Workflow sidebar — right panel listing all tracked workflows with health status.
+ */
+function WorkflowSidebar({
+  workflows,
+  getHealth,
+  getRunCount,
+  slug,
+}: {
+  workflows: Workflow[];
+  getHealth: (id: number) => WorkflowHealth;
+  getRunCount: (id: number) => number;
+  slug: string;
+}) {
+  const sorted = useMemo(() => {
+    const order: Record<WorkflowHealth, number> = {
+      still_failing: 0,
+      regressed: 1,
+      consistent: 2,
+      improved: 3,
+      idle: 4,
+    };
+    return [...workflows].sort(
+      (a, b) => order[getHealth(a.id)] - order[getHealth(b.id)]
+    );
+  }, [workflows, getHealth]);
+
+  return (
+    <div className="rounded-lg border border-border bg-card flex flex-col">
+      {/* Sidebar header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+        <span className="text-sm font-normal text-muted-foreground">
+          Workflows
+        </span>
+        <span className="text-sm text-muted-foreground/60">
+          {workflows.length} tracked
+        </span>
+      </div>
+
+      {/* Workflow rows */}
+      <div>
+        {sorted.length === 0 ? (
+          <div className="flex items-center justify-center h-32">
+            <span className="text-xs text-muted-foreground/40 font-mono">no workflows</span>
+          </div>
+        ) : (
+          sorted.slice(0, 20).map((w) => (
+            <SidebarWorkflowRow
+              key={w.id}
+              workflow={w}
+              health={getHealth(w.id)}
+              slug={slug}
+              runCount={getRunCount(w.id)}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Bar area height in px — determines max bar height for the timeline
+const TIMELINE_BAR_HEIGHT = 48;
+
+/**
+ * 24-hour activity timeline — a histogram of runs across the day.
+ * Bars are colored by pass rate: green (≥80%), amber (mixed), red (failing), muted (no runs).
+ * All bars animate up simultaneously on mount using a single useState trigger,
+ * avoiding the per-ref timing issues of individual useEffect timers.
+ */
+function ActivityTimeline({
+  runs,
+  overviewHourData,
+}: {
+  runs: WorkflowRun[];
+  overviewHourData: Array<{ hour: number; passed: number; total: number }>;
+}) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 350);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Rebuild hourStats whenever either data source changes
+  const hourStats: HourStat[] = useMemo(() => {
+    const map = new Map<number, HourStat>();
+    for (let h = 0; h < 24; h++) map.set(h, { hour: h, total: 0, passed: 0, failed: 0 });
+
+    // Prefer the API's pre-computed hourly breakdown
+    if (overviewHourData.length > 0) {
+      overviewHourData.forEach(({ hour, passed, total }) => {
+        if (hour >= 0 && hour < 24) {
+          map.set(hour, { hour, total, passed, failed: total - passed });
+        }
+      });
+    } else {
+      // Fall back to computing from raw runs
+      runs.forEach((r) => {
+        if (!r.run_started_at) return;
+        const hour = new Date(r.run_started_at).getHours();
+        const s = map.get(hour)!;
+        s.total++;
+        if (r.conclusion === "success") s.passed++;
+        if (r.conclusion === "failure") s.failed++;
+      });
+    }
+
+    return Array.from(map.values());
+  }, [runs, overviewHourData]);
+
+  const maxRuns = Math.max(...hourStats.map((s) => s.total), 1);
+
+  return (
+    <div className="rounded-lg border border-border bg-card">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <span className="text-sm font-normal text-muted-foreground">
+          Activity — 24h
+        </span>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground/60">
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-1.5 w-3 rounded-[1px] bg-[#00e5a0]/70" /> pass
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-1.5 w-3 rounded-[1px] bg-amber-500/70" /> mixed
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-1.5 w-3 rounded-[1px] bg-red-500/70" /> fail
+          </span>
+        </div>
+      </div>
+
+      {/* Histogram — bars grow from bottom using px heights driven by mounted state */}
+      <div className="px-4 pt-4 pb-3">
+        <div className="flex items-end gap-px" style={{ height: TIMELINE_BAR_HEIGHT + 14 }}>
+          {hourStats.map((stat) => {
+            const barPx = mounted && stat.total > 0
+              ? Math.max(Math.round((stat.total / maxRuns) * TIMELINE_BAR_HEIGHT), 2)
+              : 0;
+            const barColor =
+              stat.total === 0
+                ? "bg-white/[0.04]"
+                : stat.passed / stat.total >= 0.8
+                ? "bg-[#00e5a0]/70"
+                : stat.passed / stat.total >= 0.4
+                ? "bg-amber-500/70"
+                : "bg-red-500/70";
+
+            return (
+              <div key={stat.hour} className="flex flex-col items-center flex-1" style={{ height: TIMELINE_BAR_HEIGHT + 14 }}>
+                {/* Peak label */}
+                <div className="flex-1 flex flex-col justify-end relative w-full">
+                  <div
+                    className={`w-full rounded-[2px] ${barColor} transition-[height] duration-700 ease-out`}
+                    style={{ height: barPx }}
+                  />
+                </div>
+                {/* Hour label — every 6 hours; always rendered to keep consistent height */}
+                <span className={`text-xs tabular-nums mt-1 leading-none flex-shrink-0 ${stat.hour % 6 === 0 ? "text-muted-foreground/40" : "invisible"}`}>
+                  {String(stat.hour).padStart(2, "0")}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ============================================================================
 // Main Component
 // ============================================================================
 
 /**
- * Dashboard page for a specific repository
- * Displays workflow runs, metrics, and health status for a selected date
- * Supports date selection, authentication, and real-time data fetching
+ * DashboardPage — signal-feed-first repository dashboard.
+ *
+ * Layout:
+ *  ┌ Overview Strip ─────────────────────┬ Activity Timeline ┐
+ *  ├ Signal Feed ────────────────────────┤ Workflow Sidebar ──┤
+ *  └───────────────────────────────────────────────────────────┘
  */
 export default function DashboardPage() {
-  // Extract repository slug from URL params using useParams hook
   const params = useParams();
-  const repoSlug = params.slug as string;
   const router = useRouter();
+  const slug = params.slug as string;
+
   const { data: session, isPending } = useSession();
-  const queryClient = useQueryClient();
-  
-  // Date state management using nuqs for URL synchronization
   const { selectedDate, setSelectedDate } = useDateState();
-  
+
   // ============================================================================
   // Effects
   // ============================================================================
-  
-  // Cache invalidation when date changes - prevents stale comparison data
+
   useEffect(() => {
-    if (selectedDate) {
-      // Clear old comparison queries to prevent stale data
-      queryClient.removeQueries({ queryKey: ['yesterday-workflow-runs', repoSlug] });
-      queryClient.removeQueries({ queryKey: ['comparison-data', repoSlug] });
-      queryClient.removeQueries({ queryKey: ['yesterday-disabled', repoSlug] });
-    }
-  }, [selectedDate, repoSlug, queryClient]);
-  
-  // Authentication guard - redirect to login if not authenticated
-  useEffect(() => {
-    if (!isPending && !session) {
-      router.push('/login');
-    }
+    if (!isPending && !session) router.push("/login");
   }, [session, isPending, router]);
 
   // ============================================================================
-  // Data Fetching (TanStack Query)
+  // Data Fetching
   // ============================================================================
 
-  // Fetch workflow definitions for this repository
-  const { 
-    data: workflows = [], 
-    isLoading: isLoadingWorkflows, 
-    error: workflowsError 
-  } = useRepositoryWorkflows(repoSlug);
+  const { data: workflows = [], isLoading: isLoadingWorkflows } =
+    useRepositoryWorkflows(slug);
 
-  // Fetch workflow runs for the selected date
-  const { 
-    data: workflowRuns = [], 
-    isLoading: isLoadingRuns, 
-    error: runsError 
-  } = useWorkflowRuns(repoSlug, selectedDate);
+  const { data: workflowRuns = [], isLoading: isLoadingRuns } =
+    useWorkflowRuns(slug, selectedDate);
 
-  // Fetch overview metrics for the selected date
-  const { 
-    data: overviewData, 
-    isLoading: isLoadingOverview, 
-    error: overviewError 
-  } = useWorkflowOverview(repoSlug, selectedDate);
+  const { data: overviewData } = useWorkflowOverview(slug, selectedDate);
 
-  // Fetch yesterday's workflow runs for comparison
-  const { 
-    data: yesterdayRuns = [], 
-    isLoading: isLoadingYesterday, 
-    error: yesterdayError 
-  } = useYesterdayWorkflowRuns(repoSlug, selectedDate);
+  const { data: yesterdayRuns = [] } = useYesterdayWorkflowRuns(slug, selectedDate);
 
   // ============================================================================
   // Computed Values
   // ============================================================================
 
-  // Group workflow runs by workflow ID for efficient lookup
-  const groupedWorkflowRuns = useMemo(() => {
-    const grouped = new Map<number, WorkflowRun[]>();
-    
-    workflowRuns.forEach((run) => {
-      const workflowId = run.workflow_id;
-      if (!grouped.has(workflowId)) {
-        grouped.set(workflowId, []);
-      }
-      grouped.get(workflowId)!.push(run);
-    });
+  /** workflowId → name map for the feed */
+  const workflowMap = useMemo(() => {
+    const map = new Map<number, string>();
+    workflows.forEach((w) => map.set(w.id, w.name));
+    return map;
+  }, [workflows]);
 
-    return grouped;
+  /** workflowId → run[] map for run counts and health */
+  const groupedRuns = useMemo(() => {
+    const map = new Map<number, WorkflowRun[]>();
+    workflowRuns.forEach((r) => {
+      const list = map.get(r.workflow_id) ?? [];
+      list.push(r);
+      map.set(r.workflow_id, list);
+    });
+    return map;
   }, [workflowRuns]);
 
-  /**
-   * Get the last run result (success or failure) for a specific workflow
-   * Used for comparing today's results with yesterday's results
-   * @param workflowId - The workflow ID to check
-   * @param runs - Array of workflow runs to search through
-   * @returns 'success', 'failure', or null if no runs found
-   */
-  const getLastRunResult = useCallback((workflowId: number, runs: WorkflowRun[]): 'success' | 'failure' | null => {
-    const workflowRuns = runs.filter(run => run.workflow_id === workflowId);
-    if (workflowRuns.length === 0) return null;
-    
-    // Sort by run_started_at descending and get the most recent
-    const sortedRuns = workflowRuns.sort((a, b) => 
-      new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime()
-    );
-    
-    const lastRun = sortedRuns[0];
-    return lastRun.conclusion === 'success' ? 'success' : 'failure';
-  }, []);
+  /** Get last run result for yesterday comparison */
+  const getLastRunResult = useCallback(
+    (workflowId: number, runs: WorkflowRun[]): "success" | "failure" | null => {
+      const wfRuns = runs.filter((r) => r.workflow_id === workflowId);
+      if (wfRuns.length === 0) return null;
+      const sorted = [...wfRuns].sort(
+        (a, b) =>
+          new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime()
+      );
+      return sorted[0].conclusion === "success" ? "success" : "failure";
+    },
+    []
+  );
 
-  /**
-   * Classify workflow health status by comparing today's runs with yesterday's
-   * Determines if workflow is consistent, improved, regressed, still failing, or has no runs
-   * @param workflowId - The workflow ID to classify
-   * @returns Health status classification
-   */
-  const classifyWorkflowHealth = useCallback((workflowId: number): 'consistent' | 'improved' | 'regressed' | 'still_failing' | 'no_runs_today' => {
-    // Check if there's a currently running workflow from today's runs
-    const currentlyRunning = workflowRuns.find(run => 
-      run.workflow_id === workflowId && 
-      (run.status === 'in_progress' || run.status === 'queued')
-    );
-    
-    const todayRuns = workflowRuns.filter(run => run.workflow_id === workflowId);
-    
-    // If currently running, don't show historical health status
-    if (currentlyRunning) {
-      return todayRuns.length === 0 ? 'no_runs_today' : 'consistent';
-    }
-    
-    if (todayRuns.length === 0) {
-      return 'no_runs_today';
-    }
-    
-    // Check if all runs today were successful
-    const allSuccessfulToday = todayRuns.every(run => run.conclusion === 'success');
-    const allFailedToday = todayRuns.every(run => run.conclusion === 'failure');
-    
-    // Get yesterday's last run result
-    const yesterdayLastResult = getLastRunResult(workflowId, yesterdayRuns);
-    
-    if (allSuccessfulToday) {
-      if (yesterdayLastResult === 'failure') {
-        return 'improved';
-      } else {
-        return 'consistent';
+  /** Classify a workflow's health for the selected date */
+  const classifyWorkflowHealth = useCallback(
+    (
+      workflowId: number
+    ): "consistent" | "improved" | "regressed" | "still_failing" | "no_runs_today" => {
+      const currentlyRunning = workflowRuns.find(
+        (r) =>
+          r.workflow_id === workflowId &&
+          (r.status === "in_progress" || r.status === "queued")
+      );
+      const todayRuns = workflowRuns.filter((r) => r.workflow_id === workflowId);
+
+      if (currentlyRunning) return todayRuns.length === 0 ? "no_runs_today" : "consistent";
+      if (todayRuns.length === 0) return "no_runs_today";
+
+      const allSuccessfulToday = todayRuns.every((r) => r.conclusion === "success");
+      const allFailedToday = todayRuns.every((r) => r.conclusion === "failure");
+      const yesterdayLastResult = getLastRunResult(workflowId, yesterdayRuns);
+
+      if (allSuccessfulToday) {
+        return yesterdayLastResult === "failure" ? "improved" : "consistent";
       }
-    } else if (allFailedToday) {
-      if (yesterdayLastResult === 'success') {
-        return 'regressed';
-      } else {
-        return 'still_failing';
+      if (allFailedToday) {
+        return yesterdayLastResult === "success" ? "regressed" : "still_failing";
       }
-    } else {
-      // Mixed results today
+
+      // Mixed results
       const todayLastResult = getLastRunResult(workflowId, todayRuns);
-      
       if (yesterdayLastResult === null) {
-        const successCount = todayRuns.filter(run => run.conclusion === 'success').length;
-        const failureCount = todayRuns.filter(run => run.conclusion === 'failure').length;
-        return successCount > failureCount ? 'improved' : 'regressed';
+        const s = todayRuns.filter((r) => r.conclusion === "success").length;
+        const f = todayRuns.filter((r) => r.conclusion === "failure").length;
+        return s > f ? "improved" : "regressed";
       }
-      
-      if (yesterdayLastResult === 'failure' && todayLastResult === 'success') {
-        return 'improved';
-      } else if (yesterdayLastResult === 'success' && todayLastResult === 'failure') {
-        return 'regressed';
-      } else {
-        const successCount = todayRuns.filter(run => run.conclusion === 'success').length;
-        const failureCount = todayRuns.filter(run => run.conclusion === 'failure').length;
-        
-        if (yesterdayLastResult === 'success') {
-          return successCount > failureCount ? 'consistent' : 'regressed';
-        } else {
-          return successCount > failureCount ? 'improved' : 'still_failing';
-        }
-      }
-    }
-  }, [workflowRuns, yesterdayRuns, getLastRunResult]);
+      if (yesterdayLastResult === "failure" && todayLastResult === "success") return "improved";
+      if (yesterdayLastResult === "success" && todayLastResult === "failure") return "regressed";
+      const s = todayRuns.filter((r) => r.conclusion === "success").length;
+      const f = todayRuns.filter((r) => r.conclusion === "failure").length;
+      if (yesterdayLastResult === "success") return s > f ? "consistent" : "regressed";
+      return s > f ? "improved" : "still_failing";
+    },
+    [workflowRuns, yesterdayRuns, getLastRunResult]
+  );
 
-  /**
-   * Calculate aggregate health metrics across all workflows
-   * Counts workflows by their health status for display in DailyMetrics
-   */
-  const workflowHealthMetrics = useMemo(() => {
-    let consistentCount = 0;
-    let improvedCount = 0;
-    let regressedCount = 0;
-    let stillFailingCount = 0;
-    let noRunsTodayCount = 0;
-    
-    workflows.forEach(workflow => {
-      const healthStatus = classifyWorkflowHealth(workflow.id);
-      switch (healthStatus) {
-        case 'consistent':
-          consistentCount++;
-          break;
-        case 'improved':
-          improvedCount++;
-          break;
-        case 'regressed':
-          regressedCount++;
-          break;
-        case 'still_failing':
-          stillFailingCount++;
-          break;
-        case 'no_runs_today':
-          noRunsTodayCount++;
-          break;
+  /** getHealth returns the simplified WorkflowHealth for sidebar display */
+  const getHealth = useCallback(
+    (workflowId: number): WorkflowHealth =>
+      mapToWorkflowHealth(classifyWorkflowHealth(workflowId)),
+    [classifyWorkflowHealth]
+  );
+
+  /** getRunCount returns how many runs a workflow had today */
+  const getRunCount = useCallback(
+    (workflowId: number): number => groupedRuns.get(workflowId)?.length ?? 0,
+    [groupedRuns]
+  );
+
+  /** Aggregate health counts across all workflows */
+  const healthCounts = useMemo(() => {
+    let consistent = 0, improved = 0, regressed = 0, stillFailing = 0, idle = 0;
+    workflows.forEach((w) => {
+      switch (classifyWorkflowHealth(w.id)) {
+        case "consistent":    consistent++; break;
+        case "improved":      improved++;   break;
+        case "regressed":     regressed++;  break;
+        case "still_failing": stillFailing++; break;
+        case "no_runs_today": idle++;        break;
       }
     });
-    
-    return {
-      consistentCount,
-      improvedCount,
-      regressedCount,
-      stillFailingCount,
-      noRunsTodayCount
-    };
+    return { consistent, improved, regressed, stillFailing, idle };
   }, [workflows, classifyWorkflowHealth]);
 
-  /**
-   * Separate workflows into idle and non-idle groups
-   * Idle workflows have no runs for the selected date
-   */
-  const { idleWorkflows, activeWorkflows } = useMemo(() => {
-    const idle: typeof workflows = [];
-    const active: typeof workflows = [];
-    
-    workflows.forEach(workflow => {
-      const runs = groupedWorkflowRuns.get(workflow.id) || [];
-      if (runs.length === 0) {
-        idle.push(workflow);
-      } else {
-        active.push(workflow);
-      }
-    });
-    
-    return {
-      idleWorkflows: idle,
-      activeWorkflows: active
-    };
-  }, [workflows, groupedWorkflowRuns]);
+  const repoHealth = useMemo(
+    () =>
+      computeRepoHealth(
+        healthCounts.consistent,
+        healthCounts.improved,
+        healthCounts.regressed,
+        healthCounts.stillFailing,
+        healthCounts.idle
+      ),
+    [healthCounts]
+  );
+
+  const isIngesting = useMemo(
+    () =>
+      workflowRuns.some(
+        (r) => r.status === "in_progress" || r.status === "queued"
+      ),
+    [workflowRuns]
+  );
+
+  // Derived stats for the strip
+  const passedRuns    = overviewData?.passedRuns    ?? 0;
+  const failedRuns    = overviewData?.failedRuns    ?? 0;
+  const completedRuns = overviewData?.completedRuns ?? 0;
+  const successRate =
+    completedRuns > 0 ? Math.round((passedRuns / completedRuns) * 100) : 0;
+  const avgRuntimeSec =
+    completedRuns > 0
+      ? Math.floor((overviewData?.totalRuntime ?? 0) / completedRuns)
+      : 0;
+
+  const handleDateChange = useCallback(
+    (date: Date | undefined) => {
+      if (!date) return;
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      setSelectedDate(`${y}-${m}-${d}`);
+    },
+    [setSelectedDate]
+  );
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const healthConfig = getRepoHealthConfig(repoHealth);
 
   // ============================================================================
-  // Render Logic - Early Returns
+  // Render Logic — Early Returns
   // ============================================================================
 
-  // Authentication loading state - show spinner while checking session
-  if (isPending) {
+  if (isPending || isLoadingWorkflows) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading...</p>
-            </div>
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm font-mono">Loading...</p>
         </div>
       </div>
     );
   }
 
-  // Error state - show error message if any data fetch failed
-  if (workflowsError || runsError || overviewError || yesterdayError) {
-    const error = workflowsError || runsError || overviewError || yesterdayError;
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="mb-8">
-            <p className="text-muted-foreground text-red-600">
-              Error: {error?.message || 'Failed to load data'}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Initial data loading state - show spinner while fetching workflows and yesterday's data
-  if (isLoadingWorkflows || isLoadingYesterday) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading workflows...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Secondary loading state - show spinner while fetching runs and overview data
-  if (isLoadingRuns || isLoadingOverview) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">
-                {isLoadingRuns ? 'Loading workflow runs...' : 'Loading overview...'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!session) return null;
 
   // ============================================================================
   // Main Render
@@ -351,162 +784,138 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-        {/* GitHub Actions Status Banner - Shows if GitHub Actions is experiencing issues */}
-        <GitHubStatusBanner className="mb-6" />
-        
-        {/* Header Section - Date controls */}
-        <div className="flex items-center justify-end">
-          {/* Date controls - Today button, date picker, and refresh */}
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+
+        <GitHubStatusBanner className="mb-2" />
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Back to repositories */}
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+              className="flex-shrink-0 h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <Link href="/dashboard">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+
+            {/* Repo slug */}
+            <h1 className="text-xl sm:text-2xl font-bold truncate">Workflows</h1>
+
+            {/* Overall repo health pill */}
+            <div
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono uppercase tracking-widest flex-shrink-0 ${healthConfig.pillClass}`}
+            >
+              <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${healthConfig.dotClass}`} />
+              {healthConfig.label}
+            </div>
+          </div>
+
+          {/* Controls */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Today button - Quick jump to today's date */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setSelectedDate(new Date().toISOString().slice(0, 10));
-              }}
-              className={`flex-shrink-0 ${selectedDate === new Date().toISOString().slice(0, 10) ? "bg-primary text-primary-foreground" : ""}`}
+              onClick={() => setSelectedDate(todayStr)}
+              className={selectedDate === todayStr ? "bg-primary text-primary-foreground" : ""}
             >
               Today
             </Button>
-            {/* Desktop date picker - Calendar widget for date selection */}
             <div className="hidden sm:block">
-              <DatePicker
-                date={new Date(selectedDate)}
-                onDateChange={(date) => {
-                  if (date) {
-                    // Use local date formatting to avoid timezone issues
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    setSelectedDate(`${year}-${month}-${day}`);
-                  }
-                }}
-              />
+              <DatePicker date={new Date(selectedDate)} onDateChange={handleDateChange} />
             </div>
-            {/* Mobile date picker - Icon only button for small screens */}
-            <div className="sm:hidden">
-              <DatePicker
-                date={new Date(selectedDate)}
-                onDateChange={(date) => {
-                  if (date) {
-                    // Use local date formatting to avoid timezone issues
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    setSelectedDate(`${year}-${month}-${day}`);
-                  }
-                }}
-                iconOnly
-              />
-            </div>
-            {/* Refresh button - Reloads the page to fetch fresh data */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                // TanStack Query will automatically refetch when we invalidate
-                window.location.reload();
-              }}
-              aria-label="Refresh data"
-              className="flex-shrink-0"
+              onClick={() => window.location.reload()}
+              aria-label="Refresh"
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Daily Metrics Section - Shows aggregated statistics for the selected date */}
-        {overviewData && (
-          <DailyMetrics
-            passedRuns={overviewData.passedRuns || 0}
-            failedRuns={overviewData.failedRuns || 0}
-            completedRuns={overviewData.completedRuns || 0}
-            totalRuntime={overviewData.totalRuntime || 0}
-            didntRunCount={overviewData.didntRunCount || 0}
-            activeWorkflows={workflows.length}
-            consistentCount={workflowHealthMetrics.consistentCount}
-            improvedCount={workflowHealthMetrics.improvedCount}
-            regressedCount={workflowHealthMetrics.regressedCount}
-            stillFailingCount={workflowHealthMetrics.stillFailingCount}
-            runsByHour={overviewData.runsByHour || []}
-          />
-        )}
-
-        {/* Workflows Grid Section - Displays individual workflow cards */}
-        <div className="space-y-8">
-          {workflows.length === 0 ? (
-            // Empty state - No workflows found
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No workflows found for this repository.</p>
+        {/* ── Stat Strip + Activity Timeline (same row) ── */}
+        <div className="flex gap-5 items-stretch">
+          {/* Stat strip — compact fixed stats */}
+          <div className="rounded-lg border border-border bg-card flex flex-col flex-shrink-0">
+            {/* Header row — mirrors ActivityTimeline's header */}
+            <div className="flex items-center px-4 py-3 border-b border-border flex-shrink-0">
+              <span className="text-sm font-normal text-muted-foreground">
+                Overview
+              </span>
             </div>
-          ) : (
-            <>
-              {/* Active Workflows Section - Workflows with runs for the selected date */}
-              {activeWorkflows.length > 0 && (
-                <div className="space-y-4">
-                  {/* Section header with active workflow count */}
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-5 w-5" />
-                    <h2 className="text-xl font-semibold">Active Workflows</h2>
-                    <Badge variant="secondary" className="ml-2">
-                      {activeWorkflows.length}
-                    </Badge>
-                  </div>
+            {/* Stat boxes */}
+            <div className="flex overflow-x-auto flex-1 items-stretch">
+            <StatBox
+              label="Pass rate"
+              value={completedRuns > 0 ? `${successRate}%` : "—"}
+              valueClass={
+                successRate >= 80
+                  ? "text-[#00e5a0]"
+                  : successRate >= 50
+                  ? "text-amber-400"
+                  : completedRuns > 0
+                  ? "text-red-500"
+                  : "text-muted-foreground/50"
+              }
+            />
+            <StatBox label="Passed" value={passedRuns} valueClass="text-[#00e5a0]" />
+            <StatBox label="Failed" value={failedRuns} valueClass={failedRuns > 0 ? "text-red-500" : "text-muted-foreground/50"} />
+            <StatBox label="Total runs" value={workflowRuns.length} />
+            <StatBox
+              label="Avg runtime"
+              value={avgRuntimeSec > 0 ? formatDuration(avgRuntimeSec) : "—"}
+              valueClass="text-[#c084fc]"
+            />
+            <StatBox
+              label="Workflows"
+              value={workflows.length}
+              valueClass="text-[#4d9fff]"
+            />
+            <StatBox
+              label="Failing"
+              value={healthCounts.stillFailing + healthCounts.regressed}
+              valueClass={
+                healthCounts.stillFailing + healthCounts.regressed > 0
+                  ? "text-red-500"
+                  : "text-muted-foreground/50"
+              }
+              border={false}
+            />
+            </div>
+          </div>
 
-                  {/* Active workflow cards grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {activeWorkflows.map((workflow) => {
-                      // Get all runs for this workflow from the grouped map
-                      const runs = groupedWorkflowRuns.get(workflow.id) || [];
-                      
-                      // Use the first run as the primary display, but include all runs data
-                      const firstRun = runs[0];
-                      const healthStatus = classifyWorkflowHealth(workflow.id);
-                      
-                      // Enhance the first run with metadata for the WorkflowCard component
-                      const enhancedRun = {
-                        ...firstRun,
-                        run_count: runs.length,
-                        all_runs: runs
-                      };
-                      
-                      return (
-                        <WorkflowCard
-                          key={workflow.id}
-                          run={enhancedRun}
-                          healthStatus={healthStatus}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Idle Workflows Section - Workflows with no runs for the selected date */}
-              {idleWorkflows.length > 0 && (
-                <div className="space-y-4">
-                  {/* Section header with idle workflow count */}
-                  <div className="flex items-center gap-2">
-                    <MoonStar className="h-5 w-5" />
-                    <h2 className="text-xl font-semibold">Idle Workflows</h2>
-                    <Badge variant="secondary" className="ml-2">
-                      {idleWorkflows.length}
-                    </Badge>
-                  </div>
-
-                  {/* Idle workflow cards grid - Responsive layout (1 col mobile, 2 cols tablet, 3 cols desktop) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {idleWorkflows.map((workflow) => (
-                      <IdleWorkflowCard key={workflow.id} workflow={workflow} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+          {/* Activity timeline — fills remaining horizontal space */}
+          <div className="flex-1 min-w-0">
+            <ActivityTimeline
+              runs={workflowRuns}
+              overviewHourData={overviewData?.runsByHour ?? []}
+            />
+          </div>
         </div>
+
+        {/* ── Main Grid: Feed (left) + Sidebar (right) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
+          <SignalFeed
+            runs={workflowRuns}
+            workflowMap={workflowMap}
+            slug={slug}
+            isIngesting={isIngesting}
+            isLoading={isLoadingRuns}
+          />
+          <WorkflowSidebar
+            workflows={workflows}
+            getHealth={getHealth}
+            getRunCount={getRunCount}
+            slug={slug}
+          />
+        </div>
+
       </div>
     </div>
   );

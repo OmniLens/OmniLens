@@ -17,6 +17,7 @@ export const dynamic = 'force-dynamic';
  */
 const repositorySchema = z.object({
   slug: z.string(),
+  repoPath: z.string(),
   displayName: z.string(),
   avatarUrl: z.string().nullable(),
   htmlUrl: z.string().optional()
@@ -87,6 +88,7 @@ export const GET = withAuth(async (request: NextRequest, _context, authData) => 
     // Convert database repository format to API response format
     const allRepos = userAddedRepos.map((repo: Repository) => ({
       slug: repo.slug,
+      repoPath: repo.repoPath,
       displayName: repo.displayName,
       avatarUrl: repo.avatarUrl || null,
       htmlUrl: repo.htmlUrl || null

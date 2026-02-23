@@ -1,5 +1,5 @@
 // External library imports
-import { CheckCircle, XCircle, Loader, Workflow } from "lucide-react";
+import { Loader, Play, Workflow } from "lucide-react";
 
 // ============================================================================
 // Type Definitions
@@ -17,76 +17,95 @@ interface CompactMetricsProps {
 }
 
 // ============================================================================
+// Helper - Progress bar class and percentage color from success rate
+// ============================================================================
+
+function getRateStyles(successRate: number): {
+  barClass: string;
+  barStyle: React.CSSProperties;
+  percentClass: string;
+  percentStyle: React.CSSProperties;
+} {
+  if (successRate >= 90) {
+    return {
+      barClass: 'full',
+      barStyle: { background: 'linear-gradient(90deg, #00e5a0, #00ff99)' },
+      percentClass: 'high',
+      percentStyle: { color: '#00e5a0', fontWeight: 600 },
+    };
+  }
+  if (successRate >= 60) {
+    return {
+      barClass: 'med',
+      barStyle: { background: 'linear-gradient(90deg, #f59e0b, #fcd34d)' },
+      percentClass: '',
+      percentStyle: { color: '#f59e0b', fontWeight: 600 },
+    };
+  }
+  return {
+    barClass: 'low',
+    barStyle: { background: 'linear-gradient(90deg, #ef4444, #f87171)' },
+    percentClass: '',
+    percentStyle: { color: '#ef4444', fontWeight: 600 },
+  };
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
 /**
  * CompactMetricsOverview component
- * Displays a compact overview of repository workflow metrics
- * Shows success rate progress bar and run counts
- * Used in repository cards for quick metric visualization
+ * Displays a compact overview of repository workflow metrics in mockup style
+ * Shows success rate progress bar with coloured percentage and workflow/runs footer
  */
 export default function CompactMetricsOverview({
   totalWorkflows,
   passedRuns,
   failedRuns,
   inProgressRuns,
-  successRate
+  successRate,
 }: CompactMetricsProps) {
+  const totalRuns = passedRuns + failedRuns + inProgressRuns;
+  const { barStyle, percentClass, percentStyle } = getRateStyles(successRate);
+
   return (
     <div className="space-y-3">
-      {/* Success Rate Section - Progress bar with percentage */}
+      {/* Daily Success Rate - Mockup style row + progress bar */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Daily Success Rate</span>
-          <span className="text-xs font-medium">{successRate}%</span>
+        <div className="drc-rate-row flex items-center justify-between text-sm text-muted-foreground">
+          <span>Daily Success Rate</span>
+          <span
+            className={`drc-rate-val ${percentClass}`}
+            style={percentStyle}
+          >
+            {successRate}%
+          </span>
         </div>
-        {/* Progress bar with color coding based on success rate */}
-        <div className="w-full bg-muted rounded-full h-1.5">
-          <div 
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              successRate >= 80 ? 'bg-green-500' : 
-              successRate >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-            }`}
-            style={{ width: `${successRate}%` }}
+        <div className="drc-bar-wrap h-[3px] overflow-hidden rounded-[2px] bg-[rgba(255,255,255,0.05)]">
+          <div
+            className="drc-bar h-full rounded-[2px] transition-all duration-300"
+            style={{ width: `${successRate}%`, ...barStyle }}
           />
         </div>
       </div>
 
-      {/* Metrics Row - Run counts */}
-      <div className="flex items-center gap-2 text-xs">
-        {/* Run Counts - Total workflows, passed, failed, in progress */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
-          {/* Total Workflows */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <Workflow className="h-3 w-3 text-blue-500" />
-            <span className="text-muted-foreground"> {totalWorkflows}</span>
-          </div>
-          
-          {/* Passed Runs - Only shown if > 0 */}
-          {passedRuns > 0 && (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <CheckCircle className="h-3 w-3 text-green-500" />
-              <span className="text-green-500">{passedRuns}</span>
-            </div>
-          )}
-          
-          {/* Failed Runs - Only shown if > 0 */}
-          {failedRuns > 0 && (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <XCircle className="h-3 w-3 text-red-500" />
-              <span className="text-red-500">{failedRuns}</span>
-            </div>
-          )}
-          
-          {/* In Progress Runs - Only shown if > 0 */}
-          {inProgressRuns > 0 && (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Loader className="h-3 w-3 text-blue-500 animate-spin" />
-              <span className="text-blue-500">{inProgressRuns}</span>
-            </div>
-          )}
-        </div>
+      {/* Footer - X workflows + X runs + optional running badge */}
+      <div className="drc-footer flex items-center gap-2 text-sm text-muted-foreground">
+        <span className="drc-meta-item flex items-center gap-1.5">
+          <Workflow className="h-4 w-4 flex-shrink-0" />
+          {totalWorkflows} workflows
+        </span>
+        <span className="drc-meta-item flex items-center gap-1.5">
+          <Play className="h-4 w-4 flex-shrink-0" />
+          {totalRuns} runs
+        </span>
+        {inProgressRuns > 0 && (
+          <span className="drc-meta-item flex items-center gap-1.5 text-blue-400">
+            <Loader className="h-4 w-4 flex-shrink-0 animate-spin" />
+            {inProgressRuns} running
+          </span>
+        )}
       </div>
     </div>
   );

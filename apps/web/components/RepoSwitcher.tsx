@@ -4,7 +4,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Workflow } from "lucide-react";
 
 // Internal component imports
 import {
@@ -18,14 +18,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 // Utility imports
-import { formatRepoDisplayName } from "@/lib/utils";
+import { formatRepoDisplayName, getAvatarLetter, getAvatarColor } from "@/lib/utils";
 
 // Hook imports
 import { useRepositories } from "@/lib/hooks/use-repositories";
+import { useRepositoryWorkflows, useWorkflowRuns } from "@/lib/hooks/use-repository-dashboard";
 
 // ============================================================================
 // Type Definitions
@@ -38,6 +40,11 @@ interface RepoSwitcherProps {
 interface RepoSwitcherMenuItemProps {
   currentRepoSlug: string;
   currentPageType: string;
+}
+
+interface WorkflowSwitcherMenuItemProps {
+  currentWorkflowId: number;
+  repoSlug: string;
 }
 
 // ============================================================================
@@ -275,22 +282,12 @@ export function RepoSwitcherMenuItem({ currentRepoSlug, currentPageType }: RepoS
     </>
   ) : (
     <>
-      {currentRepo?.avatarUrl ? (
-        <Image
-          src={currentRepo.avatarUrl}
-          alt={currentRepo.displayName}
-          width={16}
-          height={16}
-          className="h-4 w-4 rounded object-cover flex-shrink-0"
-          unoptimized
-        />
-      ) : (
-        <div className="flex aspect-square size-4 items-center justify-center rounded bg-sidebar-primary text-sidebar-primary-foreground flex-shrink-0">
-          <span className="text-[10px] font-medium">
-            {currentRepo?.displayName?.[0]?.toUpperCase() || 'R'}
-          </span>
-        </div>
-      )}
+      <div
+        className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-[9px] font-bold text-black"
+        style={{ background: getAvatarColor(currentRepo?.repoPath || currentRepo?.displayName || currentRepoSlug) }}
+      >
+        {getAvatarLetter(currentRepo?.repoPath || currentRepo?.displayName || currentRepoSlug)}
+      </div>
       <span className="truncate">
         {currentRepo ? formatRepoDisplayName(currentRepo.displayName) : 'Repository'}
       </span>
@@ -331,22 +328,12 @@ export function RepoSwitcherMenuItem({ currentRepoSlug, currentPageType }: RepoS
                         className="cursor-pointer"
                       >
                         <div className="flex items-center gap-2 w-full">
-                          {repo.avatarUrl ? (
-                            <Image
-                              src={repo.avatarUrl}
-                              alt={repo.displayName}
-                              width={20}
-                              height={20}
-                              className="h-5 w-5 rounded object-cover flex-shrink-0"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="flex aspect-square size-5 items-center justify-center rounded bg-sidebar-primary text-sidebar-primary-foreground flex-shrink-0">
-                              <span className="text-[10px] font-medium">
-                                {repo.displayName[0]?.toUpperCase() || 'R'}
-                              </span>
-                            </div>
-                          )}
+                          <div
+                            className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-[10px] font-bold text-black"
+                            style={{ background: getAvatarColor(repo.repoPath || repo.displayName) }}
+                          >
+                            {getAvatarLetter(repo.repoPath || repo.displayName)}
+                          </div>
                           <span className="truncate flex-1">
                             {formatRepoDisplayName(repo.displayName)}
                           </span>
@@ -364,6 +351,132 @@ export function RepoSwitcherMenuItem({ currentRepoSlug, currentPageType }: RepoS
           tooltip="Repository"
           disabled={isLoading}
         >
+          {buttonContent}
+        </SidebarMenuButton>
+      )}
+    </SidebarMenuItem>
+  );
+}
+
+/**
+ * WorkflowSwitcherMenuItem component
+ * Sidebar menu item for switching between workflows within the current repository.
+ * Shows the active workflow name and a dropdown of other workflows in the same repo.
+ * Only navigates within the current repo — repo switching is not available here.
+ */
+export function WorkflowSwitcherMenuItem({ currentWorkflowId, repoSlug }: WorkflowSwitcherMenuItemProps) {
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+  const { data: workflows = [], isLoading } = useRepositoryWorkflows(repoSlug);
+  const { state } = useSidebar();
+
+  // ============================================================================
+  // Computed Values
+  // ============================================================================
+
+  // Fetch today's runs to classify which workflows are active vs idle
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: todayRuns = [] } = useWorkflowRuns(repoSlug, today);
+
+  const currentWorkflow = workflows.find((w) => w.id === currentWorkflowId);
+  const hasMultipleWorkflows = workflows.length > 1;
+
+  // Build a set of workflow IDs that had at least one run today
+  const workflowIdsWithRunsToday = new Set(todayRuns.map((r) => r.workflow_id));
+
+  // Workflows that ran today = "active" (green dot), sorted alphabetically, excluding current
+  const activeWorkflows = workflows
+    .filter((w) => w.id !== currentWorkflowId && workflowIdsWithRunsToday.has(w.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Workflows with no runs today = "idle" (grey dot), sorted alphabetically, excluding current
+  const idleWorkflows = workflows
+    .filter((w) => w.id !== currentWorkflowId && !workflowIdsWithRunsToday.has(w.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
+
+  const handleWorkflowSelect = (workflowId: number) => {
+    router.push(`/dashboard/${repoSlug}/workflow/${workflowId}`);
+    setIsOpen(false);
+  };
+
+  // ============================================================================
+  // Main Render
+  // ============================================================================
+
+  const buttonContent = isLoading ? (
+    <>
+      <div className="flex aspect-square size-4 items-center justify-center">
+        <div className="h-3 w-3 animate-spin rounded-full border-2 border-sidebar-foreground/30 border-t-sidebar-foreground" />
+      </div>
+      <span>Loading...</span>
+    </>
+  ) : (
+    <>
+      <Workflow className="size-4 flex-shrink-0" />
+      <span className="truncate">
+        {currentWorkflow?.name ?? `Workflow #${currentWorkflowId}`}
+      </span>
+      {hasMultipleWorkflows && <ChevronDown className="ml-auto size-4" />}
+    </>
+  );
+
+  return (
+    <SidebarMenuItem>
+      {hasMultipleWorkflows ? (
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              isActive
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              tooltip="Switch Workflow"
+              disabled={isLoading}
+            >
+              {buttonContent}
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className={state === "collapsed" ? "w-56 min-w-56 rounded-lg" : "w-[--radix-dropdown-menu-trigger-width] min-w-44 rounded-lg"}
+            align="start"
+            side="right"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="text-xs text-sidebar-foreground/70">
+              Workflows
+            </DropdownMenuLabel>
+            {/* Active workflows — green dot, sorted alphabetically */}
+            {activeWorkflows.map((w) => (
+              <DropdownMenuItem
+                key={w.id}
+                onClick={() => handleWorkflowSelect(w.id)}
+                className="cursor-pointer"
+              >
+                <div className="h-1.5 w-1.5 rounded-full bg-[#00e5a0] flex-shrink-0 mr-2" />
+                <span className="truncate">{w.name}</span>
+              </DropdownMenuItem>
+            ))}
+            {/* Separator between active and idle groups when both exist */}
+            {activeWorkflows.length > 0 && idleWorkflows.length > 0 && (
+              <DropdownMenuSeparator />
+            )}
+            {/* Idle workflows (no runs today) — grey dot, sorted alphabetically */}
+            {idleWorkflows.map((w) => (
+              <DropdownMenuItem
+                key={w.id}
+                onClick={() => handleWorkflowSelect(w.id)}
+                className="cursor-pointer"
+              >
+                <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50 flex-shrink-0 mr-2" />
+                <span className="truncate">{w.name}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <SidebarMenuButton isActive tooltip="Workflow" disabled={isLoading}>
           {buttonContent}
         </SidebarMenuButton>
       )}

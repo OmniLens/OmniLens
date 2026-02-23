@@ -1,15 +1,13 @@
 // External library imports
-import Image from "next/image";
-import { AlertCircle, Github, Trash2 } from "lucide-react";
+import { AlertCircle, Trash2 } from "lucide-react";
 
 // Internal component imports
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import CompactMetricsOverview from "@/components/CompactMetricsOverview";
 
 // Utility imports
-import { formatRepoDisplayName } from "@/lib/utils";
+import { formatRepoDisplayName, getAvatarLetter, getAvatarColor } from "@/lib/utils";
 
 // ============================================================================
 // Type Definitions
@@ -35,7 +33,7 @@ export interface RepositoryCardProps {
     inProgressRuns: number;
     successRate: number;
   } | null;
-  isUserRepo?: boolean;
+  /** Optional callback when delete button is clicked - opens confirmation modal */
   onRequestDelete?: () => void;
 }
 
@@ -45,111 +43,80 @@ export interface RepositoryCardProps {
 
 /**
  * RepositoryCard component
- * Displays a single repository card with metrics, actions, and navigation
- * Supports error states, workflow metrics, and delete functionality
+ * Displays a single repository card with metrics in mockup style
+ * Supports error states and workflow metrics
  */
 export default function RepositoryCard({
-  repoSlug: _,
+  repoSlug: _repoSlug,
   repoPath,
   displayName,
-  avatarUrl,
-  htmlUrl,
   visibility,
   hasError,
   errorMessage,
   hasWorkflows,
   metrics,
-  isUserRepo = false,
-  onRequestDelete
+  onRequestDelete,
 }: RepositoryCardProps) {
-  // Extract owner name from repository path for avatar alt text
-  const owner = (repoPath || displayName || '').split('/')[0] || '';
-  
+  const avatarLetter = getAvatarLetter(repoPath || displayName);
+  const avatarColor = getAvatarColor(repoPath || displayName);
+
   // Card content JSX - reused for both error and normal states
   const cardContent = (
-    <Card className={`relative h-full flex flex-col transition-all duration-200 ${
-      hasError 
-        ? 'border-red-500 bg-card hover:border-red-400' 
+    <Card className={`repository-card relative h-full flex flex-col transition-all duration-200 ${
+      hasError
+        ? 'border-red-500 bg-card hover:border-red-400'
         : 'border-border bg-card hover:border-border/80 hover:shadow-md'
     }`}>
-      {/* Card Header - Contains repository name, avatar, visibility badge, and action buttons */}
+      {/* Card Header - Avatar, name, public badge, delete button (mockup style) */}
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            {/* Avatar - Owner's GitHub avatar */}
-            {avatarUrl && (
-              <Image
-                src={avatarUrl}
-                alt={`${owner} avatar`}
-                className="h-6 w-6 rounded-full border border-border flex-shrink-0"
-                width={24}
-                height={24}
-                unoptimized
-                priority
-              />
-            )}
-            {/* Repository name and visibility badge */}
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <CardTitle className="text-base sm:text-lg font-semibold truncate">
-                {formatRepoDisplayName(displayName)}
-              </CardTitle>
-              {visibility && (
-                <Badge variant={visibility === 'private' ? 'secondary' : 'outline'} className="text-xs flex-shrink-0">
-                  {visibility === 'private' ? '🔒 Private' : '🌐 Public'}
-                </Badge>
-              )}
-            </div>
+        <div className="drc-head flex items-center gap-2">
+          {/* Avatar - Colored square with letter (no GitHub image) */}
+          <div
+            className="drc-avatar flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-xs font-bold text-black"
+            style={{ background: avatarColor }}
+          >
+            {avatarLetter}
           </div>
-          {/* Action buttons - Error indicator, GitHub link, and delete button */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            {/* Error indicator */}
-            {hasError && <AlertCircle className="h-5 w-5 text-red-500" />}
-            {/* GitHub link button */}
+          {/* Repository name - aligns with website typography */}
+          <span className="drc-name min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+            {repoPath || formatRepoDisplayName(displayName)}
+          </span>
+          {/* Public/Private badge - aligns with website typography */}
+          {visibility && (
+            <span className="drc-pub-badge flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[rgba(77,159,255,0.15)] bg-[rgba(77,159,255,0.08)] px-2 py-0.5 text-xs text-[#4d9fff]">
+              <span className="drc-pub-dot h-1 w-1 rounded-full bg-[#4d9fff]" />
+              {visibility === 'private' ? 'Private' : 'Public'}
+            </span>
+          )}
+          {/* Error indicator */}
+          {hasError && <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />}
+          {/* Delete button - opens confirmation modal to remove repo from dashboard */}
+          {onRequestDelete && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 transition-transform duration-200 hover:scale-110 active:scale-95"
+              className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              aria-label="Remove repository from dashboard"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                window.open(htmlUrl || `https://github.com/${repoPath}`, '_blank', 'noopener,noreferrer');
+                onRequestDelete();
               }}
-              title="View on GitHub"
-              aria-label="View on GitHub"
             >
-              <Github className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
             </Button>
-            {/* Delete button - Only shown for user repositories */}
-            {isUserRepo && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 transition-transform duration-200 hover:scale-110 active:scale-95"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRequestDelete?.();
-                }}
-                title="Remove repository"
-                aria-label="Remove repository"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+          )}
         </div>
       </CardHeader>
-      {/* Card Content - Shows error message, metrics, or empty state */}
+      {/* Card Content - Error message, metrics, or empty state */}
       <CardContent className="flex-1 flex flex-col">
         {hasError ? (
-          // Error state - Display error message
           <div className="space-y-2">
             <p className="text-sm text-red-600">
               {errorMessage || "Unable to access repository"}
             </p>
           </div>
         ) : hasWorkflows && metrics ? (
-          // Metrics state - Show workflow metrics overview
           <CompactMetricsOverview
             totalWorkflows={metrics.totalWorkflows}
             passedRuns={metrics.passedRuns}
@@ -158,7 +125,6 @@ export default function RepositoryCard({
             successRate={metrics.successRate}
           />
         ) : (
-          // Empty state - No workflows found (matching height of metrics view)
           <div className="space-y-3 flex flex-col justify-center flex-1">
             <p className="text-sm text-muted-foreground">
               No workflows found
@@ -169,7 +135,6 @@ export default function RepositoryCard({
     </Card>
   );
 
-  // Error state - show card with reduced opacity
   if (hasError) {
     return (
       <div className="opacity-75 h-full">
@@ -178,11 +143,9 @@ export default function RepositoryCard({
     );
   }
 
-  // Normal state - card display
   return (
     <div className="block h-full transition-all duration-200 hover:scale-[1.02]">
       {cardContent}
     </div>
   );
 }
-

@@ -8,11 +8,14 @@ import { useRouter } from "next/navigation";
 import { Github } from "lucide-react";
 
 // Internal component imports
-import { Button } from "@/components/ui/button";
+import { LandingNav } from "@/components/landing";
 import { VersionIndicator } from "@/components/VersionIndicator";
 
 // Hook imports
 import { signIn, useSession } from "@/lib/auth-client";
+
+// Styles - landing aesthetic
+import "../landing.css";
 
 // ============================================================================
 // Main Component
@@ -21,7 +24,7 @@ import { signIn, useSession } from "@/lib/auth-client";
 /**
  * LoginPage component
  * Authentication page for GitHub OAuth sign-in
- * Includes animated background, logo, and GitHub sign-in button
+ * Matches landing page aesthetic with grid overlay, hero layout, and consistent styling
  * Automatically redirects authenticated users to dashboard
  */
 export default function LoginPage() {
@@ -36,7 +39,7 @@ export default function LoginPage() {
   // Authentication redirect - send authenticated users to dashboard
   React.useEffect(() => {
     if (session) {
-      router.push('/dashboard');
+      router.push("/dashboard");
     }
   }, [session, router]);
 
@@ -67,70 +70,78 @@ export default function LoginPage() {
   // ============================================================================
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative">
+    <div className="landing-root login-page min-h-screen flex flex-col relative">
+      <LandingNav hideAuthButtons />
 
-      {/* Main Content Section - Centered login form */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
-        <div className="w-full max-w-md flex flex-col items-center space-y-8">
-          {/* Logo - OmniLens brand image */}
-          <div className="flex justify-center">
-            <Link href="/" className="h-40 w-40 cursor-pointer transition-transform duration-200 hover:scale-105">
-              <Image
-                src="/omnilens.jpeg"
-                alt="OmniLens"
-                width={1000}
-                height={1000}
-                quality={100}
-                className="w-full h-full object-cover rounded-3xl shadow-lg"
-                priority
-              />
-            </Link>
-          </div>
+      {/* Hero-style login section */}
+      <section className="hero login-hero flex-1">
+        <div className="hero-glow" />
 
-          {/* App Name Section - Title */}
-          <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-white">
-              OmniLens
-            </h1>
-          </div>
-
-          {/* GitHub Sign-In Button - Primary authentication action */}
-          <Button
-            onClick={handleGitHubSignIn}
-            variant="outline"
-            disabled={isLoading}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <Link
+            href="/"
+            className="h-32 w-32 cursor-pointer transition-transform duration-200 hover:scale-105 block"
           >
-            <Github className="h-5 w-5" />
-            {isLoading ? "Signing in..." : "Continue with GitHub"}
-          </Button>
+            <Image
+              src="/omnilens_optimized.jpeg"
+              alt="OmniLens"
+              width={256}
+              height={256}
+              quality={100}
+              className="w-full h-full object-cover rounded-2xl shadow-lg"
+              priority
+            />
+          </Link>
         </div>
-      </div>
-      
 
-      {/* Footer Section - Legal links and copyright */}
-      <div className="p-4 relative z-10">
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center w-full max-w-md mx-auto space-y-2">
-          {/* Terms and Privacy link */}
-          <p className="text-sm text-muted-foreground">
+        {/* App name */}
+        <h1 className="hero-title text-4xl mb-6">OmniLens</h1>
+
+        {/* GitHub Sign-In - outline style (not green) */}
+        <div className="hero-actions">
+          <button
+            type="button"
+            onClick={handleGitHubSignIn}
+            disabled={isLoading}
+            className="btn-lg-ghost btn-login-ghost inline-flex items-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            <Github className="h-5 w-5" strokeWidth={2} />
+            {isLoading ? "Signing in..." : "Continue with GitHub"}
+          </button>
+        </div>
+      </section>
+
+      {/* Footer - matches landing footer style */}
+      <footer>
+        <div className="footer-inner flex-col !items-stretch gap-4">
+          <p className="text-center text-sm text-[var(--muted)]">
             By signing in, you agree to our{" "}
-            <a 
-              href="/legal" 
-              className="text-blue-400 hover:text-blue-300 underline transition-colors"
-            >
+            <Link href="/legal" className="text-[var(--accent)] hover:underline">
               Terms of Service and Privacy Policy
-            </a>
+            </Link>
           </p>
-          {/* Copyright notice */}
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} OmniLens. All rights reserved.
-          </p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="footer-brand">
+              <span className="footer-copy">
+                © {new Date().getFullYear()} OmniLens. All rights reserved.
+              </span>
+            </div>
+            <ul className="footer-links">
+              <li>
+                <Link href="/legal">Legal</Link>
+              </li>
+              <li>
+                <Link href="/legal/privacy">Privacy</Link>
+              </li>
+              <li>
+                <Link href="/legal/terms">Terms</Link>
+              </li>
+            </ul>
           </div>
         </div>
-      </div>
+      </footer>
 
-      {/* Version indicator - bottom left */}
       <VersionIndicator />
     </div>
   );
