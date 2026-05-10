@@ -57,8 +57,20 @@ interface ChangelogEntry {
  */
 const changelogData: ChangelogEntry[] = [
   {
+    version: "3.0.1",
+    date: "2026-05-10",
+    type: "patch",
+    changes: {
+      changed: [
+        "Cleaner marketing visuals with lighter backgrounds and fewer decorative overlays",
+        "Login footer simplified",
+        "Call-to-action badge styling refined for clearer emphasis"
+      ]
+    }
+  },
+  {
     version: "3.0.0",
-    date: "2026-02-23",
+    date: "2026-02-22",
     type: "major",
     changes: {
       added: [

@@ -114,13 +114,7 @@ export default function LoginPage() {
 
       {/* Footer - matches landing footer style */}
       <footer>
-        <div className="footer-inner flex-col !items-stretch gap-4">
-          <p className="text-center text-sm text-[var(--muted)]">
-            By signing in, you agree to our{" "}
-            <Link href="/legal" className="text-[var(--accent)] hover:underline">
-              Terms of Service and Privacy Policy
-            </Link>
-          </p>
+        <div className="footer-inner flex-col !items-stretch gap-4 !py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="footer-brand">
               <span className="footer-copy">
