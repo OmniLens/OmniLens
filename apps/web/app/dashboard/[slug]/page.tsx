@@ -1,15 +1,33 @@
 "use client";
 
 // External library imports
-import React, { useMemo, useEffect, useCallback, useState } from "react";
+import React, { useMemo, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, RefreshCw, ExternalLink } from "lucide-react";
+import {
+  ArrowLeft,
+  RefreshCw,
+  ExternalLink,
+  ChevronRight,
+  AlertTriangle,
+  ShieldCheck,
+} from "lucide-react";
 
 // Internal component imports
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/DatePicker";
 import GitHubStatusBanner from "@/components/GitHubStatusBanner";
+import {
+  RunStrip,
+  RunningSpotlight,
+  OverviewPanel,
+  useNowTick,
+  getRunLabel,
+  getLabelColor,
+  shortenTrigger,
+  elapsedSeconds,
+  type RunningSpotlightItem,
+} from "@/components/dashboard/run-ui";
 
 // Hook imports
 import { useSession } from "@/lib/auth-client";
@@ -24,67 +42,30 @@ import {
 } from "@/lib/hooks/use-repository-dashboard";
 
 // Utility imports
-import {
-  duration,
-  formatRunTime,
-  formatDuration,
-  getWorkflowDotClass,
-  getWorkflowHealthLabel,
-  getWorkflowTextClass,
-  type WorkflowHealth,
-} from "@/lib/utils";
+import { duration, formatRunTime, formatDuration } from "@/lib/utils";
 
 // ============================================================================
 // Type Definitions
 // ============================================================================
 
-type RunLabel = "PASS" | "FAIL" | "RUN" | "SKIP";
 type RepoHealth = "healthy" | "degraded" | "failing" | "idle";
 
-interface HourStat {
-  hour: number;
-  total: number;
-  passed: number;
-  failed: number;
-}
+/**
+ * Unified per-workflow row state combining health classification with a
+ * live "running" flag. Drives sort order, the status label, and accent colors
+ * in the triage list. Lower priority = surfaced higher (more urgent).
+ */
+type RowState =
+  | "failing"
+  | "regressed"
+  | "running"
+  | "improved"
+  | "consistent"
+  | "idle";
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-function getRunLabel(run: WorkflowRun): RunLabel {
-  if (run.status === "in_progress" || run.status === "queued") return "RUN";
-  if (run.conclusion === "success") return "PASS";
-  if (run.conclusion === "cancelled" || run.conclusion === "skipped") return "SKIP";
-  return "FAIL";
-}
-
-function getLabelColor(label: RunLabel): string {
-  switch (label) {
-    case "PASS": return "text-[#00e5a0]";
-    case "FAIL": return "text-red-500";
-    case "RUN":  return "text-[#4d9fff]";
-    case "SKIP": return "text-amber-400";
-  }
-}
-
-function shortenTrigger(event: string): string {
-  switch (event) {
-    case "pull_request":      return "PR";
-    case "schedule":          return "cron";
-    case "workflow_dispatch": return "manual";
-    case "push":              return "push";
-    default:                  return event;
-  }
-}
-
-/** Map internal health status to a simplified display health for workflow rows */
-function mapToWorkflowHealth(
-  status: "consistent" | "improved" | "regressed" | "still_failing" | "no_runs_today"
-): WorkflowHealth {
-  return status === "no_runs_today" ? "idle" : status;
-}
-
 
 /**
  * Compute the overall repo health from workflow health counts.
@@ -115,65 +96,319 @@ function getRepoHealthConfig(health: RepoHealth): {
     case "healthy":
       return {
         dotClass: "bg-[#00e5a0] animate-pulse",
-        label: "healthy",
+        label: "HEALTHY",
         pillClass: "border-[#00e5a0]/20 bg-[#00e5a0]/5 text-[#00e5a0]/80",
       };
     case "degraded":
       return {
         dotClass: "bg-amber-500",
-        label: "degraded",
+        label: "DEGRADED",
         pillClass: "border-amber-500/20 bg-amber-500/5 text-amber-400/80",
       };
     case "failing":
       return {
         dotClass: "bg-red-500 animate-pulse",
-        label: "failing",
+        label: "FAILING",
         pillClass: "border-red-500/20 bg-red-500/5 text-red-400/80",
       };
     case "idle":
       return {
         dotClass: "bg-white/30",
-        label: "idle",
+        label: "IDLE",
         pillClass: "border-white/10 bg-white/5 text-white/40",
       };
   }
 }
 
+/** Visual config for each row state — dot, label, and accent text. */
+function getRowStateConfig(state: RowState): {
+  dotClass: string;
+  label: string;
+  textClass: string;
+  priority: number;
+} {
+  switch (state) {
+    case "failing":
+      return { dotClass: "bg-red-500", label: "FAILING", textClass: "text-red-500", priority: 0 };
+    case "regressed":
+      return { dotClass: "bg-amber-500", label: "REGRESSED", textClass: "text-amber-400", priority: 1 };
+    case "running":
+      return { dotClass: "bg-[#4d9fff] animate-pulse", label: "RUNNING", textClass: "text-[#4d9fff]", priority: 2 };
+    case "improved":
+      return { dotClass: "bg-[#4d9fff]", label: "IMPROVED", textClass: "text-[#4d9fff]", priority: 3 };
+    case "consistent":
+      return { dotClass: "bg-[#00e5a0]", label: "HEALTHY", textClass: "text-[#00e5a0]/80", priority: 4 };
+    case "idle":
+      return { dotClass: "bg-muted-foreground/40", label: "IDLE", textClass: "text-muted-foreground/50", priority: 5 };
+  }
+}
+
 // ============================================================================
-// Sub-Components
+// Sub-Components — Overview Ribbon
 // ============================================================================
 
 /**
- * A single stat in the top strip.
- * Compact: label above, big number below.
+ * Needs Attention card — the primary triage signal. Red-accented with a big
+ * count when failing/regressed workflows exist; calm "all clear" otherwise.
+ * Lists the worst offenders as quick drill-down links.
  */
-function StatBox({
-  label,
-  value,
-  valueClass = "text-foreground",
-  border = true,
+function NeedsAttention({
+  failing,
+  regressed,
+  offenders,
+  slug,
 }: {
-  label: string;
-  value: string | number;
-  valueClass?: string;
-  border?: boolean;
+  failing: number;
+  regressed: number;
+  offenders: Workflow[];
+  slug: string;
 }) {
+  const total = failing + regressed;
+  const clear = total === 0;
+
   return (
-    <div className={`flex flex-col gap-1 px-5 py-4 ${border ? "border-r border-border" : ""} last:border-0`}>
-      <span className="text-sm text-muted-foreground whitespace-nowrap">
-        {label}
-      </span>
-      <span className={`text-xl font-bold tabular-nums font-mono ${valueClass}`}>
-        {value}
-      </span>
+    <div
+      className={`rounded-lg border bg-card flex flex-col flex-shrink-0 w-full lg:w-[300px] overflow-hidden ${
+        clear ? "border-[#00e5a0]/20" : "border-red-500/30"
+      }`}
+    >
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border flex-shrink-0">
+        {clear ? (
+          <ShieldCheck className="h-4 w-4 text-[#00e5a0]" />
+        ) : (
+          <AlertTriangle className="h-4 w-4 text-red-500" />
+        )}
+        <span className="text-sm font-normal text-muted-foreground">
+          {clear ? "All clear" : "Needs attention"}
+        </span>
+      </div>
+
+      {clear ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-1 px-4 py-6 text-center">
+          <span className="text-3xl font-bold font-mono text-[#00e5a0]">0</span>
+          <span className="text-xs text-muted-foreground/60">
+            No failing or regressed workflows
+          </span>
+        </div>
+      ) : (
+        <div className="flex flex-1 flex-col px-4 py-4 gap-3">
+          <div className="flex items-baseline gap-3">
+            <span className="text-4xl font-bold font-mono text-red-500 leading-none tabular-nums">
+              {total}
+            </span>
+            <div className="flex flex-col text-xs font-mono">
+              {failing > 0 && (
+                <span className="text-red-400/80">{failing} failing</span>
+              )}
+              {regressed > 0 && (
+                <span className="text-amber-400/80">{regressed} regressed</span>
+              )}
+            </div>
+          </div>
+
+          {/* Worst offenders — direct drill-down */}
+          <div className="flex flex-col gap-1">
+            {offenders.slice(0, 3).map((w) => (
+              <Link
+                key={w.id}
+                href={`/dashboard/${slug}/workflow/${w.id}`}
+                className="flex items-center gap-2 text-xs text-foreground/70 hover:text-foreground transition-colors group"
+              >
+                <ChevronRight className="h-3 w-3 flex-shrink-0 text-red-500/50 group-hover:text-red-500 transition-colors" />
+                <span className="truncate">{w.name}</span>
+              </Link>
+            ))}
+            {offenders.length > 3 && (
+              <span className="text-xs text-muted-foreground/40 pl-5">
+                +{offenders.length - 3} more below
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-/**
- * A single row in the cross-workflow signal feed.
- * Shows: time · type · workflow name · branch · trigger · duration · GitHub link
- */
+// ============================================================================
+// Sub-Components — Workflow Triage List
+// ============================================================================
+
+/** A single workflow row in the severity-sorted triage list. */
+function TriageRow({
+  workflow,
+  state,
+  todayRuns,
+  activeRun,
+  slug,
+  now,
+}: {
+  workflow: Workflow;
+  state: RowState;
+  todayRuns: WorkflowRun[];
+  activeRun: WorkflowRun | null;
+  slug: string;
+  now: number;
+}) {
+  const cfg = getRowStateConfig(state);
+  const isRunning = state === "running" || activeRun !== null;
+
+  // Most recent run for last-seen time + duration
+  const latest = useMemo(() => {
+    if (todayRuns.length === 0) return null;
+    return [...todayRuns].sort(
+      (a, b) =>
+        new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime()
+    )[0];
+  }, [todayRuns]);
+
+  const passed = todayRuns.filter((r) => r.conclusion === "success").length;
+  const completed = todayRuns.filter((r) => r.status === "completed").length;
+
+  const lastTime = activeRun
+    ? "now"
+    : latest?.run_started_at
+    ? formatRunTime(latest.run_started_at)
+    : "—";
+
+  const lastDur = activeRun
+    ? formatDuration(elapsedSeconds(activeRun.run_started_at, now))
+    : latest && latest.run_started_at && latest.updated_at
+    ? duration(latest.run_started_at, latest.updated_at)
+    : "—";
+
+  return (
+    <Link
+      href={`/dashboard/${slug}/workflow/${workflow.id}`}
+      className={`group flex items-center gap-3 sm:gap-4 px-4 py-3 border-b border-white/[0.03] last:border-0 transition-colors ${
+        isRunning
+          ? "bg-[#4d9fff]/[0.035] hover:bg-[#4d9fff]/[0.07] border-l-2 border-l-[#4d9fff]"
+          : "hover:bg-white/[0.025] border-l-2 border-l-transparent"
+      }`}
+    >
+      {/* Health / running dot */}
+      {isRunning ? (
+        <span className="relative flex h-2 w-2 flex-shrink-0">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-[#4d9fff]/60 animate-ping" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-[#4d9fff]" />
+        </span>
+      ) : (
+        <span className={`h-2 w-2 rounded-full flex-shrink-0 ${cfg.dotClass}`} />
+      )}
+
+      {/* Name */}
+      <span className="text-sm font-semibold flex-1 min-w-0 truncate text-foreground/85 group-hover:text-foreground transition-colors">
+        {workflow.name}
+      </span>
+
+      {/* Run-strip — the day's pattern at a glance */}
+      <div className="hidden sm:block w-28 md:w-36 flex-shrink-0">
+        <RunStrip runs={todayRuns} />
+      </div>
+
+      {/* Status label */}
+      <span
+        className={`text-xs font-mono w-24 flex-shrink-0 text-right ${
+          isRunning ? "text-[#4d9fff]" : cfg.textClass
+        }`}
+      >
+        {isRunning ? "RUNNING" : cfg.label}
+      </span>
+
+      {/* Pass count */}
+      <span className="hidden md:block text-xs font-mono tabular-nums text-muted-foreground/60 w-12 flex-shrink-0 text-right">
+        {todayRuns.length > 0 ? `${passed}/${completed || todayRuns.length}` : "—"}
+      </span>
+
+      {/* Last run time */}
+      <span
+        className={`hidden lg:block text-xs font-mono tabular-nums w-12 flex-shrink-0 text-right ${
+          isRunning ? "text-[#4d9fff]/70" : "text-muted-foreground/50"
+        }`}
+      >
+        {lastTime}
+      </span>
+
+      {/* Duration */}
+      <span
+        className={`text-xs font-mono tabular-nums w-16 flex-shrink-0 text-right ${
+          isRunning ? "text-[#4d9fff]/70 animate-pulse" : "text-muted-foreground/45"
+        }`}
+      >
+        {lastDur}
+      </span>
+
+      <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground/25 group-hover:text-muted-foreground/70 transition-colors" />
+    </Link>
+  );
+}
+
+interface TriageEntry {
+  workflow: Workflow;
+  state: RowState;
+  todayRuns: WorkflowRun[];
+  activeRun: WorkflowRun | null;
+}
+
+/** Severity-sorted list of every tracked workflow — the page's triage core. */
+function WorkflowTriageList({
+  entries,
+  slug,
+  now,
+}: {
+  entries: TriageEntry[];
+  slug: string;
+  now: number;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-card flex flex-col">
+      {/* Header + column labels */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <span className="text-sm font-normal text-muted-foreground">Workflows</span>
+        <span className="text-xs font-mono text-muted-foreground/50">
+          {entries.length} tracked · sorted by severity
+        </span>
+      </div>
+
+      <div className="hidden sm:flex items-center gap-3 sm:gap-4 px-4 py-1.5 border-b border-white/[0.04]">
+        <span className="w-2 flex-shrink-0" />
+        <span className="text-xs text-muted-foreground/40 flex-1">workflow</span>
+        <span className="text-xs text-muted-foreground/40 w-28 md:w-36 flex-shrink-0">today</span>
+        <span className="text-xs text-muted-foreground/40 w-24 flex-shrink-0 text-right">status</span>
+        <span className="hidden md:block text-xs text-muted-foreground/40 w-12 flex-shrink-0 text-right">pass</span>
+        <span className="hidden lg:block text-xs text-muted-foreground/40 w-12 flex-shrink-0 text-right">last</span>
+        <span className="text-xs text-muted-foreground/40 w-16 flex-shrink-0 text-right">dur</span>
+        <span className="w-4 flex-shrink-0" />
+      </div>
+
+      {/* Rows */}
+      {entries.length === 0 ? (
+        <div className="flex items-center justify-center py-16">
+          <span className="text-sm text-muted-foreground/40 font-mono">no workflows</span>
+        </div>
+      ) : (
+        <div>
+          {entries.map((entry) => (
+            <TriageRow
+              key={entry.workflow.id}
+              workflow={entry.workflow}
+              state={entry.state}
+              todayRuns={entry.todayRuns}
+              activeRun={entry.activeRun}
+              slug={slug}
+              now={now}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Sub-Components — Signal Feed (secondary)
+// ============================================================================
+
 function FeedRow({
   run,
   workflowName,
@@ -191,13 +426,12 @@ function FeedRow({
   const labelColor = getLabelColor(label);
   const isActive = label === "RUN";
   const time = run.run_started_at ? formatRunTime(run.run_started_at) : "--:--";
-  const dur =
-    isActive
-      ? "..."
-      : run.run_started_at && run.updated_at
-      ? duration(run.run_started_at, run.updated_at)
-      : "—";
-  const branch  = run.head_branch || "—";
+  const dur = isActive
+    ? "..."
+    : run.run_started_at && run.updated_at
+    ? duration(run.run_started_at, run.updated_at)
+    : "—";
+  const branch = run.head_branch || "—";
   const trigger = shortenTrigger(run.event || "");
 
   return (
@@ -209,13 +443,8 @@ function FeedRow({
         animationDuration: "0.18s",
       }}
     >
-      {/* Timestamp */}
       <span className="text-muted-foreground/40 w-11 flex-shrink-0 tabular-nums">{time}</span>
-
-      {/* Type */}
       <span className={`font-bold w-10 flex-shrink-0 ${labelColor}`}>{label}</span>
-
-      {/* Workflow name — links to workflow detail */}
       <Link
         href={`/dashboard/${slug}/workflow/${workflowId}`}
         className="text-foreground/60 hover:text-foreground/90 transition-colors truncate w-64 flex-shrink-0"
@@ -223,14 +452,10 @@ function FeedRow({
       >
         {workflowName}
       </Link>
-
-      {/* Branch */}
       <span className="text-foreground/50 truncate flex-1 min-w-0">{branch}</span>
-
-      {/* Trigger */}
-      <span className="text-muted-foreground/30 w-14 flex-shrink-0 text-right">{trigger}</span>
-
-      {/* Duration */}
+      {/* Width chosen so the trigger column's left edge aligns with the
+          Workflows table "today" column (≈512px from the card's right edge). */}
+      <span className="text-muted-foreground/30 w-[368px] flex-shrink-0 text-left truncate">{trigger}</span>
       <span
         className={`w-20 flex-shrink-0 text-right tabular-nums ${
           isActive ? "text-[#4d9fff]/60 animate-pulse" : "text-muted-foreground/35"
@@ -238,8 +463,6 @@ function FeedRow({
       >
         {dur}
       </span>
-
-      {/* GitHub link */}
       {run.html_url ? (
         <Link
           href={run.html_url}
@@ -255,11 +478,6 @@ function FeedRow({
   );
 }
 
-/**
- * Cross-workflow signal feed — the hero panel of V2.
- * Shows every workflow run for the day in reverse-chron order,
- * with the workflow name as a column so users see the full picture at once.
- */
 function SignalFeed({
   runs,
   workflowMap,
@@ -283,13 +501,10 @@ function SignalFeed({
   );
 
   return (
-    <div className="rounded-lg border border-border bg-card flex flex-col">
-      {/* Feed header */}
+    <div className="rounded-lg border border-border bg-card flex flex-col overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-normal text-muted-foreground">
-            Signal Feed
-          </span>
+          <span className="text-sm font-normal text-muted-foreground">Signal Feed</span>
           <span className="text-[10px] text-muted-foreground/30 font-mono">—</span>
           <span className="text-xs text-muted-foreground/40">
             {isLoading ? "…" : `${runs.length} events`}
@@ -308,18 +523,6 @@ function SignalFeed({
         )}
       </div>
 
-      {/* Column labels */}
-      <div className="flex items-center gap-3 px-4 py-1.5 border-b border-white/[0.035] flex-shrink-0">
-        <span className="text-xs text-muted-foreground/40 w-11 flex-shrink-0">time</span>
-        <span className="text-xs text-muted-foreground/40 w-10 flex-shrink-0">type</span>
-        <span className="text-xs text-muted-foreground/40 w-64 flex-shrink-0">workflow</span>
-        <span className="text-xs text-muted-foreground/40 flex-1">branch</span>
-        <span className="text-xs text-muted-foreground/40 w-14 flex-shrink-0 text-right">trigger</span>
-        <span className="text-xs text-muted-foreground/40 w-20 flex-shrink-0 text-right">duration</span>
-        <span className="w-6 flex-shrink-0" />
-      </div>
-
-      {/* Feed body — three distinct states so overflow never shows on empty/loading */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16 px-4">
           <div className="flex items-center gap-2">
@@ -332,237 +535,39 @@ function SignalFeed({
           <span className="text-sm text-muted-foreground/40 font-mono">— no signal —</span>
         </div>
       ) : (
-        <div className="overflow-y-auto max-h-[520px] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
-          {sorted.slice(0, 20).map((run, i) => (
-            <FeedRow
-              key={run.id}
-              run={run}
-              workflowName={workflowMap.get(run.workflow_id) ?? `#${run.workflow_id}`}
-              workflowId={run.workflow_id}
-              slug={slug}
-              index={i}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+        // Horizontal-scroll container so the wide fixed-width columns never force
+        // the card (and the whole page) wider than the available viewport when
+        // the sidebar expands. Header + rows share one scroll region to stay aligned.
+        <div className="overflow-x-auto [&::-webkit-scrollbar]:h-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
+          <div className="min-w-[1024px]">
+            <div className="flex items-center gap-3 px-4 py-1.5 border-b border-white/[0.035]">
+              <span className="text-xs text-muted-foreground/40 w-11 flex-shrink-0">time</span>
+              <span className="text-xs text-muted-foreground/40 w-10 flex-shrink-0">type</span>
+              <span className="text-xs text-muted-foreground/40 w-64 flex-shrink-0">workflow</span>
+              <span className="text-xs text-muted-foreground/40 flex-1">branch</span>
+              <span className="text-xs text-muted-foreground/40 w-[368px] flex-shrink-0 text-left">trigger</span>
+              <span className="text-xs text-muted-foreground/40 w-20 flex-shrink-0 text-right">duration</span>
+              <span className="w-6 flex-shrink-0" />
+            </div>
 
-/**
- * Single workflow row in the sidebar.
- * Health dot + name (links to workflow detail) + status label.
- */
-function SidebarWorkflowRow({
-  workflow,
-  health,
-  slug,
-  runCount,
-}: {
-  workflow: Workflow;
-  health: WorkflowHealth;
-  slug: string;
-  runCount: number;
-}) {
-  const dotClass = getWorkflowDotClass(health);
-  const healthLabel = getWorkflowHealthLabel(health);
-  const textClass = getWorkflowTextClass(health);
-
-  return (
-    <Link
-      href={`/dashboard/${slug}/workflow/${workflow.id}`}
-      className="flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.025] last:border-0 hover:bg-white/[0.02] transition-colors group"
-    >
-      {/* Health dot */}
-      <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${dotClass}`} />
-
-      {/* Workflow name */}
-      <span className="text-sm font-semibold flex-1 truncate group-hover:text-foreground transition-colors text-foreground/80">
-        {workflow.name}
-      </span>
-
-      {/* Run count badge */}
-      {runCount > 0 && (
-        <span className="text-xs text-muted-foreground/40 flex-shrink-0 tabular-nums">
-          {runCount}
-        </span>
-      )}
-
-      {/* Status label */}
-      <span className={`text-sm flex-shrink-0 w-20 text-right ${textClass}`}>
-        {healthLabel}
-      </span>
-    </Link>
-  );
-}
-
-/**
- * Workflow sidebar — right panel listing all tracked workflows with health status.
- */
-function WorkflowSidebar({
-  workflows,
-  getHealth,
-  getRunCount,
-  slug,
-}: {
-  workflows: Workflow[];
-  getHealth: (id: number) => WorkflowHealth;
-  getRunCount: (id: number) => number;
-  slug: string;
-}) {
-  const sorted = useMemo(() => {
-    const order: Record<WorkflowHealth, number> = {
-      still_failing: 0,
-      regressed: 1,
-      consistent: 2,
-      improved: 3,
-      idle: 4,
-    };
-    return [...workflows].sort(
-      (a, b) => order[getHealth(a.id)] - order[getHealth(b.id)]
-    );
-  }, [workflows, getHealth]);
-
-  return (
-    <div className="rounded-lg border border-border bg-card flex flex-col">
-      {/* Sidebar header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-        <span className="text-sm font-normal text-muted-foreground">
-          Workflows
-        </span>
-        <span className="text-sm text-muted-foreground/60">
-          {workflows.length} tracked
-        </span>
-      </div>
-
-      {/* Workflow rows */}
-      <div>
-        {sorted.length === 0 ? (
-          <div className="flex items-center justify-center h-32">
-            <span className="text-xs text-muted-foreground/40 font-mono">no workflows</span>
+            <div
+              className="overflow-y-auto max-h-[420px] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20"
+              style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}
+            >
+              {sorted.slice(0, 20).map((run, i) => (
+                <FeedRow
+                  key={run.id}
+                  run={run}
+                  workflowName={workflowMap.get(run.workflow_id) ?? `#${run.workflow_id}`}
+                  workflowId={run.workflow_id}
+                  slug={slug}
+                  index={i}
+                />
+              ))}
+            </div>
           </div>
-        ) : (
-          sorted.slice(0, 20).map((w) => (
-            <SidebarWorkflowRow
-              key={w.id}
-              workflow={w}
-              health={getHealth(w.id)}
-              slug={slug}
-              runCount={getRunCount(w.id)}
-            />
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Bar area height in px — determines max bar height for the timeline
-const TIMELINE_BAR_HEIGHT = 48;
-
-/**
- * 24-hour activity timeline — a histogram of runs across the day.
- * Bars are colored by pass rate: green (≥80%), amber (mixed), red (failing), muted (no runs).
- * All bars animate up simultaneously on mount using a single useState trigger,
- * avoiding the per-ref timing issues of individual useEffect timers.
- */
-function ActivityTimeline({
-  runs,
-  overviewHourData,
-}: {
-  runs: WorkflowRun[];
-  overviewHourData: Array<{ hour: number; passed: number; total: number }>;
-}) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 350);
-    return () => clearTimeout(t);
-  }, []);
-
-  // Rebuild hourStats whenever either data source changes
-  const hourStats: HourStat[] = useMemo(() => {
-    const map = new Map<number, HourStat>();
-    for (let h = 0; h < 24; h++) map.set(h, { hour: h, total: 0, passed: 0, failed: 0 });
-
-    // Prefer the API's pre-computed hourly breakdown
-    if (overviewHourData.length > 0) {
-      overviewHourData.forEach(({ hour, passed, total }) => {
-        if (hour >= 0 && hour < 24) {
-          map.set(hour, { hour, total, passed, failed: total - passed });
-        }
-      });
-    } else {
-      // Fall back to computing from raw runs
-      runs.forEach((r) => {
-        if (!r.run_started_at) return;
-        const hour = new Date(r.run_started_at).getHours();
-        const s = map.get(hour)!;
-        s.total++;
-        if (r.conclusion === "success") s.passed++;
-        if (r.conclusion === "failure") s.failed++;
-      });
-    }
-
-    return Array.from(map.values());
-  }, [runs, overviewHourData]);
-
-  const maxRuns = Math.max(...hourStats.map((s) => s.total), 1);
-
-  return (
-    <div className="rounded-lg border border-border bg-card">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-sm font-normal text-muted-foreground">
-          Activity — 24h
-        </span>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground/60">
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-1.5 w-3 rounded-[1px] bg-[#00e5a0]/70" /> pass
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-1.5 w-3 rounded-[1px] bg-amber-500/70" /> mixed
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-1.5 w-3 rounded-[1px] bg-red-500/70" /> fail
-          </span>
         </div>
-      </div>
-
-      {/* Histogram — bars grow from bottom using px heights driven by mounted state */}
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-end gap-px" style={{ height: TIMELINE_BAR_HEIGHT + 14 }}>
-          {hourStats.map((stat) => {
-            const barPx = mounted && stat.total > 0
-              ? Math.max(Math.round((stat.total / maxRuns) * TIMELINE_BAR_HEIGHT), 2)
-              : 0;
-            const barColor =
-              stat.total === 0
-                ? "bg-white/[0.04]"
-                : stat.passed / stat.total >= 0.8
-                ? "bg-[#00e5a0]/70"
-                : stat.passed / stat.total >= 0.4
-                ? "bg-amber-500/70"
-                : "bg-red-500/70";
-
-            return (
-              <div key={stat.hour} className="flex flex-col items-center flex-1" style={{ height: TIMELINE_BAR_HEIGHT + 14 }}>
-                {/* Peak label */}
-                <div className="flex-1 flex flex-col justify-end relative w-full">
-                  <div
-                    className={`w-full rounded-[2px] ${barColor} transition-[height] duration-700 ease-out`}
-                    style={{ height: barPx }}
-                  />
-                </div>
-                {/* Hour label — every 6 hours; always rendered to keep consistent height */}
-                <span className={`text-xs tabular-nums mt-1 leading-none flex-shrink-0 ${stat.hour % 6 === 0 ? "text-muted-foreground/40" : "invisible"}`}>
-                  {String(stat.hour).padStart(2, "0")}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -572,12 +577,14 @@ function ActivityTimeline({
 // ============================================================================
 
 /**
- * DashboardPage — signal-feed-first repository dashboard.
+ * DashboardPage — hybrid triage repository dashboard.
  *
- * Layout:
- *  ┌ Overview Strip ─────────────────────┬ Activity Timeline ┐
- *  ├ Signal Feed ────────────────────────┤ Workflow Sidebar ──┤
- *  └───────────────────────────────────────────────────────────┘
+ * Layout (top → bottom):
+ *  1. Header — back, title, repo health, live "running" pill, date controls
+ *  2. Running Spotlight — only when workflows are in progress (live timers)
+ *  3. Overview ribbon — Needs Attention card + stats/activity panel
+ *  4. Workflow Triage list — every workflow, severity-sorted, with run-strips
+ *  5. Signal Feed — secondary chronological run log
  */
 export default function DashboardPage() {
   const params = useParams();
@@ -586,10 +593,6 @@ export default function DashboardPage() {
 
   const { data: session, isPending } = useSession();
   const { selectedDate, setSelectedDate } = useDateState();
-
-  // ============================================================================
-  // Effects
-  // ============================================================================
 
   useEffect(() => {
     if (!isPending && !session) router.push("/login");
@@ -620,13 +623,24 @@ export default function DashboardPage() {
     return map;
   }, [workflows]);
 
-  /** workflowId → run[] map for run counts and health */
+  /** workflowId → run[] map for run counts, run-strips, and health */
   const groupedRuns = useMemo(() => {
     const map = new Map<number, WorkflowRun[]>();
     workflowRuns.forEach((r) => {
       const list = map.get(r.workflow_id) ?? [];
       list.push(r);
       map.set(r.workflow_id, list);
+    });
+    return map;
+  }, [workflowRuns]);
+
+  /** workflowId → active (in-progress/queued) run, if any */
+  const activeRunMap = useMemo(() => {
+    const map = new Map<number, WorkflowRun>();
+    workflowRuns.forEach((r) => {
+      if ((r.status === "in_progress" || r.status === "queued") && !map.has(r.workflow_id)) {
+        map.set(r.workflow_id, r);
+      }
     });
     return map;
   }, [workflowRuns]);
@@ -650,12 +664,8 @@ export default function DashboardPage() {
     (
       workflowId: number
     ): "consistent" | "improved" | "regressed" | "still_failing" | "no_runs_today" => {
-      const currentlyRunning = workflowRuns.find(
-        (r) =>
-          r.workflow_id === workflowId &&
-          (r.status === "in_progress" || r.status === "queued")
-      );
-      const todayRuns = workflowRuns.filter((r) => r.workflow_id === workflowId);
+      const currentlyRunning = activeRunMap.has(workflowId);
+      const todayRuns = groupedRuns.get(workflowId) ?? [];
 
       if (currentlyRunning) return todayRuns.length === 0 ? "no_runs_today" : "consistent";
       if (todayRuns.length === 0) return "no_runs_today";
@@ -685,20 +695,21 @@ export default function DashboardPage() {
       if (yesterdayLastResult === "success") return s > f ? "consistent" : "regressed";
       return s > f ? "improved" : "still_failing";
     },
-    [workflowRuns, yesterdayRuns, getLastRunResult]
+    [activeRunMap, groupedRuns, yesterdayRuns, getLastRunResult]
   );
 
-  /** getHealth returns the simplified WorkflowHealth for sidebar display */
-  const getHealth = useCallback(
-    (workflowId: number): WorkflowHealth =>
-      mapToWorkflowHealth(classifyWorkflowHealth(workflowId)),
-    [classifyWorkflowHealth]
-  );
-
-  /** getRunCount returns how many runs a workflow had today */
-  const getRunCount = useCallback(
-    (workflowId: number): number => groupedRuns.get(workflowId)?.length ?? 0,
-    [groupedRuns]
+  /** Map a workflow to its unified RowState (health + live running flag) */
+  const getRowState = useCallback(
+    (workflowId: number): RowState => {
+      const health = classifyWorkflowHealth(workflowId);
+      if (health === "still_failing") return "failing";
+      if (health === "regressed") return "regressed";
+      if (activeRunMap.has(workflowId)) return "running";
+      if (health === "improved") return "improved";
+      if (health === "consistent") return "consistent";
+      return "idle";
+    },
+    [classifyWorkflowHealth, activeRunMap]
   );
 
   /** Aggregate health counts across all workflows */
@@ -728,13 +739,58 @@ export default function DashboardPage() {
     [healthCounts]
   );
 
-  const isIngesting = useMemo(
+  /** Severity-sorted triage entries for the workflow list */
+  const triageEntries: TriageEntry[] = useMemo(() => {
+    return workflows
+      .map((workflow) => {
+        const state = getRowState(workflow.id);
+        return {
+          workflow,
+          state,
+          todayRuns: groupedRuns.get(workflow.id) ?? [],
+          activeRun: activeRunMap.get(workflow.id) ?? null,
+          priority: getRowStateConfig(state).priority,
+        };
+      })
+      .sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return a.workflow.name.localeCompare(b.workflow.name);
+      })
+      .map(({ priority: _priority, ...rest }) => rest);
+  }, [workflows, getRowState, groupedRuns, activeRunMap]);
+
+  /** Workflows actively running — drives the spotlight */
+  const runningItems: RunningSpotlightItem[] = useMemo(() => {
+    return workflows
+      .filter((w) => activeRunMap.has(w.id))
+      .map((workflow) => {
+        const activeRun = activeRunMap.get(workflow.id)!;
+        return {
+          id: workflow.id,
+          name: workflow.name,
+          meta: `${activeRun.head_branch || "—"} · ${shortenTrigger(activeRun.event || "")} · run #${activeRun.run_number}`,
+          startedAt: activeRun.run_started_at,
+          todayRuns: groupedRuns.get(workflow.id) ?? [],
+          href: `/dashboard/${slug}/workflow/${workflow.id}`,
+        };
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime()
+      );
+  }, [workflows, activeRunMap, groupedRuns, slug]);
+
+  /** Failing + regressed workflows for the Needs Attention offender list */
+  const offenders: Workflow[] = useMemo(
     () =>
-      workflowRuns.some(
-        (r) => r.status === "in_progress" || r.status === "queued"
-      ),
-    [workflowRuns]
+      triageEntries
+        .filter((e) => e.state === "failing" || e.state === "regressed")
+        .map((e) => e.workflow),
+    [triageEntries]
   );
+
+  const isIngesting = activeRunMap.size > 0;
+  const now = useNowTick(isIngesting);
 
   // Derived stats for the strip
   const passedRuns    = overviewData?.passedRuns    ?? 0;
@@ -785,13 +841,11 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
-
         <GitHubStatusBanner className="mb-2" />
 
         {/* ── Header ── */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Back to repositories */}
             <Button
               variant="ghost"
               size="icon"
@@ -803,16 +857,26 @@ export default function DashboardPage() {
               </Link>
             </Button>
 
-            {/* Repo slug */}
             <h1 className="text-xl sm:text-2xl font-bold truncate">Workflows</h1>
 
-            {/* Overall repo health pill */}
+            {/* Repo health pill */}
             <div
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono uppercase tracking-widest flex-shrink-0 ${healthConfig.pillClass}`}
             >
               <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${healthConfig.dotClass}`} />
               {healthConfig.label}
             </div>
+
+            {/* Live running pill — only when something is in progress */}
+            {runningItems.length > 0 && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#4d9fff]/30 bg-[#4d9fff]/10 text-[10px] font-mono uppercase tracking-widest flex-shrink-0 text-[#4d9fff] animate-in fade-in-0">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#4d9fff]/60 animate-ping" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#4d9fff]" />
+                </span>
+                {runningItems.length} running
+              </div>
+            )}
           </div>
 
           {/* Controls */}
@@ -839,83 +903,42 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Stat Strip + Activity Timeline (same row) ── */}
-        <div className="flex gap-5 items-stretch">
-          {/* Stat strip — compact fixed stats */}
-          <div className="rounded-lg border border-border bg-card flex flex-col flex-shrink-0">
-            {/* Header row — mirrors ActivityTimeline's header */}
-            <div className="flex items-center px-4 py-3 border-b border-border flex-shrink-0">
-              <span className="text-sm font-normal text-muted-foreground">
-                Overview
-              </span>
-            </div>
-            {/* Stat boxes */}
-            <div className="flex overflow-x-auto flex-1 items-stretch">
-            <StatBox
-              label="Pass rate"
-              value={completedRuns > 0 ? `${successRate}%` : "—"}
-              valueClass={
-                successRate >= 80
-                  ? "text-[#00e5a0]"
-                  : successRate >= 50
-                  ? "text-amber-400"
-                  : completedRuns > 0
-                  ? "text-red-500"
-                  : "text-muted-foreground/50"
-              }
-            />
-            <StatBox label="Passed" value={passedRuns} valueClass="text-[#00e5a0]" />
-            <StatBox label="Failed" value={failedRuns} valueClass={failedRuns > 0 ? "text-red-500" : "text-muted-foreground/50"} />
-            <StatBox label="Total runs" value={workflowRuns.length} />
-            <StatBox
-              label="Avg runtime"
-              value={avgRuntimeSec > 0 ? formatDuration(avgRuntimeSec) : "—"}
-              valueClass="text-[#c084fc]"
-            />
-            <StatBox
-              label="Workflows"
-              value={workflows.length}
-              valueClass="text-[#4d9fff]"
-            />
-            <StatBox
-              label="Failing"
-              value={healthCounts.stillFailing + healthCounts.regressed}
-              valueClass={
-                healthCounts.stillFailing + healthCounts.regressed > 0
-                  ? "text-red-500"
-                  : "text-muted-foreground/50"
-              }
-              border={false}
-            />
-            </div>
-          </div>
+        {/* ── Running Spotlight (conditional) ── */}
+        {runningItems.length > 0 && (
+          <RunningSpotlight items={runningItems} now={now} />
+        )}
 
-          {/* Activity timeline — fills remaining horizontal space */}
-          <div className="flex-1 min-w-0">
-            <ActivityTimeline
-              runs={workflowRuns}
-              overviewHourData={overviewData?.runsByHour ?? []}
-            />
-          </div>
-        </div>
-
-        {/* ── Main Grid: Feed (left) + Sidebar (right) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
-          <SignalFeed
+        {/* ── Overview Ribbon: Needs Attention + Stats/Activity ── */}
+        <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+          <NeedsAttention
+            failing={healthCounts.stillFailing}
+            regressed={healthCounts.regressed}
+            offenders={offenders}
+            slug={slug}
+          />
+          <OverviewPanel
             runs={workflowRuns}
-            workflowMap={workflowMap}
-            slug={slug}
-            isIngesting={isIngesting}
-            isLoading={isLoadingRuns}
-          />
-          <WorkflowSidebar
-            workflows={workflows}
-            getHealth={getHealth}
-            getRunCount={getRunCount}
-            slug={slug}
+            overviewHourData={overviewData?.runsByHour ?? []}
+            passedRuns={passedRuns}
+            failedRuns={failedRuns}
+            successRate={successRate}
+            completedRuns={completedRuns}
+            totalRuns={workflowRuns.length}
+            avgRuntimeSec={avgRuntimeSec}
           />
         </div>
 
+        {/* ── Workflow Triage List ── */}
+        <WorkflowTriageList entries={triageEntries} slug={slug} now={now} />
+
+        {/* ── Signal Feed (secondary) ── */}
+        <SignalFeed
+          runs={workflowRuns}
+          workflowMap={workflowMap}
+          slug={slug}
+          isIngesting={isIngesting}
+          isLoading={isLoadingRuns}
+        />
       </div>
     </div>
   );
