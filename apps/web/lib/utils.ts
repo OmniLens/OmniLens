@@ -57,6 +57,18 @@ export function formatRepoDisplayName(repoName: string): string {
 }
 
 /**
+ * Generate a URL/DB slug from a repository path.
+ * Replaces the first "/" (the owner/repo separator) with "-" so the owner
+ * stays part of the slug, keeping it unique even when the org matches the repo
+ * name (e.g. "OmniLens/OmniLens" -> "OmniLens-OmniLens").
+ * @param repoPath - Repository path in "owner/repo" format
+ * @returns Slug string (e.g. "microsoft/vscode" -> "microsoft-vscode")
+ */
+export function slugFromRepoPath(repoPath: string): string {
+  return repoPath.replace('/', '-');
+}
+
+/**
  * Get the first letter of the repository name for avatar display
  * Uses the repo part of owner/repo (e.g. "owner/core" → "C")
  * @param displayNameOrPath - Repository display name or path (e.g. "owner/core" or "Core")

@@ -39,6 +39,9 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "test:unit": {
+      "outputs": []
+    },
     "test:health": {
       "outputs": [],
       "env": [

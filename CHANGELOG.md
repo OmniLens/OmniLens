@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] — 2026-06-06
+
+### Added
+- Vitest-based unit test suite (89 tests) covering string/time/feature-flag utilities, GitHub workflow metric aggregators, dashboard run helpers, and admin token logic, with new `test:unit`, `test:unit:watch`, and `test:unit:cov` scripts.
+- "🤏 Unit Tests" GitHub Actions workflow that runs the unit suite with coverage reports on pushes and pull requests to `main`.
+
+### Changed
+- The default `test` script now runs the unit tests before the API/integration checks.
+- Extracted the repository slug logic into a reusable `slugFromRepoPath` helper shared by the add-repository route.
+
+### Removed
+- Removed the self-referential fake slug check from the health test script, now replaced by a real unit test that imports the actual implementation.
+
 ## [3.1.0] — 2026-06-06
 
 ### Added

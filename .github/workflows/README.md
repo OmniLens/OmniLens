@@ -4,7 +4,7 @@ This directory contains CI/CD workflows for OmniLens.
 
 ## Test Workflows
 
-### 🧪 Unit Tests (`test-unit.yml`)
+### 🤏 Unit Tests (`test-unit.yml`)
 
 **Purpose:** Run unit tests for components, utilities, and hooks.
 

@@ -153,43 +153,8 @@ async function testErrorBoundaries() {
   }
 }
 
-async function testSlugGeneration() {
-  try {
-    console.log('Testing slug generation...');
-    
-    // Test the slug generation logic
-    const testCases = [
-      {
-        repoPath: 'OmniLens/OmniLens',
-        expectedSlug: 'OmniLens-OmniLens',
-        description: 'Should generate unique slug even when org matches repo name'
-      },
-      {
-        repoPath: 'microsoft/vscode',
-        expectedSlug: 'microsoft-vscode',
-        description: 'Should include organization name for uniqueness'
-      }
-    ];
-    
-    let allPassed = true;
-    
-    for (const testCase of testCases) {
-      const actualSlug = testCase.repoPath.replace('/', '-');
-      
-      if (actualSlug === testCase.expectedSlug) {
-        console.log(`✅ ${testCase.description}: "${actualSlug}"`);
-      } else {
-        console.log(`❌ ${testCase.description}: Expected "${testCase.expectedSlug}", got "${actualSlug}"`);
-        allPassed = false;
-      }
-    }
-    
-    return allPassed;
-  } catch (error) {
-    console.log(`❌ Slug generation test failed: ${error.message}`);
-    return false;
-  }
-}
+// Note: slug generation is now covered by a real unit test that imports the
+// actual implementation — see apps/web/lib/utils.test.ts (slugFromRepoPath).
 
 // Main test runner
 async function runHealthTests() {
@@ -201,8 +166,7 @@ async function runHealthTests() {
     { name: 'Environment Variables', fn: testEnvironmentVariables },
     { name: 'Database Connection', fn: testDatabaseConnection },
     { name: 'Performance Baseline', fn: testPerformanceBaseline },
-    { name: 'Error Boundaries', fn: testErrorBoundaries },
-    { name: 'Slug Generation', fn: testSlugGeneration }
+    { name: 'Error Boundaries', fn: testErrorBoundaries }
   ];
   
   const results = [];
