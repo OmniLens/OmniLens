@@ -62,11 +62,16 @@ export default function RepositoryCard({
 
   // Card content JSX - reused for both error and normal states
   const cardContent = (
-    <Card className={`repository-card relative h-full flex flex-col transition-all duration-200 ${
-      hasError
-        ? 'border-red-500 bg-card hover:border-red-400'
-        : 'border-border bg-card hover:border-border/80 hover:shadow-md'
-    }`}>
+    <Card
+      className={`repository-card relative h-full flex flex-col transition-all duration-200 bg-card ${
+        hasError ? 'border-red-500 hover:border-red-400' : 'hover:shadow-md'
+      }`}
+      style={
+        !hasError && visibility === 'private'
+          ? { borderColor: 'rgba(245,158,11,0.4)' }
+          : undefined
+      }
+    >
       {/* Card Header - Avatar, name, public badge, delete button (mockup style) */}
       <CardHeader className="pb-3">
         <div className="drc-head flex items-center gap-2">
@@ -83,8 +88,17 @@ export default function RepositoryCard({
           </span>
           {/* Public/Private badge - aligns with website typography */}
           {visibility && (
-            <span className="drc-pub-badge flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[rgba(77,159,255,0.15)] bg-[rgba(77,159,255,0.08)] px-2 py-0.5 text-xs text-[#4d9fff]">
-              <span className="drc-pub-dot h-1 w-1 rounded-full bg-[#4d9fff]" />
+            <span
+              className="drc-pub-badge flex flex-shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs"
+              style={visibility === 'private'
+                ? { borderColor: 'rgba(245,158,11,0.35)', backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b' }
+                : { borderColor: 'rgba(77,159,255,0.15)', backgroundColor: 'rgba(77,159,255,0.08)', color: '#4d9fff' }
+              }
+            >
+              <span
+                className="drc-pub-dot h-1 w-1 rounded-full"
+                style={{ backgroundColor: visibility === 'private' ? '#f59e0b' : '#4d9fff' }}
+              />
               {visibility === 'private' ? 'Private' : 'Public'}
             </span>
           )}

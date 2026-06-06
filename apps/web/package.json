@@ -2,7 +2,7 @@
   "name": "@omni/web",
   "private": true,
   "license": "MIT",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "type": "module",
   "scripts": {
     "build": "bunx next build",

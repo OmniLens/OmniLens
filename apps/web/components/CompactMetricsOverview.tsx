@@ -26,6 +26,14 @@ function getRateStyles(successRate: number): {
   percentClass: string;
   percentStyle: React.CSSProperties;
 } {
+  if (successRate === 0) {
+    return {
+      barClass: 'zero',
+      barStyle: {},
+      percentClass: 'zero',
+      percentStyle: { color: 'hsl(var(--muted-foreground))', fontWeight: 600 },
+    };
+  }
   if (successRate >= 90) {
     return {
       barClass: 'full',

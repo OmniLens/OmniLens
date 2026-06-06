@@ -130,11 +130,11 @@ export function getWorkflowDotClass(health: WorkflowHealth): string {
  */
 export function getWorkflowHealthLabel(health: WorkflowHealth): string {
   switch (health) {
-    case "consistent":    return "consistent";
-    case "improved":      return "improved";
-    case "regressed":     return "regressed";
-    case "still_failing": return "failing";
-    case "idle":          return "idle";
+    case "consistent":    return "HEALTHY";
+    case "improved":      return "IMPROVED";
+    case "regressed":     return "REGRESSED";
+    case "still_failing": return "FAILING";
+    case "idle":          return "IDLE";
   }
 }
 
@@ -251,12 +251,12 @@ export function formatRunTime(dateString: string): string {
 export function isFeatureEnabled(feature: string): boolean {
   const envVarName = `NEXT_PUBLIC_ENABLE_${feature}`;
   const envValue = process.env[envVarName];
-  
+
   // If environment variable is explicitly set, use its value
   if (envValue !== undefined) {
     return envValue === 'true' || envValue === '1';
   }
-  
+
   // Default behavior: enabled in development, disabled in production
   return process.env.NODE_ENV !== 'production';
 }

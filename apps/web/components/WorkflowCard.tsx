@@ -230,15 +230,15 @@ export default function WorkflowCard({
                 const getHealthLabel = () => {
                   switch (healthStatus) {
                     case 'consistent':
-                      return 'Consistent';
+                      return 'HEALTHY';
                     case 'improved':
-                      return 'Improved';
+                      return 'IMPROVED';
                     case 'regressed':
-                      return 'Regressed';
+                      return 'REGRESSED';
                     case 'still_failing':
-                      return 'Still Failing';
+                      return 'FAILING';
                     case 'no_runs_today':
-                      return 'No Runs Today';
+                      return 'NO RUNS TODAY';
                     default:
                       return '';
                   }

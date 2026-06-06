@@ -57,6 +57,9 @@ DB_HOST=
 DB_NAME=
 DB_PASSWORD=
 DB_PORT=5432
+ADMIN_TOKEN_HASH=          # SHA-256 hash of your admin API token (for /api/admin/* routes)
+MARBLE_API_URL=            # Marble CMS base URL (for /blog)
+MARBLE_WORKSPACE_KEY=      # Marble CMS workspace key (for /blog)
 ```
 
 For E2E tests, also create `e2e/.env`:
@@ -83,19 +86,25 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000   # optional
 - Client-side: `apps/web/lib/auth-client.ts`.
 - API routes are protected using `withAuth()` HOC from `apps/web/lib/auth-middleware.ts`, or `validateAuth()` for manual checks.
 - The user's GitHub access token (stored in the `account` table) is retrieved per-request via `apps/web/lib/github-auth.ts` and used for all GitHub API calls.
+- **Admin routes** (`/api/admin/*`) use a separate token-based scheme via `apps/web/lib/admin-auth.ts` — completely isolated from user sessions. The token is compared against `ADMIN_TOKEN_HASH` (SHA-256).
 
 ### GitHub API Integration
 
 - All GitHub API calls live in `apps/web/lib/github.ts`.
 - Calls are made server-side, using the authenticated user's OAuth token scoped to their repos.
 - Two key fetch functions: `getWorkflowRunsForDate` (flat list for metrics) and `getWorkflowRunsForDateGrouped` (deduplicated by workflow for UI cards).
+- `apps/web/lib/repo-workflow-fetch.ts` runs a background fetch of workflows + today's metrics immediately after a repository is added.
 
 ### API Routes (`apps/web/app/api/`)
 
 | Route | Purpose |
 |---|---|
 | `auth/[...all]` | better-auth handler |
-| `repo/` | CRUD for user repositories |
+| `repo/` | List repositories |
+| `repo/add` | Add a repository (triggers background `fetchWorkflowDataForNewRepo`) |
+| `repo/[slug]` | Delete a repository |
+| `repo/validate` | Validate a GitHub repo path before adding |
+| `repo/dashboard` | Batch dashboard data for all repos |
 | `workflow/[slug]` | Fetch/sync workflows for a repo |
 | `health` | Health check endpoint |
 | `github-status` | GitHub API status check |
@@ -105,8 +114,46 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000   # optional
 ### Frontend
 
 - **Next.js App Router** with all pages under `apps/web/app/`.
-- **State**: TanStack Query for server state; `nuqs` for URL-synced query params.
-- **UI components**: shadcn/ui conventions in `apps/web/components/ui/`; page-level components in `apps/web/components/`.
+- **State**: TanStack Query for server state (client: `apps/web/lib/query-client.tsx`); `nuqs` for URL-synced query params (used for the date picker on dashboard pages).
+- **UI components**: shadcn/ui conventions in `apps/web/components/ui/`; page-level components in `apps/web/components/`; dashboard-specific components in `apps/web/components/dashboard/`.
 - **Charts**: Recharts.
 - The root layout (`apps/web/app/layout.tsx`) wraps the app in `NuqsAdapter`, `QueryProvider`, `AuthProvider`, and `SidebarLayout`.
-- Dashboard routes follow the pattern `/dashboard/[slug]` where `slug` is the repository slug.
+
+### Dashboard Routes
+
+All dashboard pages live under `/dashboard/[slug]` where `slug` is the repository slug:
+
+| Route | Purpose |
+|---|---|
+| `/dashboard/[slug]` | Main workflow run view with date picker, `RunStrip`, and `RunningSpotlight` |
+| `/dashboard/[slug]/workflow/[workflowId]` | Per-workflow run history and metrics |
+| `/dashboard/[slug]/workflows` | Placeholder page for future workflow management |
+| `/dashboard/[slug]/runners` | Runner information (placeholder) |
+| `/dashboard/[slug]/usage` | Usage metrics (placeholder) |
+
+### Data Fetching (Hooks Layer)
+
+`apps/web/lib/hooks/` contains all TanStack Query hooks used by dashboard pages:
+
+- `use-repository-dashboard.ts` — core hook file exposing `useDateState`, `useRepositoryWorkflows`, `useWorkflowRuns`, `useWorkflowOverview`, `useYesterdayWorkflowRuns`
+- `use-repositories.ts` / `use-dashboard-repositories.ts` / `use-dashboard-repositories-batch.ts` — hooks for the sidebar and main repo list
+- `use-workflow-mutations.ts` — mutations for add/delete repo
+- `use-github-status.ts` — polls GitHub API status for the banner
+
+### Shared Dashboard UI (`apps/web/components/dashboard/run-ui.tsx`)
+
+This file is the core shared component library for run visualization, used by both the repo dashboard and per-workflow pages:
+
+- `RunStrip` — horizontal strip of colored run segments
+- `RunningSpotlight` — highlights currently-in-progress runs
+- `OverviewPanel` — summary stats panel
+- `useNowTick` — hook that ticks every second when runs are active
+- Pure helpers: `getRunLabel`, `getLabelColor`, `shortenTrigger`, `elapsedSeconds`
+
+### Blog
+
+The `/blog` route is powered by **Marble CMS**. All CMS queries are in `apps/web/lib/query.ts` — not TanStack Query hooks; these are plain async functions called during server-side rendering.
+
+### Utilities (`apps/web/lib/utils.ts`)
+
+Key helpers worth knowing: `cn` (Tailwind class merge), `formatDuration` / `duration` (timing display), `getWorkflowDotClass` / `getWorkflowHealthLabel` / `getWorkflowPillClass` (workflow health styling), `isFeatureEnabled` (feature flags via env vars).
