@@ -213,13 +213,18 @@ describe("duration", () => {
 });
 
 describe("formatRunTime", () => {
-  // TZ is pinned to UTC in vitest.config.ts, so HH:MM output is deterministic.
-  it("formats an ISO timestamp as HH:MM", () => {
-    expect(formatRunTime("2024-01-01T14:30:00Z")).toBe("14:30");
+  // TZ is pinned to UTC in vitest.config.ts, but the locale (12h vs 24h) is
+  // host-dependent since formatRunTime localizes to the runtime's default —
+  // e.g. "14:30" on a 24h locale, "02:30 PM" on en-US. Collapse whitespace
+  // (JS \s covers the no-break spaces ICU inserts), then accept either convention.
+  const normalize = (str: string) => str.replace(/\s+/g, " ");
+
+  it("renders the correct UTC hour and minute (24h or 12h locale)", () => {
+    expect(normalize(formatRunTime("2024-01-01T14:30:00Z"))).toMatch(/^(14:30|0?2:30 PM)$/);
   });
 
-  it("returns a value matching the HH:MM shape", () => {
-    expect(formatRunTime("2024-01-01T09:05:00Z")).toMatch(/^\d{2}:\d{2}$/);
+  it("returns a short time-of-day string", () => {
+    expect(normalize(formatRunTime("2024-01-01T09:05:00Z"))).toMatch(/^\d{1,2}:\d{2}( [AP]M)?$/);
   });
 });
 
