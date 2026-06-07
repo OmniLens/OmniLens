@@ -1,1 +1,0 @@
-../../.agents/skills/changelog-generator/command/changelog-generator.md

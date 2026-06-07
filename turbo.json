@@ -39,6 +39,20 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "test:unit": {
+      "outputs": []
+    },
+    "test:integration": {
+      "outputs": [],
+      "env": [
+        "DB_PASSWORD",
+        "DB_USER",
+        "DB_HOST",
+        "DB_NAME",
+        "DB_PORT",
+        "NODE_ENV"
+      ]
+    },
     "test:health": {
       "outputs": [],
       "env": [

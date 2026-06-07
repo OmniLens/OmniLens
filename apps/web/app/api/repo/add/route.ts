@@ -7,6 +7,7 @@ import { addUserRepo, type Repository } from '@/lib/db-storage';
 import { withAuth } from '@/lib/auth-middleware';
 import { makeGitHubRequest } from '@/lib/github-auth';
 import { fetchWorkflowDataForNewRepo, type WorkflowData } from '@/lib/repo-workflow-fetch';
+import { slugFromRepoPath } from '@/lib/utils';
 
 // ============================================================================
 // Type Definitions
@@ -162,7 +163,7 @@ export const POST = withAuth(async (request: NextRequest, _context, authData) =>
       const repoData: GitHubRepoResponse = await res.json();
       
       // Generate slug from repository path (org-repo format for uniqueness)
-      const slug = repoPath.replace('/', '-');
+      const slug = slugFromRepoPath(repoPath);
 
       // Create repository object with data from GitHub API
       const newRepo: Repository = {

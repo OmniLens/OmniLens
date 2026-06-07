@@ -48,15 +48,15 @@ function getHealthConfig(status: WorkflowDisplayHealth): {
 } {
   switch (status) {
     case "consistent":
-      return { dotClass: "bg-green-500", label: "consistent" };
+      return { dotClass: "bg-green-500", label: "HEALTHY" };
     case "improved":
-      return { dotClass: "bg-blue-500", label: "improved" };
+      return { dotClass: "bg-blue-500", label: "IMPROVED" };
     case "regressed":
-      return { dotClass: "bg-amber-500", label: "regressed" };
+      return { dotClass: "bg-amber-500", label: "REGRESSED" };
     case "still_failing":
-      return { dotClass: "bg-red-500", label: "failing" };
+      return { dotClass: "bg-red-500", label: "FAILING" };
     case "idle":
-      return { dotClass: "bg-muted-foreground/40", label: "idle" };
+      return { dotClass: "bg-muted-foreground/40", label: "IDLE" };
   }
 }
 

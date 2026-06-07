@@ -65,3 +65,9 @@ coverage/
 **/playwright/.auth/
 **/playwright-report/
 **/test-results/
+
+# Local tooling / agent skills (kept local, not tracked)
+.claude/
+.agents/skills/
+skills-lock.json
+COVERAGE.md

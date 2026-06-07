@@ -28,28 +28,6 @@
   position: relative;
 }
 
-/* ── GRID OVERLAY ── */
-.landing-root::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
-  background-size: 44px 44px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ── NOISE ── */
-.landing-root::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.4;
-}
 
 /* ── NAV ── */
 .landing-root nav {
@@ -192,19 +170,7 @@
 }
 
 .landing-root .hero-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -60%);
-  width: 800px;
-  height: 800px;
-  background: radial-gradient(
-    circle,
-    rgba(0, 229, 160, 0.06) 0%,
-    rgba(77, 159, 255, 0.04) 40%,
-    transparent 70%
-  );
-  pointer-events: none;
+  display: none;
 }
 
 /* Login page: allow spotlight to extend to edges without clipping */
@@ -214,19 +180,7 @@
 
 .landing-root .login-hero {
   overflow: visible;
-}
-
-.landing-root .login-hero .hero-glow {
-  transform: translate(-50%, -50%);
-  width: 1000px;
-  height: 1000px;
-  background: radial-gradient(
-    circle,
-    rgba(0, 229, 160, 0.025) 0%,
-    rgba(77, 159, 255, 0.015) 35%,
-    rgba(0, 229, 160, 0.01) 55%,
-    transparent 80%
-  );
+  min-height: 0;
 }
 
 .landing-root .hero-badge {
@@ -362,7 +316,7 @@
   background: var(--surface);
   overflow: hidden;
   animation: landing-fade-up 0.7s ease 0.5s both;
-  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .landing-root .dash-titlebar {
@@ -801,25 +755,7 @@
 }
 
 .landing-root .card-glow {
-  height: 1px;
-  width: 0%;
-  transition: width 0.5s ease;
-}
-
-.landing-root .card:hover .card-glow {
-  width: 100%;
-}
-
-.landing-root .card:nth-child(1) .card-glow {
-  background: linear-gradient(90deg, var(--accent), transparent);
-}
-
-.landing-root .card:nth-child(2) .card-glow {
-  background: linear-gradient(90deg, var(--accent2), transparent);
-}
-
-.landing-root .card:nth-child(3) .card-glow {
-  background: linear-gradient(90deg, var(--accent3), transparent);
+  display: none;
 }
 
 .landing-root .card-mock {
@@ -1194,18 +1130,7 @@
 }
 
 .landing-root .cta-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(
-    circle,
-    rgba(0, 229, 160, 0.07) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
+  display: none;
 }
 
 .landing-root .cta-inner {
@@ -1217,15 +1142,24 @@
 .landing-root .cta-badge {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  gap: 10px;
   font-size: 12px;
-  color: var(--muted2);
-  border: 1px solid var(--border);
-  padding: 5px 14px;
-  border-radius: 100px;
-  margin-bottom: 28px;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 28px;
+}
+
+.landing-root .cta-badge::before,
+.landing-root .cta-badge::after {
+  content: "";
+  display: block;
+  height: 1px;
+  width: 36px;
+  background: var(--accent);
+  opacity: 0.35;
 }
 
 .landing-root .cta-title {

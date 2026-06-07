@@ -1,7 +1,7 @@
 "use client";
 
 // External library imports
-import React, { useMemo, useEffect, useRef, useCallback } from "react";
+import React, { useMemo, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, RefreshCw, GitBranch } from "lucide-react";
@@ -9,6 +9,18 @@ import { ArrowLeft, ExternalLink, RefreshCw, GitBranch } from "lucide-react";
 // Internal component imports
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/DatePicker";
+import {
+  RunStrip,
+  RunningSpotlight,
+  OverviewPanel,
+  useNowTick,
+  getRunLabel,
+  getLabelColor,
+  shortenTrigger,
+  elapsedSeconds,
+  type RunLabel,
+  type RunningSpotlightItem,
+} from "@/components/dashboard/run-ui";
 
 // Hook imports
 import { useSession } from "@/lib/auth-client";
@@ -23,6 +35,7 @@ import {
 import {
   duration,
   formatRunTime,
+  formatDuration,
   getWorkflowDotClass,
   getWorkflowHealthLabel,
   getWorkflowPillClass,
@@ -32,8 +45,6 @@ import {
 // ============================================================================
 // Type Definitions
 // ============================================================================
-
-type RunLabel = "PASS" | "FAIL" | "RUN" | "SKIP";
 
 interface BranchStat {
   name: string;
@@ -46,37 +57,146 @@ interface BranchStat {
 // Helper Functions
 // ============================================================================
 
-/** Derive the display label for a run based on status + conclusion */
-function getRunLabel(run: WorkflowRun): RunLabel {
-  if (run.status === "in_progress" || run.status === "queued") return "RUN";
-  if (run.conclusion === "success") return "PASS";
-  if (run.conclusion === "cancelled" || run.conclusion === "skipped") return "SKIP";
-  return "FAIL";
-}
-
-/** Tailwind text-color class for each label */
-function getLabelColor(label: RunLabel): string {
+/** Accent treatment for the Latest Run card, keyed by the run's outcome. */
+function getRunAccent(label: RunLabel | null): {
+  border: string;
+  text: string;
+  dot: string;
+  word: string;
+} {
   switch (label) {
-    case "PASS": return "text-[#00e5a0]";
-    case "FAIL": return "text-red-500";
-    case "RUN":  return "text-[#4d9fff]";
-    case "SKIP": return "text-amber-400";
-  }
-}
-
-/** Shorten GitHub event names for the feed */
-function shortenTrigger(event: string): string {
-  switch (event) {
-    case "pull_request":      return "PR";
-    case "schedule":          return "cron";
-    case "workflow_dispatch": return "manual";
-    case "push":              return "push";
-    default:                  return event;
+    case "PASS": return { border: "border-[#00e5a0]/25", text: "text-[#00e5a0]", dot: "bg-[#00e5a0]", word: "PASSED" };
+    case "FAIL": return { border: "border-red-500/30", text: "text-red-500", dot: "bg-red-500", word: "FAILED" };
+    case "RUN":  return { border: "border-[#4d9fff]/30", text: "text-[#4d9fff]", dot: "bg-[#4d9fff]", word: "RUNNING" };
+    case "SKIP": return { border: "border-amber-400/25", text: "text-amber-400", dot: "bg-amber-400", word: "SKIPPED" };
+    default:     return { border: "border-border", text: "text-muted-foreground/60", dot: "bg-muted-foreground/40", word: "—" };
   }
 }
 
 // ============================================================================
-// Sub-Components
+// Sub-Components — Latest Run card
+// ============================================================================
+
+/**
+ * Latest Run card — the single-workflow analog of the repo "Needs Attention"
+ * card. Surfaces the most recent run's outcome big and accent-colored, with a
+ * live elapsed timer while running, today's run-strip, pass streak, and a
+ * direct GitHub link to drill into the run.
+ */
+function LatestRun({ runs, now }: { runs: WorkflowRun[]; now: number }) {
+  const latest = useMemo(() => {
+    if (runs.length === 0) return null;
+    return [...runs].sort(
+      (a, b) =>
+        new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime()
+    )[0];
+  }, [runs]);
+
+  // Consecutive pass streak from the latest completed run backwards
+  const streak = useMemo(() => {
+    const completed = [...runs]
+      .filter((r) => r.status === "completed")
+      .sort((a, b) => new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime());
+    let count = 0;
+    for (const r of completed) {
+      if (r.conclusion === "success") count++;
+      else break;
+    }
+    return count;
+  }, [runs]);
+
+  const label = latest ? getRunLabel(latest) : null;
+  const accent = getRunAccent(label);
+  const isRunning = label === "RUN";
+
+  const dur = latest
+    ? isRunning
+      ? formatDuration(elapsedSeconds(latest.run_started_at, now))
+      : latest.run_started_at && latest.updated_at
+      ? duration(latest.run_started_at, latest.updated_at)
+      : "—"
+    : "—";
+
+  return (
+    <div
+      className={`rounded-lg border bg-card flex flex-col flex-shrink-0 w-full lg:w-[300px] overflow-hidden ${accent.border}`}
+    >
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+        <span className="text-sm font-normal text-muted-foreground">Latest run</span>
+        {isRunning && (
+          <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-[#4d9fff]">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-[#4d9fff]/60 animate-ping" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#4d9fff]" />
+            </span>
+            live
+          </span>
+        )}
+      </div>
+
+      {latest === null ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-1 px-4 py-6 text-center">
+          <span className="text-2xl font-bold font-mono text-muted-foreground/50">—</span>
+          <span className="text-xs text-muted-foreground/60">No runs on this date</span>
+        </div>
+      ) : (
+        <div className="flex flex-1 flex-col px-4 py-4 gap-3">
+          {/* Outcome headline */}
+          <div className="flex items-center gap-3">
+            <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${accent.dot} ${isRunning ? "animate-pulse" : ""}`} />
+            <span className={`text-2xl font-bold font-mono tracking-tight ${accent.text}`}>
+              {accent.word}
+            </span>
+            <span
+              className={`ml-auto text-sm font-mono tabular-nums ${
+                isRunning ? "text-[#4d9fff] animate-pulse" : "text-muted-foreground/60"
+              }`}
+            >
+              {dur}
+            </span>
+          </div>
+
+          {/* Meta */}
+          <div className="flex flex-col gap-0.5 text-xs font-mono text-muted-foreground/60">
+            <span>
+              run #{latest.run_number} ·{" "}
+              {latest.run_started_at ? formatRunTime(latest.run_started_at) : "--:--"}
+            </span>
+            <span className="truncate">
+              {(latest.head_branch || "—") + " · " + shortenTrigger(latest.event || "")}
+            </span>
+          </div>
+
+          {/* Today's run-strip */}
+          <RunStrip runs={runs} />
+
+          {/* Footer — streak + GitHub link */}
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs font-mono text-muted-foreground/50">
+              {streak > 0 ? (
+                <span className="text-[#00e5a0]/80">{streak} pass streak</span>
+              ) : (
+                "no streak"
+              )}
+            </span>
+            {latest.html_url && (
+              <Link
+                href={latest.html_url}
+                target="_blank"
+                className="flex items-center gap-1 text-xs text-muted-foreground/50 hover:text-foreground transition-colors"
+              >
+                GitHub <ExternalLink className="h-3 w-3" />
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Sub-Components — Live Feed
 // ============================================================================
 
 /**
@@ -121,7 +241,7 @@ function FeedRow({ run, index }: { run: WorkflowRun; index: number }) {
       <span className="text-foreground/70 truncate flex-1 min-w-0">{branch}</span>
 
       {/* Trigger */}
-      <span className="text-muted-foreground/40 w-14 flex-shrink-0 text-right">{trigger}</span>
+      <span className="text-muted-foreground/40 w-36 flex-shrink-0 text-left truncate">{trigger}</span>
 
       {/* Duration */}
       <span
@@ -152,8 +272,6 @@ function FeedRow({ run, index }: { run: WorkflowRun; index: number }) {
  * Terminal-style live feed panel.
  * Shows all workflow runs for the selected date in reverse chronological order,
  * with a pulsing "ingesting" indicator when a run is active.
- * Distinct loading / empty / data states prevent the scrollbar from appearing
- * when there is no content, and distinguish "loading" from "no runs".
  */
 function LiveFeed({
   runs,
@@ -178,9 +296,7 @@ function LiveFeed({
       {/* Feed header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-normal text-muted-foreground">
-            Live Feed
-          </span>
+          <span className="text-sm font-normal text-muted-foreground">Live Feed</span>
           <span className="text-[10px] text-muted-foreground/30 font-mono">—</span>
           <span className="text-xs text-muted-foreground/40">
             {isLoading ? "…" : `${runs.length} runs`}
@@ -189,16 +305,12 @@ function LiveFeed({
         {isIngesting ? (
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-[#00e5a0] animate-pulse" />
-            <span className="text-xs text-[#00e5a0]/80">
-              ingesting
-            </span>
+            <span className="text-xs text-[#00e5a0]/80">ingesting</span>
           </div>
         ) : (
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-[#4d9fff]/50" />
-            <span className="text-xs text-muted-foreground/50">
-              live
-            </span>
+            <span className="text-xs text-muted-foreground/50">live</span>
           </div>
         )}
       </div>
@@ -209,7 +321,7 @@ function LiveFeed({
         <span className="text-xs text-muted-foreground/40 w-10 flex-shrink-0">type</span>
         <span className="text-xs text-muted-foreground/40 w-10 flex-shrink-0">run</span>
         <span className="text-xs text-muted-foreground/40 flex-1">branch</span>
-        <span className="text-xs text-muted-foreground/40 w-14 flex-shrink-0 text-right">trigger</span>
+        <span className="text-xs text-muted-foreground/40 w-36 flex-shrink-0 text-left">trigger</span>
         <span className="text-xs text-muted-foreground/40 w-20 flex-shrink-0 text-right">duration</span>
         <span className="w-6 flex-shrink-0" />
       </div>
@@ -237,153 +349,9 @@ function LiveFeed({
   );
 }
 
-/**
- * An animated metric row: label + fill bar + value.
- * Matches the style of MetricsCard from the main dashboard.
- */
-function MetricRow({
-  label,
-  value,
-  barWidth,
-  barColor,
-}: {
-  label: string;
-  value: string | number;
-  barWidth: number;
-  barColor: string;
-}) {
-  const barRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (barRef.current) barRef.current.style.width = `${barWidth}%`;
-    }, 420);
-    return () => clearTimeout(t);
-  }, [barWidth]);
-
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm text-muted-foreground w-28 flex-shrink-0">{label}</span>
-      <div className="flex-1 h-[3px] rounded-full bg-white/5 overflow-hidden">
-        <div
-          ref={barRef}
-          className={`h-full rounded-full ${barColor} transition-[width] duration-700 ease-out`}
-          style={{ width: 0 }}
-        />
-      </div>
-      <span className="text-sm text-foreground w-14 text-right flex-shrink-0 tabular-nums">
-        {value}
-      </span>
-    </div>
-  );
-}
-
-/**
- * Stats panel — big pass-rate number + metric bars + totals.
- * Sits alongside the live feed as a compact at-a-glance health summary.
- */
-function StatsPanel({ runs }: { runs: WorkflowRun[] }) {
-  const completedRuns = runs.filter((r) => r.status === "completed");
-  const passedRuns    = runs.filter((r) => r.conclusion === "success");
-  const failedRuns    = runs.filter((r) => r.conclusion === "failure");
-
-  const successRate =
-    completedRuns.length > 0
-      ? Math.round((passedRuns.length / completedRuns.length) * 100)
-      : 0;
-
-  // Average runtime across completed runs
-  const avgRuntimeSec = useMemo(() => {
-    const totalMs = completedRuns.reduce((sum, r) => {
-      if (r.run_started_at && r.updated_at) {
-        return sum + Math.abs(
-          new Date(r.updated_at).getTime() - new Date(r.run_started_at).getTime()
-        );
-      }
-      return sum;
-    }, 0);
-    return completedRuns.length > 0 ? totalMs / completedRuns.length / 1000 : 0;
-  }, [completedRuns]);
-
-  // Consecutive pass streak from the latest run backwards
-  const streak = useMemo(() => {
-    const sorted = [...completedRuns].sort(
-      (a, b) => new Date(b.run_started_at).getTime() - new Date(a.run_started_at).getTime()
-    );
-    let count = 0;
-    for (const r of sorted) {
-      if (r.conclusion === "success") count++;
-      else break;
-    }
-    return count;
-  }, [completedRuns]);
-
-  const formatAvg = (sec: number) => {
-    if (sec === 0) return "—";
-    const m = Math.floor(sec / 60);
-    const s = Math.round(sec % 60);
-    return m > 0 ? `${m}m ${s}s` : `${s}s`;
-  };
-
-  return (
-    <div className="rounded-lg border border-border bg-card flex flex-col">
-      {/* Panel header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-        <span className="text-sm font-normal text-muted-foreground">
-          Metrics
-        </span>
-      </div>
-
-      <div className="px-4 py-5 flex flex-col gap-5">
-        {/* Pass rate — the hero number */}
-        <div className="text-center pb-5 border-b border-border">
-          <p className="text-5xl font-bold tabular-nums tracking-tight">
-            {runs.length === 0 ? "—" : `${successRate}%`}
-          </p>
-          <p className="text-sm text-muted-foreground/70 mt-2">
-            pass rate
-          </p>
-        </div>
-
-        {/* Metric bars */}
-        <div className="flex flex-col gap-4">
-          <MetricRow
-            label="Passed"
-            value={passedRuns.length}
-            barWidth={runs.length > 0 ? (passedRuns.length / runs.length) * 100 : 0}
-            barColor="bg-gradient-to-r from-[#00e5a0] to-[#00ff99]"
-          />
-          <MetricRow
-            label="Failed"
-            value={failedRuns.length}
-            barWidth={runs.length > 0 ? (failedRuns.length / runs.length) * 100 : 0}
-            barColor="bg-gradient-to-r from-red-500 to-red-400"
-          />
-          <MetricRow
-            label="Avg runtime"
-            value={formatAvg(avgRuntimeSec)}
-            barWidth={Math.min(100, (avgRuntimeSec / 300) * 100)}
-            barColor="bg-gradient-to-r from-[#c084fc] to-[#e879f9]"
-          />
-          <MetricRow
-            label="Pass streak"
-            value={streak > 0 ? `${streak} runs` : "—"}
-            barWidth={Math.min(100, (streak / 10) * 100)}
-            barColor="bg-gradient-to-r from-[#4d9fff] to-[#88cfff]"
-          />
-        </div>
-
-        {/* Total count footer */}
-        <div className="pt-4 border-t border-border flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            Total runs
-          </span>
-          <span className="text-sm font-semibold font-mono tabular-nums">{runs.length}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+// ============================================================================
+// Sub-Components — Branch Breakdown
+// ============================================================================
 
 /**
  * Branch breakdown — groups runs by branch and shows per-branch pass/fail with an inline bar.
@@ -410,9 +378,7 @@ function BranchBreakdown({ runs }: { runs: WorkflowRun[] }) {
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
         <GitBranch className="h-3.5 w-3.5 text-muted-foreground/60" />
-        <span className="text-sm font-normal text-muted-foreground">
-          Branch Breakdown
-        </span>
+        <span className="text-sm font-normal text-muted-foreground">Branch Breakdown</span>
       </div>
 
       {/* Column labels */}
@@ -463,9 +429,12 @@ function BranchBreakdown({ runs }: { runs: WorkflowRun[] }) {
 /**
  * WorkflowDetailPage — a focused dashboard for a single GitHub Actions workflow.
  *
- * Displays a signal-ingestion-style live feed of runs for the selected date,
- * alongside a metrics panel (pass rate, avg runtime, streak) and a branch
- * breakdown table. Design follows the OmniLens signal ingestion mockup.
+ * Mirrors the repository dashboard's hybrid triage layout:
+ *  1. Header — back, name, health pill, live "running" pill, date controls
+ *  2. Running Spotlight — only when a run is in progress (live elapsed timers)
+ *  3. Ribbon — Latest Run card + stat-chip/24h activity Overview panel
+ *  4. Live Feed — full-width run log for the selected date
+ *  5. Branch Breakdown — per-branch pass/fail table
  */
 export default function WorkflowDetailPage() {
   const params = useParams();
@@ -512,10 +481,34 @@ export default function WorkflowDetailPage() {
     [allRuns, workflowId]
   );
 
-  /** True when any run is currently in progress or queued */
-  const isIngesting = useMemo(
-    () => runs.some((r) => r.status === "in_progress" || r.status === "queued"),
+  /** Active (in-progress / queued) runs, oldest first */
+  const activeRuns = useMemo(
+    () =>
+      runs
+        .filter((r) => r.status === "in_progress" || r.status === "queued")
+        .sort(
+          (a, b) =>
+            new Date(a.run_started_at).getTime() - new Date(b.run_started_at).getTime()
+        ),
     [runs]
+  );
+
+  const isIngesting = activeRuns.length > 0;
+  const now = useNowTick(isIngesting);
+
+  /** Running spotlight items — one per active run of this workflow */
+  const runningItems: RunningSpotlightItem[] = useMemo(
+    () =>
+      activeRuns.map((run) => ({
+        id: run.id,
+        name: `Run #${run.run_number}`,
+        meta: `${run.head_branch || "—"} · ${shortenTrigger(run.event || "")}`,
+        startedAt: run.run_started_at,
+        todayRuns: runs,
+        href: run.html_url,
+        external: true,
+      })),
+    [activeRuns, runs]
   );
 
   /** Classify workflow health from today's completed runs */
@@ -529,6 +522,26 @@ export default function WorkflowDetailPage() {
     return passed >= failed ? "improved" : "regressed";
   }, [runs]);
 
+  /** Derived stats for the overview panel */
+  const stats = useMemo(() => {
+    const completed = runs.filter((r) => r.status === "completed");
+    const passed = runs.filter((r) => r.conclusion === "success").length;
+    const failed = runs.filter((r) => r.conclusion === "failure").length;
+    const successRate =
+      completed.length > 0 ? Math.round((passed / completed.length) * 100) : 0;
+    const totalMs = completed.reduce((sum, r) => {
+      if (r.run_started_at && r.updated_at) {
+        return (
+          sum +
+          Math.abs(new Date(r.updated_at).getTime() - new Date(r.run_started_at).getTime())
+        );
+      }
+      return sum;
+    }, 0);
+    const avgRuntimeSec =
+      completed.length > 0 ? Math.floor(totalMs / completed.length / 1000) : 0;
+    return { passed, failed, completed: completed.length, successRate, avgRuntimeSec };
+  }, [runs]);
 
   const handleDateChange = useCallback(
     (date: Date | undefined) => {
@@ -540,6 +553,8 @@ export default function WorkflowDetailPage() {
     },
     [setSelectedDate]
   );
+
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   // ============================================================================
   // Render Logic — Early Returns
@@ -564,11 +579,11 @@ export default function WorkflowDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
         {/* ── Header ── */}
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
             {/* Back to repo dashboard */}
             <Button
               variant="ghost"
@@ -582,13 +597,11 @@ export default function WorkflowDetailPage() {
             </Button>
 
             {/* Workflow identity */}
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold truncate">
-                {workflow?.name ?? `Workflow #${workflowId}`}
-              </h1>
-            </div>
+            <h1 className="text-xl sm:text-2xl font-bold truncate">
+              {workflow?.name ?? `Workflow #${workflowId}`}
+            </h1>
 
-            {/* Workflow health badge */}
+            {/* Workflow health pill */}
             {!isLoadingRuns && (
               <div
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono uppercase tracking-widest flex-shrink-0 ${getWorkflowPillClass(workflowHealth)}`}
@@ -598,13 +611,14 @@ export default function WorkflowDetailPage() {
               </div>
             )}
 
-            {/* Live ingestion badge */}
-            {isIngesting && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#00e5a0]/20 bg-[#00e5a0]/5 flex-shrink-0">
-                <div className="h-1.5 w-1.5 rounded-full bg-[#00e5a0] animate-pulse" />
-                <span className="text-[10px] font-mono text-[#00e5a0]/80 uppercase tracking-widest">
-                  running
+            {/* Live running pill — only when a run is in progress */}
+            {runningItems.length > 0 && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#4d9fff]/30 bg-[#4d9fff]/10 text-[10px] font-mono uppercase tracking-widest flex-shrink-0 text-[#4d9fff] animate-in fade-in-0">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#4d9fff]/60 animate-ping" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#4d9fff]" />
                 </span>
+                {runningItems.length} running
               </div>
             )}
           </div>
@@ -614,19 +628,14 @@ export default function WorkflowDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSelectedDate(new Date().toISOString().slice(0, 10))}
-              className={
-                selectedDate === new Date().toISOString().slice(0, 10)
-                  ? "bg-primary text-primary-foreground"
-                  : ""
-              }
+              onClick={() => setSelectedDate(todayStr)}
+              className={selectedDate === todayStr ? "bg-primary text-primary-foreground" : ""}
             >
               Today
             </Button>
-            <DatePicker
-              date={new Date(selectedDate)}
-              onDateChange={handleDateChange}
-            />
+            <div className="hidden sm:block">
+              <DatePicker date={new Date(selectedDate)} onDateChange={handleDateChange} />
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -638,14 +647,31 @@ export default function WorkflowDetailPage() {
           </div>
         </div>
 
-        {/* ── Main grid: Live Feed (left) + Metrics (right) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
-          <LiveFeed runs={runs} isIngesting={isIngesting} isLoading={isLoadingRuns} />
-          <StatsPanel runs={runs} />
+        {/* ── Running Spotlight (conditional) ── */}
+        {runningItems.length > 0 && (
+          <RunningSpotlight items={runningItems} now={now} />
+        )}
+
+        {/* ── Ribbon: Latest Run + Stats/Activity ── */}
+        <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+          <LatestRun runs={runs} now={now} />
+          <OverviewPanel
+            runs={runs}
+            overviewHourData={[]}
+            passedRuns={stats.passed}
+            failedRuns={stats.failed}
+            successRate={stats.successRate}
+            completedRuns={stats.completed}
+            totalRuns={runs.length}
+            avgRuntimeSec={stats.avgRuntimeSec}
+          />
         </div>
 
         {/* ── Branch Breakdown ── */}
         {!isLoadingRuns && <BranchBreakdown runs={runs} />}
+
+        {/* ── Live Feed (full width) ── */}
+        <LiveFeed runs={runs} isIngesting={isIngesting} isLoading={isLoadingRuns} />
 
       </div>
     </div>

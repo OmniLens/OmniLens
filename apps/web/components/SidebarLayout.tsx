@@ -111,7 +111,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         <header className="flex h-16 shrink-0 items-center gap-4 border-b px-4">
           <SidebarTrigger className="-ml-1" />
         </header>
-        <div className="flex flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           {children}
         </div>
       </SidebarInset>

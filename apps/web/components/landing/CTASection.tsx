@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { GitHubIcon, GreenDotIcon } from "./icons";
+import { GitHubIcon } from "./icons";
 
 export function CTASection() {
   return (
@@ -9,7 +9,6 @@ export function CTASection() {
       <div className="cta-glow" />
       <div className="cta-inner">
         <div className="cta-badge">
-          <GreenDotIcon width={10} height={10} />
           Open source
         </div>
         <h2 className="cta-title">

@@ -1,0 +1,52 @@
+name: 🤏 Unit Tests
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+  workflow_dispatch:
+
+jobs:
+  test-unit:
+    name: 🤏 Run unit tests
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+
+      - name: 🍞 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: 🧰 Install dependencies
+        run: bun install
+
+      - name: 🤏 Run unit tests with coverage
+        run: bun run test:unit:cov
+        working-directory: apps/web
+        env:
+          NODE_ENV: test
+
+      - name: 📊 Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-coverage
+          path: apps/web/coverage/
+          retention-days: 7
+
+      - name: 📈 Coverage summary
+        if: always()
+        run: |
+          echo "## ✅ Unit Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage reports available in artifacts: \`unit-coverage\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View HTML report: Download \`unit-coverage\` artifact and open \`index.html\`" >> $GITHUB_STEP_SUMMARY

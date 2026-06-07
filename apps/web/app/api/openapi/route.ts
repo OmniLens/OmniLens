@@ -317,12 +317,13 @@ export async function GET() {
       '/api/admin/user-ids': {
         get: {
           summary: 'Get all user IDs (admin only)',
-          description: 'Returns all user IDs in the system. Requires authentication.',
+          description: 'Returns all user IDs in the system. Requires admin API token authentication.',
           tags: ['Admin'],
-          security: [{ cookieAuth: [] }],
+          security: [{ adminTokenAuth: [] }],
           responses: {
             '200': { description: 'Successfully retrieved user IDs' },
-            '401': { description: 'Unauthorized - Authentication required' },
+            '401': { description: 'Unauthorized - Admin token required' },
+            '403': { description: 'Forbidden - Invalid or invalidated admin token' },
             '500': { description: 'Internal server error' }
           }
         }
