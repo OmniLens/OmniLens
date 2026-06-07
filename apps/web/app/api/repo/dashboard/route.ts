@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Internal utility imports
-import { loadUserAddedRepos, type Repository } from '@/lib/db-storage';
+import { getWorkflows, loadUserAddedRepos, type Repository } from '@/lib/db-storage';
 import { withAuth } from '@/lib/auth-middleware';
 import { makeGitHubRequest } from '@/lib/github-auth';
 import { getWorkflowRunsForDate, type WorkflowRun } from '@/lib/github';
@@ -102,7 +102,6 @@ export const GET = withAuth(async (request: NextRequest, _context, authData) => 
     const repoPromises = userRepos.map(async (repo: Repository) => {
       try {
         // Quick check if workflows exist in database (avoids unnecessary GitHub API calls)
-        const { getWorkflows } = await import('@/lib/db-storage');
         const savedWorkflows = await getWorkflows(repo.slug, authData.user.id);
         const hasWorkflows = savedWorkflows.length > 0;
 

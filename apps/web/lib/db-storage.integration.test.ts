@@ -5,9 +5,15 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import pool from "@/lib/db";
 import {
   addUserRepo,
+  clearAllRepos,
   clearUserRepos,
   deleteWorkflows,
+  getAllUserIds,
+  getAllUsers,
+  getAllUsersWithStats,
+  getUserById,
   getUserRepo,
+  getUserStats,
   getWorkflows,
   loadUserAddedRepos,
   removeUserRepo,
@@ -235,6 +241,87 @@ describe.skipIf(!hasDb)("db-storage integration", () => {
 
       await deleteWorkflows(repoSlug, userId);
       expect(await getWorkflows(repoSlug, userId)).toEqual([]);
+    });
+  });
+
+  describe("clearAllRepos", () => {
+    it("removes every repository regardless of owner", async () => {
+      await addUserRepo(makeRepo({ slug: "a" }), userId);
+      await addUserRepo(makeRepo({ slug: "b" }), otherUserId);
+
+      await clearAllRepos();
+
+      expect(await loadUserAddedRepos(userId)).toHaveLength(0);
+      expect(await loadUserAddedRepos(otherUserId)).toHaveLength(0);
+    });
+  });
+
+  describe("getAllUsers / getAllUserIds / getUserById", () => {
+    it("getAllUserIds includes every seeded user id", async () => {
+      const ids = await getAllUserIds();
+      expect(ids).toEqual(expect.arrayContaining([userId, otherUserId]));
+    });
+
+    it("getAllUsers returns the seeded users with their hydrated columns", async () => {
+      const users = await getAllUsers();
+      const mine = users.find((u) => u.id === userId);
+
+      expect(mine).toBeDefined();
+      expect(mine?.email).toBe(`${userId}@example.test`);
+      // Columns with DB defaults are hydrated, not dropped.
+      expect(mine?.emailVerified).toBe(false);
+    });
+
+    it("getUserById returns the matching user", async () => {
+      const user = await getUserById(userId);
+      expect(user).toMatchObject({ id: userId, name: "Integration Test User" });
+    });
+
+    it("getUserById returns null for an unknown id", async () => {
+      expect(await getUserById(`missing-${randomUUID()}`)).toBeNull();
+    });
+  });
+
+  describe("getUserStats", () => {
+    it("counts the user's repositories and workflows and reports recent activity", async () => {
+      await addUserRepo(makeRepo({ slug: "stats-1" }), userId);
+      await addUserRepo(makeRepo({ slug: "stats-2" }), userId);
+      await saveWorkflows(
+        "stats-1",
+        [
+          { id: 1, name: "CI", path: "ci.yml", state: "active" },
+          { id: 2, name: "Deploy", path: "deploy.yml", state: "active" },
+        ],
+        userId,
+      );
+
+      const stats = await getUserStats(userId);
+
+      expect(stats.repositoryCount).toBe(2);
+      expect(stats.workflowCount).toBe(2);
+      // Real rows were just written, so lastActivity is well past the 1970 epoch floor.
+      expect(stats.lastActivity).not.toBeNull();
+      expect(new Date(stats.lastActivity as string).getFullYear()).toBeGreaterThan(2000);
+    });
+
+    it("returns zero counts for a user with no data", async () => {
+      const stats = await getUserStats(userId);
+      expect(stats.repositoryCount).toBe(0);
+      expect(stats.workflowCount).toBe(0);
+    });
+  });
+
+  describe("getAllUsersWithStats", () => {
+    it("joins per-user stats onto each user row", async () => {
+      await addUserRepo(makeRepo({ slug: "joined" }), userId);
+
+      const all = await getAllUsersWithStats();
+      const mine = all.find((u) => u.id === userId);
+
+      expect(mine).toMatchObject({ id: userId, repositoryCount: 1, workflowCount: 0 });
+      // A user with no repos still appears with zeroed stats.
+      const theirs = all.find((u) => u.id === otherUserId);
+      expect(theirs).toMatchObject({ repositoryCount: 0, workflowCount: 0 });
     });
   });
 });

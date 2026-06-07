@@ -22,27 +22,41 @@ bun run setup         # Initialize/migrate PostgreSQL schema (runs apps/web/scri
 
 ## Testing
 
-There are two test suites:
+Four layers, each with its own runner. `bun run test` chains the unit suite first, then the three API smoke scripts (so it needs a running server for those).
 
-**API/integration tests** (require a running server at `API_BASE`):
+**Unit tests** (Vitest — pure logic + API route handlers, no DB or network):
 ```bash
-bun run test                    # All API tests (health + auth basic + github-status)
-bun run test:health             # Health check test
-bun run test:auth:basic         # Auth basic test
-bun run test:github-status      # GitHub status test
+bun run test:unit               # All unit + route-handler tests
+bun run test:unit:watch         # Watch mode
+bun run test:unit:cov           # With coverage
+# Run a single file / single test name (from apps/web):
+bunx vitest run lib/utils.test.ts
+bunx vitest run -t "formatDuration"
 ```
-Test source files live in `/tests/`.
+Tests are colocated as `*.test.ts` next to their source. API route handlers use a **direct-handler** pattern: the exported handler is imported and invoked in-process with `withAuth`/`withAdminAuth` and the db/github modules mocked — no server. Request/context builders live in `apps/web/lib/test-utils/route-harness.ts`.
 
-**E2E tests** (Playwright, require running server + real GitHub credentials):
+**Integration tests** (Vitest + a live PostgreSQL — exercises the real `lib/db-storage.ts` query layer):
 ```bash
+bun run test:integration        # Needs DB_* env; seeds + cascade-cleans a synthetic user per run
+```
+Configured separately in `apps/web/vitest.integration.config.ts` (glob `*.integration.test.ts`) and **excluded** from `test:unit` to keep that run DB-free. Self-skips when `DB_HOST`/`DB_NAME`/`DB_USER` are unset.
+
+**API smoke tests** (Bun scripts in `/tests/`, require a running server at `API_BASE`):
+```bash
+bun run test:health
+bun run test:auth:basic
+bun run test:github-status
+```
+
+**E2E tests** (Playwright, require running server + real GitHub credentials; config + tests in `/e2e/`):
+```bash
+bun run test:e2e:auth-setup     # Run FIRST: saves auth state to e2e/playwright/.auth/
 bun run test:e2e                # All E2E tests
 bun run test:e2e:login          # Smoke: login + dashboard
-bun run test:e2e:ui             # Interactive Playwright UI
-bun run test:e2e:debug          # Debug mode
-bun run test:e2e:headed         # Headed (visible browser)
-bun run test:e2e:auth-setup     # First-time auth setup (run before other E2E tests)
+bun run test:e2e:ui             # Interactive Playwright UI (also :debug, :headed)
 ```
-E2E config and tests live in `/e2e/`. Before running E2E tests for the first time, run `bun run test:e2e:auth-setup` to save authenticated state to `e2e/playwright/.auth/`.
+
+CI: `test-unit.yml` runs the unit suite and `test-api.yml` runs the integration suite (with a Postgres service) on push/PR to `main`; the smoke scripts run in their own per-suite workflows.
 
 ## Environment Variables
 
@@ -57,7 +71,7 @@ DB_HOST=
 DB_NAME=
 DB_PASSWORD=
 DB_PORT=5432
-ADMIN_TOKEN_HASH=          # SHA-256 hash of your admin API token (for /api/admin/* routes)
+ADMIN_API_TOKEN=           # SHA-256 hash of your admin API token (for /api/admin/* routes)
 MARBLE_API_URL=            # Marble CMS base URL (for /blog)
 MARBLE_WORKSPACE_KEY=      # Marble CMS workspace key (for /blog)
 ```
@@ -86,7 +100,7 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000   # optional
 - Client-side: `apps/web/lib/auth-client.ts`.
 - API routes are protected using `withAuth()` HOC from `apps/web/lib/auth-middleware.ts`, or `validateAuth()` for manual checks.
 - The user's GitHub access token (stored in the `account` table) is retrieved per-request via `apps/web/lib/github-auth.ts` and used for all GitHub API calls.
-- **Admin routes** (`/api/admin/*`) use a separate token-based scheme via `apps/web/lib/admin-auth.ts` — completely isolated from user sessions. The token is compared against `ADMIN_TOKEN_HASH` (SHA-256).
+- **Admin routes** (`/api/admin/*`) use a separate token-based scheme via the `withAdminAuth()`/`validateAdminToken()` helpers in `apps/web/lib/admin-auth.ts` — completely isolated from user sessions. The `Authorization: Bearer <token>` value is SHA-256 hashed and compared (timing-safe) against the `ADMIN_API_TOKEN` env var, which must hold the **hash** of the real token (not the token itself).
 
 ### GitHub API Integration
 

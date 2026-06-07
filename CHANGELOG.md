@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.3] — 2026-06-07
+
+### Added
+- Handler tests for the dashboard batch endpoint, the workflow-existence check, the health endpoint, and the GitHub status endpoint, raising API route coverage to 12 of 14 routes.
+- Integration tests for the remaining database query functions — admin user listing and lookup, per-user statistics, combined users-with-stats, and the clear-all-repositories helper — bringing the storage layer to full query-function coverage.
+
+### Changed
+- The dashboard batch endpoint now loads workflow records through a static import instead of a per-repository dynamic import, making its parallel repository processing deterministic.
+
 ## [3.1.2] — 2026-06-07
 
 ### Added
