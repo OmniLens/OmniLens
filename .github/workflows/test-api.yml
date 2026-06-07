@@ -1,17 +1,15 @@
-name: 🔌 API Tests
+name: 🔌 Integration Tests
 
 on:
-  # push:
-  #   branches: main
-  # pull_request:
-  #   branches: main
-  # schedule:
-  #   - cron: '0 3 * * *'  # Run daily at 05:00 AM UTC+2
+  push:
+    branches: main
+  pull_request:
+    branches: main
   workflow_dispatch:
 
 jobs:
-  test-api:
-    name: 🔌 Run API tests
+  test-integration:
+    name: 🔌 Run DB integration tests
     runs-on: ubuntu-latest
 
     env:
@@ -67,14 +65,10 @@ jobs:
         env:
           PGPASSWORD: ${{ secrets.DB_PASSWORD }}
 
-      - name: 🔌 Run API tests with coverage
-        run: bun run test:api
+      - name: 🔌 Run integration tests with coverage
+        run: bun run test:integration:cov
         working-directory: apps/web
         env:
-          GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
-          GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          BETTER_AUTH_URL: http://localhost:3000
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_HOST: localhost
@@ -86,17 +80,17 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: api-coverage
+          name: integration-coverage
           path: apps/web/coverage/
           retention-days: 7
 
       - name: 📈 Coverage summary
         if: always()
         run: |
-          echo "## ✅ API Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Integration Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "Coverage reports available in artifacts: \`api-coverage\`" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage reports available in artifacts: \`integration-coverage\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "View HTML report: Download \`api-coverage\` artifact and open \`index.html\`" >> $GITHUB_STEP_SUMMARY
+          echo "View HTML report: Download \`integration-coverage\` artifact and open \`index.html\`" >> $GITHUB_STEP_SUMMARY
 

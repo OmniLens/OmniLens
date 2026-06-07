@@ -16,7 +16,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
-    exclude: ["node_modules/**", "e2e/**", ".next/**"],
+    // Integration tests (*.integration.test.ts) need a live DB and run under
+    // vitest.integration.config.ts — keep them out of the fast, DB-free unit run.
+    exclude: ["node_modules/**", "e2e/**", ".next/**", "**/*.integration.test.ts"],
     env: {
       TZ: "UTC",
     },
@@ -27,6 +29,7 @@ export default defineConfig({
         "lib/github.ts",
         "lib/admin-auth.ts",
         "components/dashboard/run-ui.tsx",
+        "app/api/**/route.ts",
       ],
       reporter: ["text", "html", "json", "lcov"],
     },

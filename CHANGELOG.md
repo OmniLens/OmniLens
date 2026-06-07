@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.2] — 2026-06-07
+
+### Added
+- Database integration test suite for the repository and workflow storage layer (16 tests) covering the 12-repository limit, per-user scoping, duplicate handling, and workflow persistence, with new `test:integration` and `test:integration:cov` scripts and a dedicated Vitest config.
+- Direct-handler API route tests (37 tests) for the repository, workflow, and admin endpoints, asserting request validation, status-code branching, GitHub error mapping, and response shapes.
+- Unit tests for the admin authentication gate (`validateAdminToken` and `withAdminAuth`), covering missing, malformed, invalid, and invalidated tokens as well as an unconfigured admin token.
+
+### Changed
+- The previously disabled API Tests GitHub Actions workflow now runs the database integration suite with coverage on pushes and pull requests to `main`.
+- Unit-test coverage now includes the API route handlers, and integration tests are kept out of the fast, database-free unit run.
+
+### Security
+- `GET /api/admin/user-ids` now requires an admin API token instead of an ordinary user session, preventing any signed-in user from enumerating every user ID; its OpenAPI documentation was updated to match.
+
 ## [3.1.1] — 2026-06-06
 
 ### Added

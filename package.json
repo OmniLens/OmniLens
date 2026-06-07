@@ -16,6 +16,7 @@
     "postinstall": "playwright install chromium",
     "test": "turbo run test --filter=@omni/web",
     "test:unit": "turbo run test:unit --filter=@omni/web",
+    "test:integration": "turbo run test:integration --filter=@omni/web",
     "test:health": "turbo run test:health --filter=@omni/web",
     "test:auth:basic": "turbo run test:auth:basic --filter=@omni/web",
     "test:github-status": "turbo run test:github-status --filter=@omni/web",
@@ -31,5 +32,5 @@
     "dotenv": "^16.6.1",
     "turbo": "^2.8.10"
   },
-  "version": "3.1.1"
+  "version": "3.1.2"
 }
