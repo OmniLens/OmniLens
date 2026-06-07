@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.4] — 2026-06-07
+
+### Added
+- Handler tests for the OpenAPI specification endpoint and the Better Auth catch-all route, bringing API route coverage to all 14 routes.
+- Expanded workflow-overview endpoint tests covering the hourly run breakdown, the repository-not-found and malformed-path cases, and the GitHub repository-info failure path.
+- Cache-miss tests for the workflow endpoint that exercise the live GitHub sync, active-workflow filtering, best-effort persistence, and GitHub error mapping.
+- Tests for the GitHub run-fetching layer, covering date-windowed pagination, the page-count safety cap, deduplicated grouping, and the not-modified, not-found, and forbidden responses.
+- Unit tests for the authentication middleware.
+
+### Changed
+- Test coverage reporting now includes the authentication middleware module.
+
 ## [3.1.3] — 2026-06-07
 
 ### Added

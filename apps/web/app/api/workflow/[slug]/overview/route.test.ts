@@ -104,10 +104,69 @@ describe("GET /api/workflow/[slug]/overview", () => {
     expect(json.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
+  it("aggregates an hourly breakdown alongside the rate metrics", async () => {
+    mockGetUserRepo.mockResolvedValue(repo);
+    mockGitHub
+      .mockResolvedValueOnce(
+        githubResponse(200, {
+          total_count: 1,
+          workflows: [{ id: 1, name: "CI", state: "active" }],
+        }),
+      )
+      .mockResolvedValueOnce(githubResponse(200, {}));
+
+    // Two runs in the 10:00 UTC hour (config pins TZ=UTC).
+    mockRuns.mockResolvedValue([
+      run({ id: 1, workflow_id: 1, run_started_at: "2024-01-01T10:00:00Z" }),
+      run({ id: 2, workflow_id: 1, run_started_at: "2024-01-01T10:30:00Z" }),
+    ]);
+
+    const json = await (await GET(getRequest(URL), ctx({ slug: "owner-repo" }))).json();
+
+    expect(json.overview.totalRuns).toBe(2);
+    expect(Array.isArray(json.overview.runsByHour)).toBe(true);
+    expect(json.overview.runsByHour).toHaveLength(24);
+    expect(json.overview.runsByHour[10]).toMatchObject({ hour: 10, total: 2, passed: 2 });
+    expect(json.overview.maxRunsPerHour).toBe(2);
+    expect(typeof json.generatedAt).toBe("string");
+  });
+
+  it("returns 400 when the stored repoPath isn't in owner/repo form", async () => {
+    mockGetUserRepo.mockResolvedValue({ ...repo, repoPath: "no-slash" });
+
+    const res = await GET(getRequest(URL), ctx({ slug: "owner-repo" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.error).toMatch(/invalid repository path/i);
+    expect(mockRuns).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 when GitHub repo-info fetch fails after workflows load", async () => {
+    mockGetUserRepo.mockResolvedValue(repo);
+    mockGitHub
+      .mockResolvedValueOnce(
+        githubResponse(200, {
+          total_count: 1,
+          workflows: [{ id: 1, name: "CI", state: "active" }],
+        }),
+      )
+      // 2nd call (repo info) fails -> 500.
+      .mockResolvedValueOnce(githubResponse(503));
+
+    const res = await GET(getRequest(URL), ctx({ slug: "owner-repo" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(json.error).toMatch(/failed to fetch repository information/i);
+  });
+
   it("returns 400 for a malformed date query param", async () => {
     mockGetUserRepo.mockResolvedValue(repo);
 
     const res = await GET(getRequest(`${URL}?date=2024-1-1`), ctx({ slug: "owner-repo" }));
+    const json = await res.json();
     expect(res.status).toBe(400);
+    expect(json.error).toMatch(/invalid request parameters/i);
   });
 });

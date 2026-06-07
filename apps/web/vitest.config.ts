@@ -28,6 +28,7 @@ export default defineConfig({
         "lib/utils.ts",
         "lib/github.ts",
         "lib/admin-auth.ts",
+        "lib/auth-middleware.ts",
         "components/dashboard/run-ui.tsx",
         "app/api/**/route.ts",
       ],
