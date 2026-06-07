@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Removed the self-referential fake slug check from the health test script, now replaced by a real unit test that imports the actual implementation.
+- Removed the redundant `api-health` E2E spec that duplicated the API-layer health check; its `status === 'healthy'` assertion is now part of the health test script.
 
 ## [3.1.0] — 2026-06-06
 

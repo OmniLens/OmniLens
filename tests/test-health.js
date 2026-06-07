@@ -24,16 +24,24 @@ const API_BASE = process.env.API_BASE || 'http://localhost:3000';
 async function testServerHealth() {
   try {
     console.log('Testing server health...');
-    
+
     const response = await fetch(`${API_BASE}/api/health`);
-    
-    if (response.ok) {
-      console.log('✅ Server is running and responding');
-      return true;
-    } else {
+
+    if (!response.ok) {
       console.log(`❌ Server health check failed: ${response.status}`);
       return false;
     }
+
+    // Assert the response body reports a healthy status (consolidated from the
+    // former e2e/tests/health/api-health.spec.ts, which only duplicated this).
+    const data = await response.json().catch(() => ({}));
+    if (data.status !== 'healthy') {
+      console.log(`❌ Server reported non-healthy status: ${JSON.stringify(data)}`);
+      return false;
+    }
+
+    console.log('✅ Server is running and reports healthy status');
+    return true;
   } catch (error) {
     console.log(`❌ Server health test failed: ${error.message}`);
     return false;
